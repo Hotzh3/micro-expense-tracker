@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Xcode user/local files
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Build output
+build/
+Build/
+DerivedData/
+
+# Swift Package Manager
+.swiftpm/
+.build/
+
+# Secrets / local env
+.env
+*.env
+
+# Logs
+*.log
