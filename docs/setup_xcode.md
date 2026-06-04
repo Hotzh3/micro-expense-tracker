@@ -1,28 +1,24 @@
-# Manual Xcode Setup
+# XcodeGen Setup
 
-This repository does not contain an Xcode project yet. Create a new SwiftUI iOS app in Xcode and copy these files into it.
+This repository is configured to generate the Xcode project reproducibly with XcodeGen.
 
-## Steps
+## Install
 
-1. Open Xcode.
-2. Choose File > New > Project.
-3. Select iOS > App.
-4. Set the product name to `J Tap`.
-5. Use SwiftUI for the interface and Swift for the language.
-6. Save the new project somewhere local.
-7. Create these groups or folders in the Xcode project:
-   - App
-   - Models
-   - Views
-   - ViewModels
-   - Services
-   - Theme
-8. Copy the Swift files from this repository into the matching groups.
-9. Replace the default app entry file with `JTapApp.swift`.
-10. Set `RootView` as the root screen.
-11. Run the app in an iPhone simulator.
+1. Install Xcode from the Mac App Store or Apple Developer downloads.
+2. Install XcodeGen with Homebrew:
+   - `brew install xcodegen`
 
-## File Placement
+## Generate the Project
+
+1. From the repository root, run:
+   - `xcodegen generate`
+2. Open the generated project:
+   - `open JTap.xcodeproj`
+3. Select the `JTap` scheme and run it in an iPhone simulator.
+
+## Manual File Layout
+
+The source files in this repository are already arranged for the XcodeGen target:
 
 - `App/JTapApp.swift`
 - `Models/Expense.swift`
@@ -43,4 +39,4 @@ This repository does not contain an Xcode project yet. Create a new SwiftUI iOS 
 
 ## Expected Result
 
-After copying the files, the app should build as a simple SwiftUI shell with in-memory sample data and no persistence, charts, or App Intents yet.
+After running XcodeGen, the app should build as a simple SwiftUI shell with in-memory sample data and no persistence, charts, or App Intents yet.

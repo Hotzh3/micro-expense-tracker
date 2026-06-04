@@ -35,7 +35,15 @@ Micro-expenses add up quickly, but they are easy to forget. J Tap gives users a 
 
 ## Current Status
 
-Product definition, iOS app foundation, and minimal design system skeleton are in place. This repository does not yet contain a full Xcode project.
+Product definition, iOS app foundation, minimal design system skeleton, and an XcodeGen project manifest are in place. The project can now be generated reproducibly instead of being created manually in Xcode.
+
+## Build Locally
+
+1. Install Xcode.
+2. Install XcodeGen with Homebrew: `brew install xcodegen`
+3. From the repo root, run `xcodegen generate`
+4. Open `JTap.xcodeproj`
+5. Build and run the `JTap` scheme in an iPhone simulator
 
 ## Roadmap
 

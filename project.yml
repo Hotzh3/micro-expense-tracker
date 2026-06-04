@@ -1,0 +1,31 @@
+name: JTap
+
+options:
+  createIntermediateGroups: true
+
+settings:
+  base:
+    IPHONEOS_DEPLOYMENT_TARGET: 17.0
+    SWIFT_VERSION: 5.0
+
+targets:
+  JTap:
+    type: application
+    platform: iOS
+    deploymentTarget: 17.0
+    sources:
+      - path: App
+      - path: Models
+      - path: Views
+      - path: ViewModels
+      - path: Services
+      - path: Theme
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.josema.JTap
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: J Tap
