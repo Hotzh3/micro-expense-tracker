@@ -13,6 +13,24 @@ struct HistoryView: View {
                     subtitle: "Review saved leaks by time range and category."
                 )
 
+                if !viewModel.expenses.isEmpty {
+                    ShareLink(item: viewModel.csvExport.fileURL) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Export CSV")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(AppTheme.primaryText)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 VStack(spacing: 12) {
                     filterCard
 
@@ -69,12 +87,16 @@ struct HistoryView: View {
         GlassCardView {
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("History")
-                        .font(.headline)
-                        .foregroundStyle(AppTheme.primaryText)
-                    Text("Filter saved expenses by time range and category.")
-                        .font(.subheadline)
-                        .foregroundStyle(AppTheme.secondaryText)
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("History")
+                                .font(.headline)
+                                .foregroundStyle(AppTheme.primaryText)
+                            Text("Filter saved expenses by time range and category.")
+                                .font(.subheadline)
+                                .foregroundStyle(AppTheme.secondaryText)
+                        }
+                    }
                 }
 
                 Picker("Time range", selection: $timeFilter) {

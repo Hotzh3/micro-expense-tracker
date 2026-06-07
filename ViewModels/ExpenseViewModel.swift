@@ -15,6 +15,27 @@ final class ExpenseViewModel: ObservableObject {
         var id: UUID { category.id }
     }
 
+    struct CategorySpendPoint: Identifiable, Equatable {
+        let category: ExpenseCategory
+        let total: Double
+
+        var id: UUID { category.id }
+    }
+
+    struct DailySpendPoint: Identifiable, Equatable {
+        let date: Date
+        let total: Double
+
+        var id: Date { date }
+    }
+
+    struct WeeklySpendPoint: Identifiable, Equatable {
+        let weekStart: Date
+        let total: Double
+
+        var id: Date { weekStart }
+    }
+
     @Published var expenses: [Expense]
     @Published var selectedCategory: ExpenseCategory
     @Published var amountText: String = ""
@@ -65,7 +86,7 @@ final class ExpenseViewModel: ObservableObject {
         expenses.insert(expense, at: 0)
         persistExpenses()
         resetDraftForm()
-        showSaveFeedback(message: "Expense saved locally.", isError: false)
+        showSaveFeedback(message: "Expense saved", isError: false)
     }
 
     func parseImportedText() {
@@ -163,12 +184,82 @@ final class ExpenseViewModel: ObservableObject {
         categoryBreakdown(by: .amount)
     }
 
+    var categorySpendChartData: [CategorySpendPoint] {
+        categoryBreakdown.map {
+            CategorySpendPoint(category: $0.category, total: $0.total)
+        }
+    }
+
+    var recentSpendTrendData: [DailySpendPoint] {
+        let daysToShow = 14
+        guard let startDate = calendar.date(byAdding: .day, value: -(daysToShow - 1), to: calendar.startOfDay(for: .now)) else {
+            return []
+        }
+
+        let totalsByDay = Dictionary(
+            grouping: expenses,
+            by: { calendar.startOfDay(for: $0.date) }
+        ).mapValues { items in
+            items.reduce(0) { $0 + $1.amount }
+        }
+
+        return (0..<daysToShow).compactMap { offset in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: startDate) else {
+                return nil
+            }
+
+            return DailySpendPoint(
+                date: date,
+                total: totalsByDay[date] ?? 0
+            )
+        }
+    }
+
+    var weeklySpendTrendData: [WeeklySpendPoint] {
+        let weeksToShow = 6
+        guard let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: .now)?.start else {
+            return []
+        }
+
+        let totalsByWeek = Dictionary(
+            grouping: expenses,
+            by: { expense in
+                calendar.dateInterval(of: .weekOfYear, for: expense.date)?.start ?? calendar.startOfDay(for: expense.date)
+            }
+        ).mapValues { items in
+            items.reduce(0) { $0 + $1.amount }
+        }
+
+        return (0..<weeksToShow).compactMap { offset in
+            guard let weekStart = calendar.date(byAdding: .weekOfYear, value: offset - (weeksToShow - 1), to: currentWeekStart) else {
+                return nil
+            }
+
+            return WeeklySpendPoint(
+                weekStart: weekStart,
+                total: totalsByWeek[weekStart] ?? 0
+            )
+        }
+    }
+
+    var hasWeeklyTrendData: Bool {
+        Set(
+            expenses.compactMap { expense in
+                calendar.dateInterval(of: .weekOfYear, for: expense.date)?.start
+            }
+        ).count >= 2
+    }
+
     var insightText: String {
         guard let topCategory else {
             return "Add your first micro-expense to see a spending pattern."
         }
 
         return "\(topCategory.displayName) is your top micro-expense category this month."
+    }
+
+    var csvExport: ExpenseCSVExport {
+        ExpenseCSVExport(expenses: expenses)
     }
 
     private var totalAmount: Double {
@@ -273,7 +364,7 @@ final class ExpenseViewModel: ObservableObject {
 
     private func clearFeedbackLater(kind: FeedbackKind, message: String) {
         Task { [message] in
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
             await MainActor.run {
                 switch kind {
                 case .save:

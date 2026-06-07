@@ -26,10 +26,12 @@
 		DB6EFDFFF4E22697EF5F0F01 /* ExpenseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9934F8C17BF826DD6A372998 /* ExpenseViewModel.swift */; };
 		DE33318207E74B105E08AEEA /* MetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697605CC219504DC542E8B53 /* MetricCardView.swift */; };
 		E309E47015503A79EAB0643A /* GlassCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 550BC99EC03E3743F041AFBC /* GlassCardView.swift */; };
+		ECAAC336CE4692AB49CEECAE /* ExpenseCSVExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D25343254B4EAFCA5A4E523 /* ExpenseCSVExport.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		1D0708AE58614758F77DC4A5 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
+		1D25343254B4EAFCA5A4E523 /* ExpenseCSVExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseCSVExport.swift; sourceTree = "<group>"; };
 		2400B34CA586FB694B7FBC85 /* JTap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = JTap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		550BC99EC03E3743F041AFBC /* GlassCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCardView.swift; sourceTree = "<group>"; };
@@ -75,6 +77,7 @@
 		A03A0F803EF7F6F62E9DD0C3 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				1D25343254B4EAFCA5A4E523 /* ExpenseCSVExport.swift */,
 				A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */,
 				A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */,
 			);
@@ -209,6 +212,7 @@
 				4B4C472BC7AF1E95C6C9F187 /* DashboardView.swift in Sources */,
 				DA2DFE02B300E42A7A212CDD /* EmptyStateView.swift in Sources */,
 				32F0830027148034CFA631B6 /* Expense.swift in Sources */,
+				ECAAC336CE4692AB49CEECAE /* ExpenseCSVExport.swift in Sources */,
 				D6B5C3519B80E085005D8141 /* ExpenseCategory.swift in Sources */,
 				4CF52795AFA522FCF0F823DE /* ExpenseStore.swift in Sources */,
 				40539938AA0B3D0152BF8602 /* ExpenseTextParser.swift in Sources */,

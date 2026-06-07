@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 
 struct InsightsView: View {
@@ -36,6 +37,45 @@ struct InsightsView: View {
                             Text(viewModel.insightText)
                                 .font(.subheadline)
                                 .foregroundStyle(AppTheme.secondaryText)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    GlassCardView {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Weekly Totals")
+                                .font(.headline)
+                                .foregroundStyle(AppTheme.primaryText)
+
+                            if viewModel.hasWeeklyTrendData {
+                                Chart(viewModel.weeklySpendTrendData) { point in
+                                    BarMark(
+                                        x: .value("Week", point.weekStart),
+                                        y: .value("Total", point.total)
+                                    )
+                                    .foregroundStyle(AppTheme.primaryText)
+                                }
+                                .chartLegend(.hidden)
+                                .chartXAxis {
+                                    AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                                        AxisGridLine()
+                                        AxisTick()
+                                        AxisValueLabel(format: .dateTime.month().day(), centered: true)
+                                    }
+                                }
+                                .chartYAxis {
+                                    AxisMarks(position: .leading) { _ in
+                                        AxisGridLine()
+                                        AxisTick()
+                                        AxisValueLabel()
+                                    }
+                                }
+                                .frame(height: 180)
+                            } else {
+                                Text("Add a little more history before weekly totals are shown.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(AppTheme.secondaryText)
+                            }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
