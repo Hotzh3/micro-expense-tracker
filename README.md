@@ -21,6 +21,10 @@ Micro-expenses are easy to forget. Pocket Leak keeps the capture flow short, loc
 - Shortcut and Back Tap readiness through the `jtap://` URL scheme
 - Minimal black-and-white SwiftUI layout tuned for iPhone
 
+## Visual Identity
+
+Pocket Leak currently uses a temporary black app icon with a white `PL` monogram. The mark is intentionally minimal and premium while the final branding direction is still being finalized.
+
 ## Tech Stack
 
 - Swift

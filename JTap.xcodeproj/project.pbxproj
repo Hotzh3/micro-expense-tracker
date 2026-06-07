@@ -17,6 +17,7 @@
 		5693FEFE719BEEB2C97DA03D /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */; };
 		6DB02DD256C195E94E19C1A9 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF8C91F013BFC9F006FF742 /* AppTheme.swift */; };
 		9319939C894C2063EF69BCCD /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0708AE58614758F77DC4A5 /* PrimaryButton.swift */; };
+		B3B5DFC6979C639EBE29F03F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F1861775BC0F4EB582B26B /* Assets.xcassets */; };
 		B85A4CFE82C62DFE72779400 /* JTapApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB8E6910BD6B24989A22861D /* JTapApp.swift */; };
 		BDDD29FC1D96F39B2BC86141 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25A7D50F01059CAEA99CE4C /* RootView.swift */; };
 		CEDD8779E682D4D9948B6DCD /* CategoryPillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E89F1506DA204E117366DB /* CategoryPillView.swift */; };
@@ -32,6 +33,7 @@
 		2400B34CA586FB694B7FBC85 /* JTap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = JTap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		550BC99EC03E3743F041AFBC /* GlassCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCardView.swift; sourceTree = "<group>"; };
+		55F1861775BC0F4EB582B26B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		697605CC219504DC542E8B53 /* MetricCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCardView.swift; sourceTree = "<group>"; };
 		9934F8C17BF826DD6A372998 /* ExpenseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseViewModel.swift; sourceTree = "<group>"; };
 		A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseTextParser.swift; sourceTree = "<group>"; };
@@ -96,6 +98,7 @@
 		B784DFE5C760BE608CB2451E = {
 			isa = PBXGroup;
 			children = (
+				55F1861775BC0F4EB582B26B /* Assets.xcassets */,
 				2D1E9D0D093D75369E66BA80 /* App */,
 				D9DABE4ADCB0454E641AF714 /* Models */,
 				A03A0F803EF7F6F62E9DD0C3 /* Services */,
@@ -139,6 +142,7 @@
 			buildConfigurationList = DDC930BFA1DA108E44E0270D /* Build configuration list for PBXNativeTarget "JTap" */;
 			buildPhases = (
 				35F1BDB8D90A126E8ED93285 /* Sources */,
+				3061D231E52C8BE00A339A14 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -183,6 +187,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3061D231E52C8BE00A339A14 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B3B5DFC6979C639EBE29F03F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		35F1BDB8D90A126E8ED93285 /* Sources */ = {
