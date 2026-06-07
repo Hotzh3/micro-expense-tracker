@@ -65,3 +65,9 @@
 Recommended direction: start with the Minimal PL Monogram as the app icon and keep the Droplet / Leak Icon as the strongest backup if a more literal symbol is wanted later.
 
 If a temporary placeholder becomes necessary before a final logo is chosen, use a black icon with a white `PL` monogram and label it clearly as temporary in the asset notes.
+
+## v0.1 Selection
+
+Selected for v0.1: Minimal PL Monogram.
+
+This is the temporary production app icon for Pocket Leak until the final branding system is approved.
