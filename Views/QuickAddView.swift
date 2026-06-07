@@ -117,6 +117,11 @@ struct QuickAddView: View {
                     PrimaryButton(title: "Save Expense") {
                         viewModel.saveDraftExpense()
                     }
+
+                    if let saveFeedback = viewModel.saveFeedback {
+                        feedbackBanner(for: saveFeedback)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -124,14 +129,6 @@ struct QuickAddView: View {
             .padding(.bottom, 24)
         }
         .scrollDismissesKeyboard(.interactively)
-        .overlay(alignment: .top) {
-            if let feedback = viewModel.saveFeedback {
-                feedbackBanner(for: feedback)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 10)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
         .animation(.easeOut(duration: 0.2), value: viewModel.saveFeedback)
         .animation(.easeOut(duration: 0.2), value: viewModel.parseFeedback)
         .onChange(of: viewModel.amountText) { _, _ in viewModel.clearSaveFeedback() }

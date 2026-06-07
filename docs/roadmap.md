@@ -12,6 +12,8 @@
 - Insights
 - Manual pasted-text parser
 - Shortcut URL readiness
+- Charts
+- CSV export
 
 ## Future
 
@@ -20,8 +22,6 @@
 - Physical iPhone testing
 - Screenshots
 - LinkedIn post
-- Charts
 - Widgets
-- CSV export
 - Better parser
 - Optional AI categorization later

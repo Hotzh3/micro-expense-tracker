@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 
 struct DashboardView: View {
@@ -27,6 +28,9 @@ struct DashboardView: View {
                         MetricCardView(title: "Expenses This Month", value: "\(viewModel.expenseCountThisMonth)", subtitle: "Saved locally")
                         MetricCardView(title: "Average Expense", value: amount(viewModel.averageExpenseAmount), subtitle: "Across all saved expenses")
                     }
+
+                    categoryChartCard
+                    recentTrendCard
 
                     GlassCardView {
                         VStack(alignment: .leading, spacing: 12) {
@@ -85,5 +89,98 @@ struct DashboardView: View {
 
     private func amount(_ value: Double) -> String {
         String(format: "$%.2f", value)
+    }
+
+    private var categoryChartCard: some View {
+        let chartData = Array(viewModel.categorySpendChartData.prefix(6))
+
+        return GlassCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Spending by Category")
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.primaryText)
+
+                if chartData.isEmpty {
+                    Text("Add a few expenses to see the category mix.")
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.secondaryText)
+                } else {
+                    Chart(chartData) { item in
+                        BarMark(
+                            x: .value("Amount", item.total),
+                            y: .value("Category", item.category.displayName)
+                        )
+                        .foregroundStyle(AppTheme.primaryText)
+                    }
+                    .chartLegend(.hidden)
+                    .chartXAxis {
+                        AxisMarks(position: .bottom, values: .automatic(desiredCount: 4)) { _ in
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel()
+                        }
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .leading) { _ in
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel()
+                        }
+                    }
+                    .frame(height: CGFloat(max(160, chartData.count * 34)))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var recentTrendCard: some View {
+        let trendData = viewModel.recentSpendTrendData
+        let maxSpend = max(trendData.map(\.total).max() ?? 0, 1)
+
+        return GlassCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Recent Spending Trend")
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.primaryText)
+
+                if trendData.isEmpty {
+                    Text("Add expenses to see your recent spending trend.")
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.secondaryText)
+                } else {
+                    Chart(trendData) { point in
+                        LineMark(
+                            x: .value("Day", point.date),
+                            y: .value("Spend", point.total)
+                        )
+                        .foregroundStyle(AppTheme.primaryText)
+                        PointMark(
+                            x: .value("Day", point.date),
+                            y: .value("Spend", point.total)
+                        )
+                        .foregroundStyle(AppTheme.primaryText)
+                    }
+                    .chartLegend(.hidden)
+                    .chartXAxis {
+                        AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel(format: .dateTime.month().day(), centered: true)
+                        }
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .leading) { _ in
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel()
+                        }
+                    }
+                    .chartYScale(domain: 0...maxSpend * 1.15)
+                    .frame(height: 180)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 }
