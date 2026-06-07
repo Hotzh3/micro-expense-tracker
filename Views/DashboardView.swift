@@ -7,10 +7,10 @@ struct DashboardView: View {
         ScrollView {
             VStack(spacing: 12) {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    MetricCardView(title: "Today", value: amount(viewModel.todayTotal), subtitle: "Placeholder summary")
-                    MetricCardView(title: "This Week", value: amount(viewModel.weekTotal), subtitle: "Placeholder summary")
-                    MetricCardView(title: "This Month", value: amount(viewModel.monthTotal), subtitle: "Placeholder summary")
-                    MetricCardView(title: "Top Category", value: viewModel.topCategory.displayName, subtitle: "Placeholder summary")
+                    MetricCardView(title: "Today", value: amount(viewModel.todayTotal), subtitle: "Live in-memory total")
+                    MetricCardView(title: "This Week", value: amount(viewModel.weekTotal), subtitle: "Live in-memory total")
+                    MetricCardView(title: "This Month", value: amount(viewModel.monthTotal), subtitle: "Live in-memory total")
+                    MetricCardView(title: "Top Category", value: viewModel.topCategory?.displayName ?? "—", subtitle: "Live in-memory total")
                 }
 
                 GlassCardView {
@@ -18,7 +18,7 @@ struct DashboardView: View {
                         Text("Quick Snapshot")
                             .font(.headline)
                             .foregroundStyle(AppTheme.primaryText)
-                        Text("Weekly and monthly insights will become richer as persistence and charts are added.")
+                        Text("Weekly and monthly totals update immediately after you save a micro-expense.")
                             .font(.subheadline)
                             .foregroundStyle(AppTheme.secondaryText)
                     }
@@ -26,6 +26,7 @@ struct DashboardView: View {
                 }
             }
             .padding(16)
+            .safeAreaPadding(.bottom, 24)
         }
     }
 
