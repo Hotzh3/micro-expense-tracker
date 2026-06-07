@@ -1,6 +1,6 @@
 import Foundation
 
-struct Expense: Identifiable, Equatable {
+struct Expense: Identifiable, Equatable, Codable {
     let id: UUID
     var amount: Double
     var category: ExpenseCategory
@@ -34,7 +34,7 @@ struct Expense: Identifiable, Equatable {
     }
 }
 
-enum ExpenseSource: String, CaseIterable, Identifiable {
+enum ExpenseSource: String, CaseIterable, Identifiable, Codable {
     case manual
     case parsedText
     case imported

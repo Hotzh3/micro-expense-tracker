@@ -39,4 +39,4 @@ The source files in this repository are already arranged for the XcodeGen target
 
 ## Expected Result
 
-After running XcodeGen, the app should build as a simple SwiftUI shell with in-memory sample data and no persistence, charts, or App Intents yet.
+After running XcodeGen, the app should build as a SwiftUI iPhone app with local persistence, history filters, insights, and a `jtap://` URL scheme for shortcut-style opening. The user-facing app name in the UI should read Pocket Leak.
