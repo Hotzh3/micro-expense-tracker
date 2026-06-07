@@ -2,7 +2,7 @@
 
 ## Visual Identity
 
-J Tap should feel like a calm, premium, Apple-like utility with a strict black-and-white palette.
+Pocket Leak should feel like a calm, premium, Apple-like utility with a strict black-and-white palette.
 
 ## Core Aesthetic
 

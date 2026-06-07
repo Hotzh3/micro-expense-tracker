@@ -2,31 +2,33 @@
 
 ## iOS Notification Access
 
-The MVP should not assume access to push notifications from other apps. iOS does not provide a general-purpose API for reading third-party app notifications into another app. That means J Tap should not be built around bank notification scraping as the primary capture path.
+Normal third-party iOS apps cannot arbitrarily read other apps' notifications. Pocket Leak must not attempt to scrape bank notifications as a core feature.
 
 ## Recommended Capture Strategy
 
 - Manual quick add as the core flow
-- Back Tap as a shortcut entry point later
-- App Intents and Shortcuts for fast invocation later
-- Optional paste or shared-text parsing only if implemented carefully
+- Back Tap through a user-created Shortcut
+- URL scheme for fast invocation
+- Optional paste-based parsing only as an editable helper
 
 ## Persistence Constraint
 
-The current phase should not implement real persistence yet. Sample data and in-memory state are enough for the initial product and UI foundation.
+Pocket Leak stores expenses locally on device only. No cloud sync, sign-in, external database, or paid API is part of the product.
 
 ## Scope Constraint
 
-The repository should remain focused on the first three phases only:
+The repository should stay focused on the local-first Pocket Leak scope:
 
 - Product definition
 - App foundation
-- Minimal design system skeleton
+- Local persistence
+- Shortcut-ready capture
+- Manual parsing and insights
 
 ## Privacy Constraint
 
-The product should stay local-first in the MVP and avoid collecting sensitive banking data by default.
+The product should stay local-first and avoid collecting sensitive banking data by default. The manual parser is privacy-safe because the user explicitly pastes the text they want parsed.
 
 ## Manual Xcode Requirement
 
-If no Xcode project exists, the Swift files in this repository are intended to be copied into a manually created iOS SwiftUI app target.
+The project is generated with XcodeGen and built from the checked-in source files and manifest.

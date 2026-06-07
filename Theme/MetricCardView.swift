@@ -19,6 +19,7 @@ struct MetricCardView: View {
                     .foregroundStyle(AppTheme.secondaryText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minHeight: 102, alignment: .leading)
         }
     }
 }

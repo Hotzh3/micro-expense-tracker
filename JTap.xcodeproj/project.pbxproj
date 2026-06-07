@@ -9,7 +9,9 @@
 /* Begin PBXBuildFile section */
 		0BDCD10B88237D0CEDDDA48C /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0F11CF5730320D4AAC50BC8 /* QuickAddView.swift */; };
 		19AFDA6C7B8C4EF11A9B8831 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A442EA48F29B0B0E0C9744A6 /* HistoryView.swift */; };
+		1ED52494759FE144AC3C0927 /* ScreenHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEC44A49ECF410342E39AEA1 /* ScreenHeaderView.swift */; };
 		32F0830027148034CFA631B6 /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = C879640230F5C9FE3109AB05 /* Expense.swift */; };
+		40539938AA0B3D0152BF8602 /* ExpenseTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */; };
 		4B4C472BC7AF1E95C6C9F187 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FDE24A0CC7C4AB709DA7C0 /* DashboardView.swift */; };
 		4CF52795AFA522FCF0F823DE /* ExpenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */; };
 		5693FEFE719BEEB2C97DA03D /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */; };
@@ -32,6 +34,7 @@
 		550BC99EC03E3743F041AFBC /* GlassCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCardView.swift; sourceTree = "<group>"; };
 		697605CC219504DC542E8B53 /* MetricCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCardView.swift; sourceTree = "<group>"; };
 		9934F8C17BF826DD6A372998 /* ExpenseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseViewModel.swift; sourceTree = "<group>"; };
+		A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseTextParser.swift; sourceTree = "<group>"; };
 		A442EA48F29B0B0E0C9744A6 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseStore.swift; sourceTree = "<group>"; };
 		ABF8C91F013BFC9F006FF742 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
@@ -43,6 +46,7 @@
 		DB8E6910BD6B24989A22861D /* JTapApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JTapApp.swift; sourceTree = "<group>"; };
 		F25A7D50F01059CAEA99CE4C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		F2EE9E8808FBF2D8C177AAE4 /* ExpenseCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseCategory.swift; sourceTree = "<group>"; };
+		FEC44A49ECF410342E39AEA1 /* ScreenHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenHeaderView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -70,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */,
+				A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -83,6 +88,7 @@
 				550BC99EC03E3743F041AFBC /* GlassCardView.swift */,
 				697605CC219504DC542E8B53 /* MetricCardView.swift */,
 				1D0708AE58614758F77DC4A5 /* PrimaryButton.swift */,
+				FEC44A49ECF410342E39AEA1 /* ScreenHeaderView.swift */,
 			);
 			path = Theme;
 			sourceTree = "<group>";
@@ -190,6 +196,7 @@
 				32F0830027148034CFA631B6 /* Expense.swift in Sources */,
 				D6B5C3519B80E085005D8141 /* ExpenseCategory.swift in Sources */,
 				4CF52795AFA522FCF0F823DE /* ExpenseStore.swift in Sources */,
+				40539938AA0B3D0152BF8602 /* ExpenseTextParser.swift in Sources */,
 				DB6EFDFFF4E22697EF5F0F01 /* ExpenseViewModel.swift in Sources */,
 				E309E47015503A79EAB0643A /* GlassCardView.swift in Sources */,
 				19AFDA6C7B8C4EF11A9B8831 /* HistoryView.swift in Sources */,
@@ -199,6 +206,7 @@
 				9319939C894C2063EF69BCCD /* PrimaryButton.swift in Sources */,
 				0BDCD10B88237D0CEDDDA48C /* QuickAddView.swift in Sources */,
 				BDDD29FC1D96F39B2BC86141 /* RootView.swift in Sources */,
+				1ED52494759FE144AC3C0927 /* ScreenHeaderView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

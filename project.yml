@@ -28,4 +28,8 @@ targets:
     info:
       path: Info.plist
       properties:
-        CFBundleDisplayName: J Tap
+        CFBundleDisplayName: Pocket Leak
+        CFBundleURLTypes:
+          - CFBundleURLName: com.josema.JTap
+            CFBundleURLSchemes:
+              - jtap

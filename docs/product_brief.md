@@ -70,4 +70,4 @@ The app should not be designed around directly reading push notifications from b
 
 ## LinkedIn and Portfolio Angle
 
-J Tap is best positioned as a focused product design and native iOS systems project. It demonstrates how to take a vague spending problem, narrow it into a frictionless capture workflow, and build an elegant mobile foundation that respects platform constraints.
+Pocket Leak is best positioned as a focused product design and native iOS systems project. It demonstrates how to take a vague spending problem, narrow it into a frictionless capture workflow, and build an elegant mobile foundation that respects platform constraints.
