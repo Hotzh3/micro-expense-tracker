@@ -9,7 +9,8 @@ struct InsightsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 ScreenHeaderView(
                     title: "Insights",
-                    subtitle: "See patterns without charts while keeping the UI calm and lightweight."
+                    subtitle: "See patterns without charts while keeping the UI calm and lightweight.",
+                    showsSettingsButton: true
                 )
 
                 VStack(spacing: 12) {
@@ -117,8 +118,11 @@ struct InsightsView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+            .padding(.top, 0)
+            .padding(.bottom, 12)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear.frame(height: 14)
         }
     }
 

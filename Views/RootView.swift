@@ -10,6 +10,10 @@ struct RootView: View {
 
     @EnvironmentObject private var viewModel: ExpenseViewModel
     @State private var selectedTab: AppTab = .quickAdd
+    @State private var showLaunchSplash = true
+    @State private var didRunSplashTimer = false
+    @State private var showSettings = false
+    @State private var splashPhrase = LaunchSplashView.randomPhrase()
 
     var body: some View {
         ZStack {
@@ -44,6 +48,32 @@ struct RootView: View {
             .toolbarBackground(AppTheme.background, for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
             .ignoresSafeArea(.keyboard, edges: .bottom)
+            .environment(\.presentSettings, { showSettings = true })
+
+            if showLaunchSplash {
+                LaunchSplashView(phrase: splashPhrase)
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
+        }
+        .task {
+            guard !didRunSplashTimer else { return }
+            didRunSplashTimer = true
+            try? await Task.sleep(nanoseconds: 1_400_000_000)
+            withAnimation(.easeInOut(duration: 0.45)) {
+                showLaunchSplash = false
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView(
+                versionText: "v0.1",
+                onOpenHistory: {
+                    selectedTab = .history
+                },
+                onResetLocalData: {
+                    viewModel.clearAllExpenses()
+                }
+            )
         }
         .onOpenURL { url in
             guard let route = PocketLeakRoute(url: url) else { return }

@@ -10,7 +10,8 @@ struct HistoryView: View {
             VStack(alignment: .leading, spacing: 12) {
                 ScreenHeaderView(
                     title: "History",
-                    subtitle: "Review saved leaks by time range and category."
+                    subtitle: "Review saved leaks by time range and category.",
+                    showsSettingsButton: true
                 )
 
                 if !viewModel.expenses.isEmpty {
@@ -49,8 +50,11 @@ struct HistoryView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+            .padding(.top, 0)
+            .padding(.bottom, 12)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear.frame(height: 14)
         }
     }
 

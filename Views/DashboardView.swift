@@ -9,7 +9,8 @@ struct DashboardView: View {
             VStack(alignment: .leading, spacing: 12) {
                 ScreenHeaderView(
                     title: "Dashboard",
-                    subtitle: "Track daily spend, month totals, and the categories leaking the most."
+                    subtitle: "Track daily spend, month totals, and the categories leaking the most.",
+                    showsSettingsButton: true
                 )
 
                 VStack(spacing: 12) {
@@ -46,8 +47,11 @@ struct DashboardView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+            .padding(.top, 0)
+            .padding(.bottom, 12)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear.frame(height: 14)
         }
     }
 

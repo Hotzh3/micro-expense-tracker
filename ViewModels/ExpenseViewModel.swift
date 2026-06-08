@@ -158,6 +158,14 @@ final class ExpenseViewModel: ObservableObject {
         persistExpenses()
     }
 
+    func clearAllExpenses() {
+        expenses.removeAll()
+        persistExpenses()
+        parsedExpense = nil
+        saveFeedback = nil
+        parseFeedback = nil
+    }
+
     func clearSaveFeedback() {
         guard !isResettingDraft else { return }
         saveFeedback = nil
