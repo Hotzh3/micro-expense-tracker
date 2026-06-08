@@ -15,6 +15,15 @@ final class ExpenseViewModel: ObservableObject {
         var id: UUID { category.id }
     }
 
+    struct CategoryShare: Identifiable, Equatable {
+        let category: ExpenseCategory
+        let total: Double
+        let count: Int
+        let percentage: Double
+
+        var id: UUID { category.id }
+    }
+
     struct CategorySpendPoint: Identifiable, Equatable {
         let category: ExpenseCategory
         let total: Double
@@ -42,6 +51,7 @@ final class ExpenseViewModel: ObservableObject {
     @Published var merchantText: String = ""
     @Published var noteText: String = ""
     @Published var importText: String = ""
+    @Published var parsedExpense: ExpenseParseResult?
     @Published var saveFeedback: Feedback?
     @Published var parseFeedback: Feedback?
 
@@ -51,6 +61,9 @@ final class ExpenseViewModel: ObservableObject {
     private let parser: ExpenseTextParser
     private let calendar: Calendar
     private let defaultCategory: ExpenseCategory
+    private var draftSource: ExpenseSource = .manual
+    private var draftConfidence: Double = 1.0
+    private var isResettingDraft = false
 
     init(
         store: ExpenseStore = ExpenseStore(),
@@ -79,8 +92,8 @@ final class ExpenseViewModel: ObservableObject {
             category: selectedCategory,
             merchant: merchantText.trimmingCharacters(in: .whitespacesAndNewlines),
             note: noteText.trimmingCharacters(in: .whitespacesAndNewlines),
-            source: .manual,
-            confidence: 1.0
+            source: draftSource,
+            confidence: draftSource == .parsedText ? draftConfidence : 1.0
         )
 
         expenses.insert(expense, at: 0)
@@ -92,20 +105,46 @@ final class ExpenseViewModel: ObservableObject {
     func parseImportedText() {
         let suggestion = parser.parse(importText, categories: categories)
         guard let suggestion else {
+            parsedExpense = nil
             showParseFeedback(message: "No usable amount or merchant found. You can still enter the expense manually.", isError: true)
             return
         }
 
-        if let amount = suggestion.amount {
-            amountText = String(format: "%.2f", amount)
+        guard suggestion.amount != nil else {
+            parsedExpense = nil
+            showParseFeedback(message: "I could not find an amount in the pasted text. Try including the charge total.", isError: true)
+            return
         }
 
-        if !suggestion.merchant.isEmpty {
-            merchantText = suggestion.merchant
-        }
-
-        selectedCategory = suggestion.category
+        parsedExpense = suggestion
+        applyParsedSuggestion(suggestion)
+        draftConfidence = suggestion.confidence
         showParseFeedback(message: suggestion.summary, isError: false)
+    }
+
+    func useParsedExpense() {
+        guard let parsedExpense else { return }
+        applyParsedSuggestion(parsedExpense)
+        self.parsedExpense = nil
+        clearParseFeedback()
+    }
+
+    func prefillDraft(amount: String? = nil, merchant: String? = nil, category: String? = nil, source: ExpenseSource = .imported) {
+        parsedExpense = nil
+        if let amount, !amount.isEmpty {
+            amountText = amount
+        }
+
+        if let merchant, !merchant.isEmpty {
+            merchantText = merchant
+        }
+
+        if let category, let matchedCategory = ExpenseCategory.category(matching: category, in: categories) {
+            selectedCategory = matchedCategory
+        }
+
+        draftSource = source
+        draftConfidence = 1.0
     }
 
     func deleteExpense(at offsets: IndexSet) {
@@ -120,6 +159,7 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     func clearSaveFeedback() {
+        guard !isResettingDraft else { return }
         saveFeedback = nil
     }
 
@@ -172,6 +212,10 @@ final class ExpenseViewModel: ObservableObject {
         expenses.max(by: { $0.amount < $1.amount })
     }
 
+    var largestExpenseThisMonth: Expense? {
+        expenses(in: .month).max(by: { $0.amount < $1.amount })
+    }
+
     var topCategory: ExpenseCategory? {
         categoryBreakdown.first?.category
     }
@@ -187,6 +231,21 @@ final class ExpenseViewModel: ObservableObject {
     var categorySpendChartData: [CategorySpendPoint] {
         categoryBreakdown.map {
             CategorySpendPoint(category: $0.category, total: $0.total)
+        }
+    }
+
+    var topCategorySharesThisMonth: [CategoryShare] {
+        let monthBreakdown = categoryBreakdown
+        let monthTotal = self.monthTotal
+        guard monthTotal > 0 else { return [] }
+
+        return monthBreakdown.prefix(3).map { item in
+            CategoryShare(
+                category: item.category,
+                total: item.total,
+                count: item.count,
+                percentage: (item.total / monthTotal) * 100
+            )
         }
     }
 
@@ -258,8 +317,56 @@ final class ExpenseViewModel: ObservableObject {
         return "\(topCategory.displayName) is your top micro-expense category this month."
     }
 
+    var monthCategorySummaryText: String {
+        guard let topShare = topCategorySharesThisMonth.first else {
+            return "Add a few expenses to see where most leaks land."
+        }
+
+        return "\(topShare.category.displayName) is \(percentageString(topShare.percentage)) of your tracked leaks this month."
+    }
+
+    var largestExpenseThisMonthText: String {
+        guard let largestExpenseThisMonth else { return "—" }
+        return currency(largestExpenseThisMonth.amount)
+    }
+
+    var largestExpenseThisMonthSubtitle: String {
+        guard let largestExpenseThisMonth else {
+            return "No expenses this month yet"
+        }
+
+        return largestExpenseThisMonth.merchant.isEmpty ? largestExpenseThisMonth.category.displayName : largestExpenseThisMonth.merchant
+    }
+
+    var monthlySummaryReportText: String {
+        let topCategoryText: String
+        if let top = topCategorySharesThisMonth.first {
+            topCategoryText = "\(top.category.displayName) (\(percentageString(top.percentage)))"
+        } else {
+            topCategoryText = "None yet"
+        }
+
+        let largestExpenseText = largestExpenseThisMonth.map { expense in
+            let merchant = expense.merchant.isEmpty ? expense.category.displayName : expense.merchant
+            return "\(currency(expense.amount)) at \(merchant)"
+        } ?? "None yet"
+
+        return [
+            "Pocket Leak - Monthly Summary",
+            "Total this month: \(currency(monthTotal))",
+            "Expenses this month: \(expenseCountThisMonth)",
+            "Average expense: \(currency(averageExpenseAmount))",
+            "Top category: \(topCategoryText)",
+            "Largest expense: \(largestExpenseText)"
+        ].joined(separator: "\n")
+    }
+
     var csvExport: ExpenseCSVExport {
         ExpenseCSVExport(expenses: expenses)
+    }
+
+    var jsonExport: ExpenseJSONExport {
+        ExpenseJSONExport(expenses: expenses)
     }
 
     private var totalAmount: Double {
@@ -344,12 +451,20 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     private func resetDraftForm() {
+        isResettingDraft = true
         amountText = ""
         merchantText = ""
         noteText = ""
         importText = ""
+        parsedExpense = nil
         selectedCategory = defaultCategory
+        draftSource = .manual
+        draftConfidence = 1.0
         clearParseFeedback()
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            isResettingDraft = false
+        }
     }
 
     private func showSaveFeedback(message: String, isError: Bool) {
@@ -394,6 +509,28 @@ final class ExpenseViewModel: ObservableObject {
         case today
         case week
         case month
+    }
+
+    private func currency(_ amount: Double) -> String {
+        String(format: "$%.2f", amount)
+    }
+
+    private func percentageString(_ value: Double) -> String {
+        String(format: "%.0f%%", value)
+    }
+
+    private func applyParsedSuggestion(_ suggestion: ExpenseParseResult) {
+        if let amount = suggestion.amount {
+            amountText = String(format: "%.2f", amount)
+        }
+
+        if !suggestion.merchant.isEmpty {
+            merchantText = suggestion.merchant
+        }
+
+        selectedCategory = suggestion.category
+        draftSource = suggestion.source
+        draftConfidence = suggestion.confidence
     }
 }
 
