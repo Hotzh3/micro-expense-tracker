@@ -29,6 +29,9 @@ targets:
     type: application
     platform: iOS
     deploymentTarget: 17.0
+    dependencies:
+      - target: PocketLeakWidget
+        embed: true
     sources:
       - path: App
       - path: Models
@@ -48,8 +51,31 @@ targets:
       path: Info.plist
       properties:
         CFBundleDisplayName: Pocket Leak
+        UIRequiresFullScreen: true
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
         CFBundleURLTypes:
           - CFBundleURLName: com.josema.JTap
             CFBundleURLSchemes:
               - jtap
               - pocketleak
+
+  PocketLeakWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: 17.0
+    sources:
+      - path: Widgets/PocketLeakWidget/PocketLeakWidget.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.josema.JTap.PocketLeakWidget
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Widgets/PocketLeakWidget/Info.plist
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: Widgets/PocketLeakWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Pocket Leak
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

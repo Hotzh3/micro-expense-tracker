@@ -6,16 +6,19 @@ struct ScreenHeaderView: View {
     var showsSettingsButton: Bool = false
     var settingsAction: (() -> Void)? = nil
 
-    @Environment(\.presentSettings) private var presentSettings
+    @Environment(\.appTextSize) private var appTextSize: AppTextSize
+    @Environment(\.presentSettings) private var presentSettings: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            VStack(alignment: .leading, spacing: 4) {
+        let scale = appTextSize.scale
+
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text("Pocket Leak")
-                    .font(.caption.weight(.semibold))
+                    .font(.system(size: 13 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.primaryText)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 12 * scale)
+                    .padding(.vertical, 5 * scale)
                     .background(
                         Capsule(style: .continuous)
                             .fill(AppTheme.chipFill)
@@ -26,12 +29,12 @@ struct ScreenHeaderView: View {
                     )
 
                 Text(title)
-                    .font(.system(size: 23, weight: .semibold, design: .rounded))
+                    .font(.system(size: 27 * scale, weight: .semibold, design: .rounded))
                     .foregroundStyle(AppTheme.primaryText)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text(subtitle)
-                    .font(.subheadline)
+                    .font(.system(size: 16 * scale))
                     .foregroundStyle(AppTheme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -43,9 +46,9 @@ struct ScreenHeaderView: View {
                     (settingsAction ?? presentSettings)()
                 } label: {
                     Image(systemName: "gearshape")
-                        .font(.subheadline.weight(.semibold))
+                        .font(.system(size: 17 * scale, weight: .semibold))
                         .foregroundStyle(AppTheme.primaryText)
-                        .frame(width: 36, height: 36)
+                        .frame(width: 40 * scale, height: 40 * scale)
                         .background(
                             Circle()
                                 .fill(AppTheme.cardFill)

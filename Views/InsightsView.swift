@@ -3,12 +3,13 @@ import SwiftUI
 
 struct InsightsView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
+    @Environment(\.pocketLeakStrings) private var strings: AppStrings
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 ScreenHeaderView(
-                    title: "Insights",
+                    title: strings.insightsHeader,
                     subtitle: "See patterns without charts while keeping the UI calm and lightweight.",
                     showsSettingsButton: true
                 )
@@ -16,7 +17,7 @@ struct InsightsView: View {
                 VStack(spacing: 12) {
                     if viewModel.expenses.isEmpty {
                         EmptyStateView(
-                            title: "No insights yet",
+                            title: strings.emptyNoInsights,
                             message: "Add a few expenses and the app will surface spending patterns here."
                         )
                     }
@@ -119,11 +120,9 @@ struct InsightsView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 0)
-            .padding(.bottom, 12)
+            .padding(.bottom, 20)
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            Color.clear.frame(height: 14)
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var highestExpenseValue: String {

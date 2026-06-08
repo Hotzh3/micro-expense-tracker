@@ -17,6 +17,8 @@ Micro-expenses are easy to forget. Pocket Leak keeps the capture flow short, loc
 - Dashboard totals for today, this week, and this month
 - History with category and time filters plus delete support
 - Insights with average spend, projected monthly spend, top categories, category breakdowns, and visual charts
+- Goals for weekly or monthly spending limits with progress and risk states
+- Settings for appearance, text size, language, privacy notes, and Back Tap setup
 - CSV, JSON, and monthly summary export through the iOS share sheet
 - Manual pasted-text parser for transaction alerts and pasted receipts
 - Shortcut and Back Tap readiness through the `jtap://` and `pocketleak://` URL schemes
@@ -47,7 +49,7 @@ Screenshots are not checked in yet. Suggested placeholders for future captures:
 
 ## Current Status
 
-The app has a working SwiftUI foundation, local storage, Quick Add, Dashboard, History, Insights, smart pasted-text parsing, URL-scheme launch readiness, chart-based insights, CSV/JSON/monthly-summary export, and a widget foundation. The current focus is layout polish, branding, and device-ready documentation.
+The app has a working SwiftUI foundation, local storage, Quick Add, Dashboard, History, Insights, Goals, smart pasted-text parsing, URL-scheme launch readiness, chart-based insights, CSV/JSON/monthly-summary export, and a widget foundation. The current focus is layout polish, settings, and device-ready documentation.
 
 ## Run Locally
 
