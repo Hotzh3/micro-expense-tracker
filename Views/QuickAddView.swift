@@ -9,7 +9,8 @@ struct QuickAddView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     ScreenHeaderView(
                         title: "Quick Add",
-                        subtitle: "Capture a leak fast, or paste transaction text for a privacy-safe parse."
+                        subtitle: "Capture a leak fast, or paste transaction text for a privacy-safe parse.",
+                        showsSettingsButton: true
                     )
 
                     VStack(alignment: .leading, spacing: 12) {
@@ -143,10 +144,13 @@ struct QuickAddView: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 24)
+                .padding(.top, 0)
+                .padding(.bottom, 12)
             }
             .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 14)
+            }
             .animation(.easeOut(duration: 0.2), value: viewModel.saveFeedback)
             .animation(.easeOut(duration: 0.2), value: viewModel.parseFeedback)
             .onChange(of: viewModel.amountText) { _, _ in viewModel.clearSaveFeedback() }
@@ -156,11 +160,15 @@ struct QuickAddView: View {
             .onChange(of: viewModel.importText) { _, _ in viewModel.clearParseFeedback() }
 
             if viewModel.saveFeedback != nil {
-                saveToast()
-                    .padding(.top, 10)
-                    .padding(.horizontal, 16)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .allowsHitTesting(false)
+                HStack {
+                    Spacer(minLength: 0)
+                    saveToast()
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, 10)
+                .padding(.horizontal, 16)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .allowsHitTesting(false)
             }
         }
     }

@@ -16,10 +16,12 @@
 		4CF52795AFA522FCF0F823DE /* ExpenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */; };
 		5693FEFE719BEEB2C97DA03D /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */; };
 		6DB02DD256C195E94E19C1A9 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF8C91F013BFC9F006FF742 /* AppTheme.swift */; };
+		8F3CFC9678B38E0B42DE06DD /* LaunchSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E3ABD1CB31A26030C2045ED /* LaunchSplashView.swift */; };
 		9319939C894C2063EF69BCCD /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0708AE58614758F77DC4A5 /* PrimaryButton.swift */; };
 		B3B5DFC6979C639EBE29F03F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F1861775BC0F4EB582B26B /* Assets.xcassets */; };
 		B85A4CFE82C62DFE72779400 /* JTapApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB8E6910BD6B24989A22861D /* JTapApp.swift */; };
 		BDDD29FC1D96F39B2BC86141 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25A7D50F01059CAEA99CE4C /* RootView.swift */; };
+		CDEEB59D76C791E58D1821D8 /* SettingsAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 476EA1D36938A3260F78056A /* SettingsAction.swift */; };
 		CEDD8779E682D4D9948B6DCD /* CategoryPillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E89F1506DA204E117366DB /* CategoryPillView.swift */; };
 		D2CAC0396C85E83039C51928 /* ExpenseJSONExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68AEAC3B57EA1315B4B34AD7 /* ExpenseJSONExport.swift */; };
 		D6B5C3519B80E085005D8141 /* ExpenseCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EE9E8808FBF2D8C177AAE4 /* ExpenseCategory.swift */; };
@@ -28,6 +30,7 @@
 		DE33318207E74B105E08AEEA /* MetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697605CC219504DC542E8B53 /* MetricCardView.swift */; };
 		E309E47015503A79EAB0643A /* GlassCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 550BC99EC03E3743F041AFBC /* GlassCardView.swift */; };
 		ECAAC336CE4692AB49CEECAE /* ExpenseCSVExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D25343254B4EAFCA5A4E523 /* ExpenseCSVExport.swift */; };
+		FBF6EFAE68754841E50AEFDB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57F9119760DF1AB8519002B8 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,8 +38,11 @@
 		1D25343254B4EAFCA5A4E523 /* ExpenseCSVExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseCSVExport.swift; sourceTree = "<group>"; };
 		2400B34CA586FB694B7FBC85 /* JTap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = JTap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		476EA1D36938A3260F78056A /* SettingsAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAction.swift; sourceTree = "<group>"; };
+		4E3ABD1CB31A26030C2045ED /* LaunchSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSplashView.swift; sourceTree = "<group>"; };
 		550BC99EC03E3743F041AFBC /* GlassCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCardView.swift; sourceTree = "<group>"; };
 		55F1861775BC0F4EB582B26B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		57F9119760DF1AB8519002B8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		68AEAC3B57EA1315B4B34AD7 /* ExpenseJSONExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseJSONExport.swift; sourceTree = "<group>"; };
 		697605CC219504DC542E8B53 /* MetricCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCardView.swift; sourceTree = "<group>"; };
 		9934F8C17BF826DD6A372998 /* ExpenseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseViewModel.swift; sourceTree = "<group>"; };
@@ -62,8 +68,10 @@
 				D4FDE24A0CC7C4AB709DA7C0 /* DashboardView.swift */,
 				A442EA48F29B0B0E0C9744A6 /* HistoryView.swift */,
 				25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */,
+				4E3ABD1CB31A26030C2045ED /* LaunchSplashView.swift */,
 				D0F11CF5730320D4AAC50BC8 /* QuickAddView.swift */,
 				F25A7D50F01059CAEA99CE4C /* RootView.swift */,
+				57F9119760DF1AB8519002B8 /* SettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -97,6 +105,7 @@
 				697605CC219504DC542E8B53 /* MetricCardView.swift */,
 				1D0708AE58614758F77DC4A5 /* PrimaryButton.swift */,
 				FEC44A49ECF410342E39AEA1 /* ScreenHeaderView.swift */,
+				476EA1D36938A3260F78056A /* SettingsAction.swift */,
 			);
 			path = Theme;
 			sourceTree = "<group>";
@@ -225,11 +234,14 @@
 				19AFDA6C7B8C4EF11A9B8831 /* HistoryView.swift in Sources */,
 				5693FEFE719BEEB2C97DA03D /* InsightsView.swift in Sources */,
 				B85A4CFE82C62DFE72779400 /* JTapApp.swift in Sources */,
+				8F3CFC9678B38E0B42DE06DD /* LaunchSplashView.swift in Sources */,
 				DE33318207E74B105E08AEEA /* MetricCardView.swift in Sources */,
 				9319939C894C2063EF69BCCD /* PrimaryButton.swift in Sources */,
 				0BDCD10B88237D0CEDDDA48C /* QuickAddView.swift in Sources */,
 				BDDD29FC1D96F39B2BC86141 /* RootView.swift in Sources */,
 				1ED52494759FE144AC3C0927 /* ScreenHeaderView.swift in Sources */,
+				CDEEB59D76C791E58D1821D8 /* SettingsAction.swift in Sources */,
+				FBF6EFAE68754841E50AEFDB /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

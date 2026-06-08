@@ -9,7 +9,7 @@ struct GlassCardView<Content: View>: View {
 
     var body: some View {
         content
-            .padding(16)
+            .padding(18)
             .background(
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(AppTheme.cardFill)
