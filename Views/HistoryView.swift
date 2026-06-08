@@ -14,21 +14,7 @@ struct HistoryView: View {
                 )
 
                 if !viewModel.expenses.isEmpty {
-                    ShareLink(item: viewModel.csvExport.fileURL) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "square.and.arrow.up")
-                            Text("Export CSV")
-                        }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.black)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(AppTheme.primaryText)
-                        )
-                    }
-                    .buttonStyle(.plain)
+                    exportCard
                 }
 
                 VStack(spacing: 12) {
@@ -158,6 +144,53 @@ struct HistoryView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var exportCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Exports")
+                        .font(.headline)
+                        .foregroundStyle(AppTheme.primaryText)
+                    Text("Share your expenses as CSV, JSON, or a plain-English monthly summary.")
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.secondaryText)
+                }
+
+                VStack(spacing: 10) {
+                    ShareLink(item: viewModel.csvExport.fileURL) {
+                        exportButtonLabel(title: "Export CSV", systemImage: "doc.text")
+                    }
+                    .buttonStyle(.plain)
+
+                    ShareLink(item: viewModel.jsonExport.fileURL) {
+                        exportButtonLabel(title: "Export JSON", systemImage: "curlybraces")
+                    }
+                    .buttonStyle(.plain)
+
+                    ShareLink(item: viewModel.monthlySummaryReportText) {
+                        exportButtonLabel(title: "Share Monthly Summary", systemImage: "text.alignleft")
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func exportButtonLabel(title: String, systemImage: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+            Text(title)
+        }
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(Color.black)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 13)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppTheme.primaryText)
+        )
     }
 
     private func resetFilters() {

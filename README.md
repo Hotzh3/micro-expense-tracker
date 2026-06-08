@@ -17,14 +17,24 @@ Micro-expenses are easy to forget. Pocket Leak keeps the capture flow short, loc
 - Dashboard totals for today, this week, and this month
 - History with category and time filters plus delete support
 - Insights with average spend, projected monthly spend, top categories, category breakdowns, and visual charts
-- CSV export for saved expenses through the iOS share sheet
-- Manual pasted-text parser for transaction alerts
-- Shortcut and Back Tap readiness through the `jtap://` URL scheme
+- CSV, JSON, and monthly summary export through the iOS share sheet
+- Manual pasted-text parser for transaction alerts and pasted receipts
+- Shortcut and Back Tap readiness through the `jtap://` and `pocketleak://` URL schemes
+- Widget foundation for a future Home Screen summary
 - Minimal black-and-white SwiftUI layout tuned for iPhone
 
 ## Visual Identity
 
 Pocket Leak currently uses a temporary black app icon with a white `PL` monogram. The mark is intentionally minimal and premium while the final branding direction is still being finalized.
+
+## Screenshots
+
+Screenshots are not checked in yet. Suggested placeholders for future captures:
+
+- `docs/screenshots/quick-add.png`
+- `docs/screenshots/dashboard.png`
+- `docs/screenshots/history-export.png`
+- `docs/screenshots/insights.png`
 
 ## Tech Stack
 
@@ -37,7 +47,7 @@ Pocket Leak currently uses a temporary black app icon with a white `PL` monogram
 
 ## Current Status
 
-The app has a working SwiftUI foundation, local storage, Quick Add, Dashboard, History, Insights, manual pasted-text parsing, URL scheme launch readiness, chart-based insights, and CSV export. The current focus is layout polish, branding, and device-ready documentation.
+The app has a working SwiftUI foundation, local storage, Quick Add, Dashboard, History, Insights, smart pasted-text parsing, URL-scheme launch readiness, chart-based insights, CSV/JSON/monthly-summary export, and a widget foundation. The current focus is layout polish, branding, and device-ready documentation.
 
 ## Run Locally
 
