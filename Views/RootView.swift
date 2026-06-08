@@ -46,24 +46,80 @@ struct RootView: View {
             .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .onOpenURL { url in
-            guard url.scheme?.lowercased() == "jtap" else { return }
-            selectedTab = .quickAdd
+            guard let route = PocketLeakRoute(url: url) else { return }
 
-            if let host = url.host?.lowercased(), host == "dashboard" {
+            switch route {
+            case .dashboard:
                 selectedTab = .dashboard
-            }
-
-            if let host = url.host?.lowercased(), host == "history" {
+            case .history:
                 selectedTab = .history
-            }
-
-            if let host = url.host?.lowercased(), host == "insights" {
+            case .insights:
                 selectedTab = .insights
-            }
-
-            if let host = url.host?.lowercased(), host == "quick-add" {
+            case .quickAdd(let draft):
+                selectedTab = .quickAdd
+                viewModel.prefillDraft(
+                    amount: draft.amount,
+                    merchant: draft.merchant,
+                    category: draft.category,
+                    source: draft.hasPrefill ? .imported : .manual
+                )
                 viewModel.clearParseFeedback()
             }
         }
+    }
+}
+
+private enum PocketLeakRoute {
+    struct QuickAddDraft {
+        let amount: String?
+        let merchant: String?
+        let category: String?
+
+        var hasPrefill: Bool {
+            [amount, merchant, category].contains(where: { value in
+                if let value, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    return true
+                }
+                return false
+            })
+        }
+    }
+
+    case quickAdd(QuickAddDraft)
+    case dashboard
+    case history
+    case insights
+
+    init?(url: URL) {
+        guard let scheme = url.scheme?.lowercased(), ["jtap", "pocketleak"].contains(scheme) else {
+            return nil
+        }
+
+        let host = url.host?.lowercased() ?? ""
+        let pathRoute = url.pathComponents.dropFirst().first?.lowercased() ?? ""
+        let destination = host.isEmpty ? pathRoute : host
+        let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+
+        switch destination {
+        case "dashboard":
+            self = .dashboard
+        case "history":
+            self = .history
+        case "insights":
+            self = .insights
+        case "add", "quick-add", "quickadd", "":
+            let draft = QuickAddDraft(
+                amount: Self.queryValue(named: "amount", in: queryItems),
+                merchant: Self.queryValue(named: "merchant", in: queryItems),
+                category: Self.queryValue(named: "category", in: queryItems)
+            )
+            self = .quickAdd(draft)
+        default:
+            return nil
+        }
+    }
+
+    private static func queryValue(named name: String, in items: [URLQueryItem]) -> String? {
+        items.first(where: { $0.name.lowercased() == name.lowercased() })?.value
     }
 }

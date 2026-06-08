@@ -11,9 +11,14 @@
 - History
 - Insights
 - Manual pasted-text parser
+- Smart pasted-text parser
 - Shortcut URL readiness
+- Pocket Leak URL routes
 - Charts
 - CSV export
+- JSON export
+- Monthly summary export
+- Widget foundation
 
 ## Future
 
@@ -22,6 +27,5 @@
 - Physical iPhone testing
 - Screenshots
 - LinkedIn post
-- Widgets
-- Better parser
+- Shared widget storage
 - Optional AI categorization later

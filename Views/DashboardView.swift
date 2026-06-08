@@ -25,48 +25,12 @@ struct DashboardView: View {
                         MetricCardView(title: "This Week", value: amount(viewModel.weekTotal), subtitle: "Local storage total")
                         MetricCardView(title: "This Month", value: amount(viewModel.monthTotal), subtitle: "Local storage total")
                         MetricCardView(title: "Top Category", value: viewModel.topCategory?.displayName ?? "—", subtitle: "By spending this month")
-                        MetricCardView(title: "Expenses This Month", value: "\(viewModel.expenseCountThisMonth)", subtitle: "Saved locally")
+                        MetricCardView(title: "Largest Expense", value: viewModel.largestExpenseThisMonthText, subtitle: viewModel.largestExpenseThisMonthSubtitle)
                         MetricCardView(title: "Average Expense", value: amount(viewModel.averageExpenseAmount), subtitle: "Across all saved expenses")
                     }
 
-                    categoryChartCard
+                    categoryDistributionCard
                     recentTrendCard
-
-                    GlassCardView {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Category Breakdown")
-                                .font(.headline)
-                                .foregroundStyle(AppTheme.primaryText)
-
-                            if viewModel.categoryBreakdown.isEmpty {
-                                Text("No category breakdown yet.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(AppTheme.secondaryText)
-                            } else {
-                                VStack(spacing: 10) {
-                                    ForEach(viewModel.categoryBreakdown) { item in
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(item.category.displayName)
-                                                    .font(.subheadline.weight(.semibold))
-                                                    .foregroundStyle(AppTheme.primaryText)
-                                                Text("\(item.count) expense\(item.count == 1 ? "" : "s")")
-                                                    .font(.caption)
-                                                    .foregroundStyle(AppTheme.secondaryText)
-                                            }
-
-                                            Spacer()
-
-                                            Text(amount(item.total))
-                                                .font(.subheadline.weight(.semibold))
-                                                .foregroundStyle(AppTheme.primaryText)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
 
                     GlassCardView {
                         VStack(alignment: .leading, spacing: 10) {
@@ -91,43 +55,92 @@ struct DashboardView: View {
         String(format: "$%.2f", value)
     }
 
-    private var categoryChartCard: some View {
-        let chartData = Array(viewModel.categorySpendChartData.prefix(6))
+    private var categoryDistributionCard: some View {
+        let topShares = viewModel.topCategorySharesThisMonth
+        let domain = topShares.map { $0.category.displayName }
+        let fillColors: [Color] = [
+            Color.white,
+            Color.white.opacity(0.76),
+            Color.white.opacity(0.52)
+        ]
 
         return GlassCardView {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Spending by Category")
+                Text("Category Distribution")
                     .font(.headline)
                     .foregroundStyle(AppTheme.primaryText)
 
-                if chartData.isEmpty {
-                    Text("Add a few expenses to see the category mix.")
+                if topShares.isEmpty {
+                    Text("Add a few expenses to see where the leaks cluster.")
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.secondaryText)
                 } else {
-                    Chart(chartData) { item in
-                        BarMark(
-                            x: .value("Amount", item.total),
-                            y: .value("Category", item.category.displayName)
-                        )
-                        .foregroundStyle(AppTheme.primaryText)
-                    }
-                    .chartLegend(.hidden)
-                    .chartXAxis {
-                        AxisMarks(position: .bottom, values: .automatic(desiredCount: 4)) { _ in
-                            AxisGridLine()
-                            AxisTick()
-                            AxisValueLabel()
+                    VStack(spacing: 16) {
+                        ZStack {
+                            Chart(topShares) { share in
+                                SectorMark(
+                                    angle: .value("Spend", share.total),
+                                    innerRadius: .ratio(0.66),
+                                    angularInset: 2
+                                )
+                                .foregroundStyle(by: .value("Category", share.category.displayName))
+                            }
+                            .chartLegend(.hidden)
+                            .chartForegroundStyleScale(domain: domain, range: fillColors)
+
+                            VStack(spacing: 2) {
+                                Text(amount(viewModel.monthTotal))
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(AppTheme.primaryText)
+                                Text("This month")
+                                    .font(.caption)
+                                    .foregroundStyle(AppTheme.secondaryText)
+                            }
                         }
-                    }
-                    .chartYAxis {
-                        AxisMarks(position: .leading) { _ in
-                            AxisGridLine()
-                            AxisTick()
-                            AxisValueLabel()
+                        .frame(height: 180)
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(topShares) { share in
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack {
+                                        Text(share.category.displayName)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(AppTheme.primaryText)
+                                        Spacer()
+                                        Text("\(percentage(share.percentage))")
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(AppTheme.primaryText)
+                                    }
+
+                                    HStack {
+                                        Text(amount(share.total))
+                                            .font(.caption)
+                                            .foregroundStyle(AppTheme.secondaryText)
+                                        Spacer()
+                                        Text("\(share.count) expense\(share.count == 1 ? "" : "s")")
+                                            .font(.caption)
+                                            .foregroundStyle(AppTheme.secondaryText)
+                                    }
+
+                                    GeometryReader { geometry in
+                                        ZStack(alignment: .leading) {
+                                            Capsule(style: .continuous)
+                                                .fill(AppTheme.cardFill)
+                                                .frame(height: 8)
+                                            Capsule(style: .continuous)
+                                                .fill(AppTheme.primaryText)
+                                                .frame(width: max(8, geometry.size.width * CGFloat(share.percentage / 100)), height: 8)
+                                        }
+                                    }
+                                    .frame(height: 8)
+                                }
+                            }
                         }
+
+                        Text(viewModel.monthCategorySummaryText)
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.secondaryText)
                     }
-                    .frame(height: CGFloat(max(160, chartData.count * 34)))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -143,6 +156,9 @@ struct DashboardView: View {
                 Text("Recent Spending Trend")
                     .font(.headline)
                     .foregroundStyle(AppTheme.primaryText)
+                Text("A simple 14-day view of how your tracked leaks changed.")
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.secondaryText)
 
                 if trendData.isEmpty {
                     Text("Add expenses to see your recent spending trend.")
@@ -182,5 +198,9 @@ struct DashboardView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private func percentage(_ value: Double) -> String {
+        String(format: "%.0f%%", value)
     }
 }

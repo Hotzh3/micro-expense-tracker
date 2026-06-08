@@ -3,6 +3,22 @@ name: JTap
 options:
   createIntermediateGroups: true
 
+schemes:
+  JTap:
+    build:
+      targets:
+        JTap: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+
 settings:
   base:
     IPHONEOS_DEPLOYMENT_TARGET: 17.0
@@ -36,3 +52,4 @@ targets:
           - CFBundleURLName: com.josema.JTap
             CFBundleURLSchemes:
               - jtap
+              - pocketleak

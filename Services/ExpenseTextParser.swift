@@ -5,6 +5,7 @@ struct ExpenseParseResult: Equatable {
     let merchant: String
     let category: ExpenseCategory
     let confidence: Double
+    let source: ExpenseSource
     let summary: String
 }
 
@@ -19,13 +20,17 @@ final class ExpenseTextParser {
         let category = suggestCategory(from: lowercasedText, merchant: merchant, categories: categories)
 
         let confidence: Double
-        switch (amount != nil, merchant.isEmpty) {
-        case (true, false):
-            confidence = 0.92
-        case (true, true), (false, false):
-            confidence = 0.65
+        switch (amount != nil, !merchant.isEmpty, category != .other) {
+        case (true, true, true):
+            confidence = 0.93
+        case (true, true, false):
+            confidence = 0.85
+        case (true, false, true):
+            confidence = 0.74
+        case (true, false, false), (false, true, _):
+            confidence = 0.58
         default:
-            confidence = 0.3
+            confidence = 0.25
         }
 
         let summaryParts: [String] = [
@@ -36,21 +41,22 @@ final class ExpenseTextParser {
 
         let summary = summaryParts.isEmpty
             ? "No clear amount or merchant was found."
-            : "Parsed " + summaryParts.joined(separator: " • ")
+            : "Parsed from pasted text: " + summaryParts.joined(separator: " • ")
 
         return ExpenseParseResult(
             amount: amount,
             merchant: merchant,
             category: category,
             confidence: confidence,
+            source: .parsedText,
             summary: summary
         )
     }
 
     private func extractAmount(from text: String) -> Double? {
         let patterns = [
-            #"\$\s*([0-9]+(?:[.,][0-9]{1,2})?)"#,
-            #"(?:MXN|mxn)\s*([0-9]+(?:[.,][0-9]{1,2})?)"#,
+            #"(?:\$|MXN|mxn)\s*([0-9]+(?:[.,][0-9]{1,2})?)"#,
+            #"\b(?:por|de|for|amount of)\s*(?:\$|MXN|mxn)?\s*([0-9]+(?:[.,][0-9]{1,2})?)"#,
             #"\b([0-9]+(?:[.,][0-9]{1,2}))\b"#
         ]
 
@@ -64,31 +70,35 @@ final class ExpenseTextParser {
     }
 
     private func extractMerchant(from text: String) -> String {
-        let merchantPatterns = [
-            #"\b(?:en|at|in|para)\s+([A-Za-zÀ-ÿ0-9&'.,\- ]{2,40})"#,
-            #"\b(?:en|at|in|para)\s+([A-Za-zÀ-ÿ0-9&'.,\- ]+)$"#
+        let patterns = [
+            #"\b(?:en|at|in|para)\s+([A-Za-zÀ-ÿ0-9&'().\- ]{2,40})"#,
+            #"\b(?:en|at|in|para)\s+([A-Za-zÀ-ÿ0-9&'().\- ]+)$"#,
+            #"(?:\$|MXN|mxn)\s*[0-9]+(?:[.,][0-9]{1,2})?\s+([A-Za-zÀ-ÿ0-9&'().\- ]{2,30})$"#,
+            #"(?:\$|MXN|mxn)\s*[0-9]+(?:[.,][0-9]{1,2})?\s+(?:en\s+)?([A-Za-zÀ-ÿ0-9&'().\- ]{2,30})$"#
         ]
 
-        for pattern in merchantPatterns {
+        for pattern in patterns {
             if let match = firstMatchString(in: text, pattern: pattern) {
-                let cleaned = match
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                    .trimmingCharacters(in: CharacterSet(charactersIn: ".,:;!-"))
+                let cleaned = cleanMerchant(match)
                 if !cleaned.isEmpty {
                     return cleaned
                 }
             }
         }
 
-        if let bankPrefixRange = text.range(of: ":") {
-            let trailingText = text[bankPrefixRange.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines)
-            if let amountRange = trailingText.range(of: #"\$\s*[0-9]+(?:[.,][0-9]{1,2})?"#, options: .regularExpression) {
-                let afterAmount = trailingText[amountRange.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines)
-                if let merchant = afterAmount.split(separator: " ").first {
-                    let cleaned = String(merchant).trimmingCharacters(in: CharacterSet(charactersIn: ".,:;!-"))
-                    if !cleaned.isEmpty {
-                        return cleaned
-                    }
+        if let amountRange = text.range(of: #"(?:\$|MXN|mxn)\s*[0-9]+(?:[.,][0-9]{1,2})?"#, options: .regularExpression) {
+            let trailingText = text[amountRange.upperBound...]
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: CharacterSet(charactersIn: ":,.-/"))
+
+            if !trailingText.isEmpty {
+                let candidate = trailingText
+                    .split(whereSeparator: { $0.isWhitespace || $0 == "," || $0 == "." })
+                    .prefix(2)
+                    .joined(separator: " ")
+                let cleaned = cleanMerchant(candidate)
+                if !cleaned.isEmpty {
+                    return cleaned
                 }
             }
         }
@@ -140,5 +150,27 @@ final class ExpenseTextParser {
         }
 
         return String(text[swiftRange])
+    }
+
+    private func cleanMerchant(_ value: String) -> String {
+        let trimmed = value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: ".,:;!-/"))
+
+        let stopWords = [
+            "approved", "aprobada", "purchase", "compra", "cargo", "paid", "done", "successful", "approved", "por", "de"
+        ]
+
+        let parts = trimmed.split(whereSeparator: { $0.isWhitespace })
+        let filtered = parts.prefix(while: { part in
+            !stopWords.contains(part.lowercased())
+        })
+        let candidate = filtered.isEmpty ? trimmed : filtered.joined(separator: " ")
+
+        let final = candidate
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: ".,:;!-/"))
+
+        return final
     }
 }
