@@ -4,12 +4,15 @@
 
 Normal third-party iOS apps cannot arbitrarily read other apps' notifications. Pocket Leak must not attempt to scrape bank notifications as a core feature.
 
+Notification permissions in iOS apply to the app's own notifications, not to reading notifications from other apps.
+
 ## Recommended Capture Strategy
 
 - Manual quick add as the core flow
 - Back Tap through a user-created Shortcut
 - URL scheme for fast invocation
 - Optional paste-based parsing only as an editable helper
+- Future user-driven import flows should require explicit sharing or export from the source app
 
 ## Persistence Constraint
 
@@ -28,6 +31,8 @@ The repository should stay focused on the local-first Pocket Leak scope:
 ## Privacy Constraint
 
 The product should stay local-first and avoid collecting sensitive banking data by default. The manual parser is privacy-safe because the user explicitly pastes the text they want parsed.
+
+UI copy should stay aligned with this constraint: "Pocket Leak stores expenses locally and only parses text you paste manually."
 
 ## Manual Xcode Requirement
 

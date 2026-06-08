@@ -2,22 +2,37 @@ import SwiftUI
 
 struct QuickAddView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
+    @Environment(\.pocketLeakStrings) private var strings: AppStrings
+    @Environment(\.appTextSize) private var appTextSize: AppTextSize
+
+    @FocusState private var focusedField: Field?
+
+    private var scale: CGFloat {
+        appTextSize.scale
+    }
+
+    private enum Field {
+        case amount
+        case merchant
+        case note
+        case importText
+    }
 
     var body: some View {
         ZStack(alignment: .top) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     ScreenHeaderView(
-                        title: "Quick Add",
-                        subtitle: "Capture a leak fast, or paste transaction text for a privacy-safe parse.",
+                        title: strings.quickAddHeader,
+                        subtitle: strings.quickAddIntro,
                         showsSettingsButton: true
                     )
 
                     VStack(alignment: .leading, spacing: 12) {
                         GlassCardView {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Capture a micro-expense in under 10 seconds.")
-                                    .font(.headline)
+                                Text(strings.quickAddIntro)
+                                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
                                     .foregroundStyle(AppTheme.primaryText)
 
                                 amountField
@@ -26,12 +41,12 @@ struct QuickAddView: View {
 
                         GlassCardView {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Category")
-                                    .font(.headline)
+                                Text(strings.categoryTitle)
+                                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
                                     .foregroundStyle(AppTheme.primaryText)
 
-                                Text("Pick the closest match first. You can always adjust it later.")
-                                    .font(.subheadline)
+                                Text(strings.categorySubtitle)
+                                    .font(.system(size: 14 * scale))
                                     .foregroundStyle(AppTheme.secondaryText)
 
                                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 108), spacing: 10)], spacing: 8) {
@@ -47,49 +62,58 @@ struct QuickAddView: View {
 
                         GlassCardView {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Details")
-                                    .font(.headline)
+                                Text(strings.detailsTitle)
+                                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
                                     .foregroundStyle(AppTheme.primaryText)
 
-                                TextField("Optional merchant", text: $viewModel.merchantText)
+                                TextField(strings.merchantPlaceholder, text: $viewModel.merchantText)
                                     .textFieldStyle(.plain)
                                     .foregroundStyle(AppTheme.primaryText)
-                                    .padding(12)
+                                    .focused($focusedField, equals: .merchant)
+                                    .submitLabel(.next)
+                                    .font(.system(size: 15 * scale))
+                                    .padding(.vertical, 14)
+                                    .padding(.horizontal, 14)
                                     .background(
                                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .fill(Color.white.opacity(0.04))
+                                            .fill(AppTheme.cardFill)
                                     )
 
-                                TextField("Optional note", text: $viewModel.noteText)
+                                TextField(strings.notePlaceholder, text: $viewModel.noteText)
                                     .textFieldStyle(.plain)
                                     .foregroundStyle(AppTheme.primaryText)
-                                    .padding(12)
+                                    .focused($focusedField, equals: .note)
+                                    .submitLabel(.done)
+                                    .font(.system(size: 15 * scale))
+                                    .padding(.vertical, 14)
+                                    .padding(.horizontal, 14)
                                     .background(
                                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .fill(Color.white.opacity(0.04))
+                                            .fill(AppTheme.cardFill)
                                     )
                             }
                         }
 
                         GlassCardView {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("Paste Notification Text")
-                                    .font(.headline)
+                                Text(strings.pasteTitle)
+                                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
                                     .foregroundStyle(AppTheme.primaryText)
 
-                                Text("Paste a bank alert or transaction message. Pocket Leak only parses text you paste yourself, keeping the flow privacy-safe.")
-                                    .font(.subheadline)
+                                Text(strings.pasteDescription)
+                                    .font(.system(size: 14 * scale))
                                     .foregroundStyle(AppTheme.secondaryText)
 
                                 TextEditor(text: $viewModel.importText)
                                     .scrollContentBackground(.hidden)
-                                    .font(.body)
+                                    .focused($focusedField, equals: .importText)
+                                    .font(.system(size: 15 * scale))
                                     .foregroundStyle(AppTheme.primaryText)
-                                    .frame(minHeight: 96)
+                                    .frame(minHeight: 120)
                                     .padding(10)
                                     .background(
                                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .fill(Color.white.opacity(0.04))
+                                            .fill(AppTheme.cardFill)
                                     )
 
                                 Button {
@@ -97,12 +121,12 @@ struct QuickAddView: View {
                                 } label: {
                                     HStack {
                                         Image(systemName: "wand.and.stars")
-                                        Text("Parse Text")
+                                        Text(strings.parseTextButton)
                                     }
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(Color.black)
+                                    .font(.system(size: 15 * scale, weight: .semibold))
+                                    .foregroundStyle(AppTheme.background)
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
+                                    .padding(.vertical, 14)
                                     .background(
                                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                                             .fill(AppTheme.primaryText)
@@ -122,12 +146,12 @@ struct QuickAddView: View {
                                     } label: {
                                         HStack {
                                             Image(systemName: "checkmark.circle.fill")
-                                            Text("Use Parsed Expense")
+                                            Text(strings.useParsedExpenseButton)
                                         }
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(Color.black)
+                                        .font(.system(size: 15 * scale, weight: .semibold))
+                                        .foregroundStyle(AppTheme.background)
                                         .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 12)
+                                        .padding(.vertical, 14)
                                         .background(
                                             RoundedRectangle(cornerRadius: 16, style: .continuous)
                                                 .fill(AppTheme.primaryText)
@@ -138,19 +162,17 @@ struct QuickAddView: View {
                             }
                         }
 
-                        PrimaryButton(title: "Save Expense") {
+                        PrimaryButton(title: strings.saveExpenseButton) {
                             viewModel.saveDraftExpense()
                         }
                     }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 0)
-                .padding(.bottom, 12)
+                .padding(.bottom, 18)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear.frame(height: 14)
-            }
             .animation(.easeOut(duration: 0.2), value: viewModel.saveFeedback)
             .animation(.easeOut(duration: 0.2), value: viewModel.parseFeedback)
             .onChange(of: viewModel.amountText) { _, _ in viewModel.clearSaveFeedback() }
@@ -171,23 +193,61 @@ struct QuickAddView: View {
                 .allowsHitTesting(false)
             }
         }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                switch focusedField {
+                case .amount:
+                    Spacer()
+                    Button(strings.next) {
+                        focusedField = .merchant
+                    }
+                case .merchant:
+                    Button(strings.done) {
+                        focusedField = nil
+                    }
+                    Spacer()
+                    Button(strings.next) {
+                        focusedField = .note
+                    }
+                case .note:
+                    Button(strings.done) {
+                        focusedField = nil
+                    }
+                    Spacer()
+                    Button(strings.next) {
+                        focusedField = .importText
+                    }
+                case .importText:
+                    Button(strings.done) {
+                        focusedField = nil
+                    }
+                case .none:
+                    Spacer()
+                    Button(strings.done) {
+                        focusedField = nil
+                    }
+                }
+            }
+        }
     }
 
     private var amountField: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Amount")
-                .font(.caption)
+            Text(strings.amountTitle)
+                .font(.system(size: 13 * scale, weight: .semibold))
                 .foregroundStyle(AppTheme.tertiaryText)
 
             TextField("0.00", text: $viewModel.amountText)
                 .keyboardType(.decimalPad)
-                .font(.system(size: 34, weight: .semibold, design: .rounded))
+                .focused($focusedField, equals: .amount)
+                .submitLabel(.next)
+                .font(.system(size: 40 * scale, weight: .semibold, design: .rounded))
                 .foregroundStyle(AppTheme.primaryText)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
                 .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.white.opacity(0.04))
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(AppTheme.cardFill)
                 )
         }
     }
@@ -200,10 +260,10 @@ struct QuickAddView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(feedback.isError ? "Needs attention" : "Ready")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.system(size: 15 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.primaryText)
                 Text(feedback.message)
-                    .font(.caption)
+                    .font(.system(size: 13 * scale))
                     .foregroundStyle(AppTheme.secondaryText)
             }
 
@@ -226,8 +286,8 @@ struct QuickAddView: View {
         HStack(spacing: 10) {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(Color.green)
-            Text("Expense saved")
-                .font(.subheadline.weight(.semibold))
+            Text(strings.expenseSaved)
+                .font(.system(size: 15 * scale, weight: .semibold))
                 .foregroundStyle(AppTheme.primaryText)
             Spacer(minLength: 0)
         }
@@ -272,16 +332,20 @@ struct QuickAddView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                previewRow(label: "Amount", value: parsedExpense.amount.map { String(format: "$%.2f", $0) } ?? "—")
-                previewRow(label: "Merchant", value: parsedExpense.merchant.isEmpty ? "—" : parsedExpense.merchant)
-                previewRow(label: "Category", value: parsedExpense.category.displayName)
-                previewRow(label: "Source", value: "Parsed text")
+                if let amount = parsedExpense.amount {
+                    previewRow(label: strings.amountTitle, value: String(format: "$%.2f", amount))
+                }
+                if !parsedExpense.merchant.isEmpty {
+                    previewRow(label: strings.merchantPlaceholder, value: parsedExpense.merchant)
+                }
+                previewRow(label: strings.categoryTitle, value: parsedExpense.category.displayName)
             }
         }
-        .padding(14)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.04))
+                .fill(AppTheme.cardFill)
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .stroke(AppTheme.cardBorder, lineWidth: 1)
@@ -292,11 +356,11 @@ struct QuickAddView: View {
     private func previewRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.caption)
+                .font(.system(size: 13 * appTextSize.scale))
                 .foregroundStyle(AppTheme.tertiaryText)
             Spacer()
             Text(value)
-                .font(.caption.weight(.semibold))
+                .font(.system(size: 15 * appTextSize.scale, weight: .medium))
                 .foregroundStyle(AppTheme.primaryText)
         }
     }

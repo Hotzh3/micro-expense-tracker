@@ -45,6 +45,13 @@ final class ExpenseViewModel: ObservableObject {
         var id: Date { weekStart }
     }
 
+    enum GoalStatus {
+        case none
+        case onTrack
+        case closeToLimit
+        case limitReached
+    }
+
     @Published var expenses: [Expense]
     @Published var selectedCategory: ExpenseCategory
     @Published var amountText: String = ""
@@ -54,10 +61,13 @@ final class ExpenseViewModel: ObservableObject {
     @Published var parsedExpense: ExpenseParseResult?
     @Published var saveFeedback: Feedback?
     @Published var parseFeedback: Feedback?
+    @Published var weeklyGoal: SpendingGoal?
+    @Published var monthlyGoal: SpendingGoal?
 
     let categories: [ExpenseCategory]
 
     private let store: ExpenseStore
+    private let goalStore: GoalStore
     private let parser: ExpenseTextParser
     private let calendar: Calendar
     private let defaultCategory: ExpenseCategory
@@ -67,15 +77,20 @@ final class ExpenseViewModel: ObservableObject {
 
     init(
         store: ExpenseStore = ExpenseStore(),
+        goalStore: GoalStore = GoalStore(),
         parser: ExpenseTextParser = ExpenseTextParser()
     ) {
         self.store = store
+        self.goalStore = goalStore
         self.parser = parser
         self.calendar = .current
         self.categories = ExpenseCategory.allDefaults
         let initialCategory = ExpenseCategory.allDefaults.last ?? .other
         self.defaultCategory = initialCategory
         self.expenses = store.loadExpenses()
+        let goals = goalStore.loadGoals()
+        self.weeklyGoal = goals.weekly
+        self.monthlyGoal = goals.monthly
         self.selectedCategory = initialCategory
     }
 
@@ -164,6 +179,27 @@ final class ExpenseViewModel: ObservableObject {
         parsedExpense = nil
         saveFeedback = nil
         parseFeedback = nil
+    }
+
+    func saveGoal(cadence: SpendingGoalCadence, limit: Double) {
+        guard limit > 0 else { return }
+        switch cadence {
+        case .weekly:
+            weeklyGoal = SpendingGoal(cadence: .weekly, limit: limit, createdAt: weeklyGoal?.createdAt ?? .now, updatedAt: .now)
+        case .monthly:
+            monthlyGoal = SpendingGoal(cadence: .monthly, limit: limit, createdAt: monthlyGoal?.createdAt ?? .now, updatedAt: .now)
+        }
+        goalStore.saveGoals(SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal))
+    }
+
+    func removeGoal(cadence: SpendingGoalCadence) {
+        switch cadence {
+        case .weekly:
+            weeklyGoal = nil
+        case .monthly:
+            monthlyGoal = nil
+        }
+        goalStore.saveGoals(SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal))
     }
 
     func clearSaveFeedback() {
@@ -367,6 +403,124 @@ final class ExpenseViewModel: ObservableObject {
             "Top category: \(topCategoryText)",
             "Largest expense: \(largestExpenseText)"
         ].joined(separator: "\n")
+    }
+
+    func goal(for cadence: SpendingGoalCadence) -> SpendingGoal? {
+        switch cadence {
+        case .weekly:
+            return weeklyGoal
+        case .monthly:
+            return monthlyGoal
+        }
+    }
+
+    func goalSpentAmount(for cadence: SpendingGoalCadence) -> Double {
+        switch cadence {
+        case .weekly:
+            return weekTotal
+        case .monthly:
+            return monthTotal
+        }
+    }
+
+    func goalRemainingAmount(for cadence: SpendingGoalCadence) -> Double {
+        guard let goal = goal(for: cadence) else { return 0 }
+        return max(goal.limit - goalSpentAmount(for: cadence), 0)
+    }
+
+    func goalPercentUsed(for cadence: SpendingGoalCadence) -> Double {
+        guard let goal = goal(for: cadence), goal.limit > 0 else { return 0 }
+        return min((goalSpentAmount(for: cadence) / goal.limit) * 100, 999)
+    }
+
+    func goalProgressFraction(for cadence: SpendingGoalCadence) -> Double {
+        guard let goal = goal(for: cadence), goal.limit > 0 else { return 0 }
+        return min(goalSpentAmount(for: cadence) / goal.limit, 1)
+    }
+
+    func goalStatusText(for cadence: SpendingGoalCadence) -> String {
+        guard goal(for: cadence) != nil else { return "No goal" }
+
+        let percent = goalPercentUsed(for: cadence)
+        if percent >= 100 {
+            return "Limit reached"
+        } else if percent >= 75 {
+            return "Close to limit"
+        } else {
+            return "On track"
+        }
+    }
+
+    func goalStatus(for cadence: SpendingGoalCadence) -> GoalStatus {
+        guard goal(for: cadence) != nil else { return .none }
+
+        switch goalPercentUsed(for: cadence) {
+        case 100...:
+            return .limitReached
+        case 75..<100:
+            return .closeToLimit
+        default:
+            return .onTrack
+        }
+    }
+
+    func goalMotivationText(for cadence: SpendingGoalCadence) -> String {
+        guard let goal = goal(for: cadence) else {
+            return "Create a simple spending limit to see your progress."
+        }
+
+        switch goal.cadence {
+        case .weekly:
+            if goalPercentUsed(for: cadence) >= 100 {
+                return "Weekly spending has reached the limit. Pause and reset before the next cycle."
+            } else if goalPercentUsed(for: cadence) >= 75 {
+                return "You are getting close. Keep the rest of the week intentional."
+            } else {
+                return "You still have room this week. Small purchases stay visible."
+            }
+        case .monthly:
+            if goalPercentUsed(for: cadence) >= 100 {
+                return "This month has reached the limit. Keep the next spend intentional."
+            } else if goalPercentUsed(for: cadence) >= 75 {
+                return "You are in the caution zone. Watch the remaining budget carefully."
+            } else {
+                return "There is still room in the monthly budget."
+            }
+        }
+    }
+
+    func goalPeriodLabel(for cadence: SpendingGoalCadence) -> String {
+        switch cadence {
+        case .weekly:
+            return "this week"
+        case .monthly:
+            return "this month"
+        }
+    }
+
+    func goalLimitText(for cadence: SpendingGoalCadence) -> String {
+        guard let goal = goal(for: cadence) else { return "—" }
+        return currency(goal.limit)
+    }
+
+    func goalSpentText(for cadence: SpendingGoalCadence) -> String {
+        currency(goalSpentAmount(for: cadence))
+    }
+
+    func goalRemainingText(for cadence: SpendingGoalCadence) -> String {
+        currency(goalRemainingAmount(for: cadence))
+    }
+
+    var hasWeeklyGoal: Bool {
+        weeklyGoal != nil
+    }
+
+    var hasMonthlyGoal: Bool {
+        monthlyGoal != nil
+    }
+
+    var hasGoal: Bool {
+        hasWeeklyGoal || hasMonthlyGoal
     }
 
     var csvExport: ExpenseCSVExport {

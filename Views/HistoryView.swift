@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HistoryView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
+    @Environment(\.pocketLeakStrings) private var strings: AppStrings
     @State private var timeFilter: HistoryTimeFilter = .all
     @State private var selectedCategoryID: UUID? = nil
 
@@ -9,7 +10,7 @@ struct HistoryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 ScreenHeaderView(
-                    title: "History",
+                    title: strings.historyHeader,
                     subtitle: "Review saved leaks by time range and category.",
                     showsSettingsButton: true
                 )
@@ -23,7 +24,7 @@ struct HistoryView: View {
 
                     if viewModel.expenses.isEmpty {
                         EmptyStateView(
-                            title: "No expenses yet",
+                            title: strings.emptyNoExpenses,
                             message: "Add your first micro-expense from Quick Add."
                         )
                     } else if filteredExpenses.isEmpty {
@@ -51,11 +52,9 @@ struct HistoryView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 0)
-            .padding(.bottom, 12)
+            .padding(.bottom, 20)
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            Color.clear.frame(height: 14)
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var filteredExpenses: [Expense] {
@@ -129,7 +128,7 @@ struct HistoryView: View {
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.white.opacity(0.04))
+                            .fill(AppTheme.cardFill)
                     )
                 }
                 .buttonStyle(.plain)
@@ -188,7 +187,7 @@ struct HistoryView: View {
             Text(title)
         }
         .font(.subheadline.weight(.semibold))
-        .foregroundStyle(Color.black)
+        .foregroundStyle(AppTheme.background)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 13)
         .background(

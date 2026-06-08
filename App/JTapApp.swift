@@ -8,7 +8,6 @@ struct JTapApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(viewModel)
-                .preferredColorScheme(.dark)
         }
     }
 }

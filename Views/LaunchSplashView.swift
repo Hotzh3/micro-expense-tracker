@@ -25,7 +25,7 @@ struct LaunchSplashView: View {
                 Text(phrase)
                     .font(.system(size: 28, weight: .semibold, design: .rounded))
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(AppTheme.primaryText)
+                    .foregroundStyle(Color.white)
                     .frame(maxWidth: 280)
                     .padding(.horizontal, 12)
 
@@ -33,7 +33,7 @@ struct LaunchSplashView: View {
 
                 Text("Pocket Leak")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(AppTheme.secondaryText)
+                    .foregroundStyle(Color.white.opacity(0.7))
                     .padding(.bottom, 18)
             }
             .padding(.horizontal, 24)

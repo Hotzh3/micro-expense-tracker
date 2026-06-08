@@ -1,0 +1,81 @@
+import Foundation
+
+final class GoalStore {
+    private let fileManager: FileManager
+    private let fileURL: URL
+    private let encoder: JSONEncoder
+    private let decoder: JSONDecoder
+
+    init(fileManager: FileManager = .default) {
+        self.fileManager = fileManager
+        self.fileURL = Self.makeFileURL(fileManager: fileManager)
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        self.encoder = encoder
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        self.decoder = decoder
+    }
+
+    func loadGoals() -> SpendingGoals {
+        do {
+            guard fileManager.fileExists(atPath: fileURL.path) else {
+                return .empty
+            }
+
+            let data = try Data(contentsOf: fileURL)
+            if let goals = try? decoder.decode(SpendingGoals.self, from: data) {
+                return goals
+            }
+
+            if let legacyGoal = try? decoder.decode(SpendingGoal.self, from: data) {
+                switch legacyGoal.cadence {
+                case .weekly:
+                    return SpendingGoals(weekly: legacyGoal, monthly: nil)
+                case .monthly:
+                    return SpendingGoals(weekly: nil, monthly: legacyGoal)
+                }
+            }
+
+            return .empty
+        } catch {
+            print("Failed to load goals: \(error)")
+            return .empty
+        }
+    }
+
+    func saveGoals(_ goals: SpendingGoals) {
+        do {
+            try ensureStoreDirectoryExists()
+            if goals.isEmpty {
+                if fileManager.fileExists(atPath: fileURL.path) {
+                    try fileManager.removeItem(at: fileURL)
+                }
+                return
+            }
+
+            let data = try encoder.encode(goals)
+            try data.write(to: fileURL, options: [.atomic])
+        } catch {
+            print("Failed to save goals: \(error)")
+        }
+    }
+
+    private func ensureStoreDirectoryExists() throws {
+        let directoryURL = fileURL.deletingLastPathComponent()
+        if !fileManager.fileExists(atPath: directoryURL.path) {
+            try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil)
+        }
+    }
+
+    private static func makeFileURL(fileManager: FileManager) -> URL {
+        let baseDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return baseDirectory
+            .appendingPathComponent("JTap", isDirectory: true)
+            .appendingPathComponent("goal.json")
+    }
+}

@@ -3,12 +3,13 @@ import SwiftUI
 
 struct DashboardView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
+    @Environment(\.pocketLeakStrings) private var strings: AppStrings
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 ScreenHeaderView(
-                    title: "Dashboard",
+                    title: strings.dashboardHeader,
                     subtitle: "Track daily spend, month totals, and the categories leaking the most.",
                     showsSettingsButton: true
                 )
@@ -16,8 +17,8 @@ struct DashboardView: View {
                 VStack(spacing: 12) {
                     if viewModel.expenses.isEmpty {
                         EmptyStateView(
-                            title: "No expenses yet",
-                            message: "Add your first micro-expense from Quick Add."
+                            title: strings.emptyNoExpenses,
+                            message: strings.emptyNoExpenses
                         )
                     }
 
@@ -35,7 +36,7 @@ struct DashboardView: View {
 
                     GlassCardView {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("Quick Snapshot")
+                            Text(strings.dashboardQuickSnapshotTitle)
                                 .font(.headline)
                                 .foregroundStyle(AppTheme.primaryText)
                             Text(viewModel.insightText)
@@ -48,11 +49,9 @@ struct DashboardView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 0)
-            .padding(.bottom, 12)
+            .padding(.bottom, 20)
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            Color.clear.frame(height: 14)
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private func amount(_ value: Double) -> String {
@@ -70,12 +69,12 @@ struct DashboardView: View {
 
         return GlassCardView {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Category Distribution")
+                Text(strings.dashboardCategoryDistributionTitle)
                     .font(.headline)
                     .foregroundStyle(AppTheme.primaryText)
 
                 if topShares.isEmpty {
-                    Text("Add a few expenses to see where the leaks cluster.")
+                    Text(strings.dashboardNoCategoryDistribution)
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.secondaryText)
                 } else {
@@ -157,7 +156,7 @@ struct DashboardView: View {
 
         return GlassCardView {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Recent Spending Trend")
+                Text(strings.dashboardRecentTrendTitle)
                     .font(.headline)
                     .foregroundStyle(AppTheme.primaryText)
                 Text("A simple 14-day view of how your tracked leaks changed.")
@@ -165,7 +164,7 @@ struct DashboardView: View {
                     .foregroundStyle(AppTheme.secondaryText)
 
                 if trendData.isEmpty {
-                    Text("Add expenses to see your recent spending trend.")
+                    Text(strings.dashboardNoRecentTrend)
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.secondaryText)
                 } else {
