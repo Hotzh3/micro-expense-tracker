@@ -14,6 +14,8 @@ struct SettingsView: View {
     let onOpenGoals: (() -> Void)?
     let onOpenQuickAdd: (() -> Void)?
     let onCopyQuickAddURL: (() -> Void)?
+    let onCopyPrefillURLExample: (() -> Void)?
+    let onOpenQuickAddRoute: (() -> Void)?
     let onResetLocalData: () -> Void
 
     @State private var showResetConfirmation = false
@@ -58,7 +60,7 @@ struct SettingsView: View {
                 isPresented: $showResetConfirmation,
                 titleVisibility: .visible
             ) {
-                Button(strings.deleteAllExpenses, role: .destructive) {
+                Button(strings.deleteAllData, role: .destructive) {
                     onResetLocalData()
                 }
                 Button(strings.cancel, role: .cancel) {}
@@ -222,13 +224,17 @@ struct SettingsView: View {
                     .font(.system(size: 15 * scale))
                     .foregroundStyle(AppTheme.secondaryText)
 
+                Text(strings.backTapQuickAdd)
+                    .font(.system(size: 12 * scale, weight: .semibold))
+                    .foregroundStyle(AppTheme.tertiaryText)
+
                 VStack(alignment: .leading, spacing: 8) {
-                    instructionRow("1. Open Shortcuts.")
-                    instructionRow("2. Create a Shortcut.")
-                    instructionRow("3. Add Open URLs.")
-                    instructionRow("4. Use pocketleak://quick-add.")
-                    instructionRow("5. Go to Settings > Accessibility > Touch > Back Tap.")
-                    instructionRow("6. Assign the Shortcut to Double Tap.")
+                    instructionRow(strings.backTapStepOpenShortcuts)
+                    instructionRow(strings.backTapStepCreateShortcut)
+                    instructionRow(strings.backTapStepAddOpenURLs)
+                    instructionRow(strings.backTapStepUseQuickAddURL)
+                    instructionRow(strings.backTapStepOpenAccessibility)
+                    instructionRow(strings.backTapStepSelectShortcut)
                 }
 
                 Button {
@@ -250,12 +256,59 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
 
                 Button {
+                    onCopyPrefillURLExample?()
+                } label: {
+                    HStack {
+                        Image(systemName: "doc.on.doc")
+                        Text(strings.copyPrefillURLExample)
+                    }
+                    .font(.system(size: 15 * scale, weight: .semibold))
+                    .foregroundStyle(AppTheme.primaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppTheme.cardFill)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(AppTheme.cardBorder, lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Button {
                     dismiss()
                     onOpenQuickAdd?()
                 } label: {
                     HStack {
                         Image(systemName: "plus.circle.fill")
                         Text(strings.openQuickAdd)
+                    }
+                    .font(.system(size: 15 * scale, weight: .semibold))
+                    .foregroundStyle(AppTheme.primaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppTheme.cardFill)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(AppTheme.cardBorder, lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    dismiss()
+                    DispatchQueue.main.async {
+                        onOpenQuickAddRoute?()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "arrow.up.right.circle")
+                        Text(strings.openQuickAddRoute)
                     }
                     .font(.system(size: 15 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.primaryText)
@@ -291,7 +344,7 @@ struct SettingsView: View {
                 } label: {
                     HStack {
                         Image(systemName: "trash")
-                        Text(strings.resetLocalData)
+                        Text(strings.deleteAllData)
                     }
                     .font(.system(size: 15 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.background)

@@ -4,13 +4,14 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 ScreenHeaderView(
                     title: strings.dashboardHeader,
-                    subtitle: "Track daily spend, month totals, and the categories leaking the most.",
+                    subtitle: strings.dashboardHeaderSubtitle,
                     showsSettingsButton: true
                 )
 
@@ -31,6 +32,7 @@ struct DashboardView: View {
                         MetricCardView(title: "Average Expense", value: amount(viewModel.averageExpenseAmount), subtitle: "Across all saved expenses")
                     }
 
+                    goalsSummaryCard
                     categoryDistributionCard
                     recentTrendCard
 
@@ -60,12 +62,6 @@ struct DashboardView: View {
 
     private var categoryDistributionCard: some View {
         let topShares = viewModel.topCategorySharesThisMonth
-        let domain = topShares.map { $0.category.displayName }
-        let fillColors: [Color] = [
-            Color.white,
-            Color.white.opacity(0.76),
-            Color.white.opacity(0.52)
-        ]
 
         return GlassCardView {
             VStack(alignment: .leading, spacing: 12) {
@@ -86,10 +82,9 @@ struct DashboardView: View {
                                     innerRadius: .ratio(0.66),
                                     angularInset: 2
                                 )
-                                .foregroundStyle(by: .value("Category", share.category.displayName))
+                                .foregroundStyle(share.category.accentColor)
                             }
                             .chartLegend(.hidden)
-                            .chartForegroundStyleScale(domain: domain, range: fillColors)
 
                             VStack(spacing: 2) {
                                 Text(amount(viewModel.monthTotal))
@@ -106,9 +101,14 @@ struct DashboardView: View {
                             ForEach(topShares) { share in
                                 VStack(alignment: .leading, spacing: 6) {
                                     HStack {
-                                        Text(share.category.displayName)
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(AppTheme.primaryText)
+                                        HStack(spacing: 8) {
+                                            Circle()
+                                                .fill(share.category.accentColor)
+                                                .frame(width: 10, height: 10)
+                                            Text(share.category.displayName)
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundStyle(AppTheme.primaryText)
+                                        }
                                         Spacer()
                                         Text("\(percentage(share.percentage))")
                                             .font(.subheadline.weight(.semibold))
@@ -118,7 +118,7 @@ struct DashboardView: View {
                                     HStack {
                                         Text(amount(share.total))
                                             .font(.caption)
-                                            .foregroundStyle(AppTheme.secondaryText)
+                                            .foregroundStyle(share.category.accentColor)
                                         Spacer()
                                         Text("\(share.count) expense\(share.count == 1 ? "" : "s")")
                                             .font(.caption)
@@ -131,7 +131,7 @@ struct DashboardView: View {
                                                 .fill(AppTheme.cardFill)
                                                 .frame(height: 8)
                                             Capsule(style: .continuous)
-                                                .fill(AppTheme.primaryText)
+                                                .fill(share.category.accentColor)
                                                 .frame(width: max(8, geometry.size.width * CGFloat(share.percentage / 100)), height: 8)
                                         }
                                     }
@@ -205,5 +205,106 @@ struct DashboardView: View {
 
     private func percentage(_ value: Double) -> String {
         String(format: "%.0f%%", value)
+    }
+
+    private var goalsSummaryCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(strings.dashboardGoalsTitle)
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.primaryText)
+                Text(strings.dashboardGoalsSubtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.secondaryText)
+
+                if viewModel.goalOverviews.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(strings.dashboardGoalsCtaTitle)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AppTheme.primaryText)
+                        Text(strings.dashboardGoalsCtaSubtitle)
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.secondaryText)
+
+                        Button {
+                            guard let url = URL(string: "pocketleak://goals") else { return }
+                            openURL(url)
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "target")
+                                Text(strings.dashboardGoalsCtaButton)
+                            }
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(AppTheme.background)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(AppTheme.primaryText)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } else {
+                    VStack(spacing: 12) {
+                        ForEach(viewModel.goalOverviews) { summary in
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(summary.cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(AppTheme.primaryText)
+                                        Text(summary.statusText)
+                                            .font(.caption)
+                                            .foregroundStyle(AppTheme.secondaryText)
+                                    }
+                                    Spacer()
+                                    Text("\(summary.percentUsedText)")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(AppTheme.primaryText)
+                                }
+
+                                GeometryReader { geometry in
+                                    ZStack(alignment: .leading) {
+                                        Capsule(style: .continuous)
+                                            .fill(AppTheme.cardFill)
+                                            .frame(height: 8)
+                                        Capsule(style: .continuous)
+                                            .fill(progressColor(for: summary.status))
+                                            .frame(width: max(8, geometry.size.width * summary.progressFraction), height: 8)
+                                    }
+                                }
+                                .frame(height: 8)
+
+                                HStack {
+                                    Text("\(summary.spentText) / \(summary.limitText)")
+                                        .font(.caption)
+                                        .foregroundStyle(AppTheme.secondaryText)
+                                    Spacer()
+                                    Text("\(strings.goalsRemainingLabel): \(summary.remainingText)")
+                                        .font(.caption)
+                                        .foregroundStyle(AppTheme.secondaryText)
+                                }
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func progressColor(for status: ExpenseViewModel.GoalStatus) -> Color {
+        switch status {
+        case .onTrack:
+            return .white
+        case .closeToLimit:
+            return .yellow
+        case .limitReached:
+            return .red
+        case .none:
+            return .white
+        }
     }
 }

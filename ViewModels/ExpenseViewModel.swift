@@ -1,5 +1,9 @@
 import SwiftUI
 
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
+
 @MainActor
 final class ExpenseViewModel: ObservableObject {
     struct Feedback: Equatable {
@@ -45,11 +49,44 @@ final class ExpenseViewModel: ObservableObject {
         var id: Date { weekStart }
     }
 
-    enum GoalStatus {
+    enum GoalStatus: Equatable {
         case none
         case onTrack
         case closeToLimit
         case limitReached
+    }
+
+    struct GoalOverview: Identifiable, Equatable {
+        let cadence: SpendingGoalCadence
+        let goal: SpendingGoal
+        let spent: Double
+        let remaining: Double
+        let percentUsed: Double
+        let progressFraction: Double
+        let status: GoalStatus
+        let daysLeftInPeriod: Int
+        let remainingDailyBudget: Double
+        let projectedMonthSpend: Double
+        let statusText: String
+        let motivationText: String
+
+        var id: SpendingGoalCadence { cadence }
+
+        var limitText: String {
+            String(format: "$%.2f", goal.limit)
+        }
+
+        var spentText: String {
+            String(format: "$%.2f", spent)
+        }
+
+        var remainingText: String {
+            String(format: "$%.2f", remaining)
+        }
+
+        var percentUsedText: String {
+            String(format: "%.0f%%", percentUsed)
+        }
     }
 
     @Published var expenses: [Expense]
@@ -69,6 +106,7 @@ final class ExpenseViewModel: ObservableObject {
     private let store: ExpenseStore
     private let goalStore: GoalStore
     private let parser: ExpenseTextParser
+    private let widgetSummaryStore: WidgetSummaryStore
     private let calendar: Calendar
     private let defaultCategory: ExpenseCategory
     private var draftSource: ExpenseSource = .manual
@@ -83,6 +121,7 @@ final class ExpenseViewModel: ObservableObject {
         self.store = store
         self.goalStore = goalStore
         self.parser = parser
+        self.widgetSummaryStore = WidgetSummaryStore()
         self.calendar = .current
         self.categories = ExpenseCategory.allDefaults
         let initialCategory = ExpenseCategory.allDefaults.last ?? .other
@@ -92,12 +131,14 @@ final class ExpenseViewModel: ObservableObject {
         self.weeklyGoal = goals.weekly
         self.monthlyGoal = goals.monthly
         self.selectedCategory = initialCategory
+        syncWidgetSummary()
     }
 
     func saveDraftExpense() {
         let sanitizedAmount = amountText.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedAmount = sanitizedAmount.replacingOccurrences(of: ",", with: ".")
-        guard let amount = Double(normalizedAmount), amount > 0 else {
+        let parsedAmount = parsedExpense?.amount
+        guard let amount = Double(normalizedAmount) ?? parsedAmount, amount > 0 else {
             showSaveFeedback(message: "Enter a valid amount greater than zero.", isError: true)
             return
         }
@@ -121,13 +162,13 @@ final class ExpenseViewModel: ObservableObject {
         let suggestion = parser.parse(importText, categories: categories)
         guard let suggestion else {
             parsedExpense = nil
-            showParseFeedback(message: "No usable amount or merchant found. You can still enter the expense manually.", isError: true)
+            showParseFeedback(message: "No usable text found. Paste a transaction with an amount, then try Parse Text.", isError: true)
             return
         }
 
         guard suggestion.amount != nil else {
             parsedExpense = nil
-            showParseFeedback(message: "I could not find an amount in the pasted text. Try including the charge total.", isError: true)
+            showParseFeedback(message: "I could not find an amount. Include the charge total, then try Parse Text again.", isError: true)
             return
         }
 
@@ -162,6 +203,33 @@ final class ExpenseViewModel: ObservableObject {
         draftConfidence = 1.0
     }
 
+    func resetDraftForExternalEntry() {
+        isResettingDraft = true
+        amountText = ""
+        merchantText = ""
+        noteText = ""
+        importText = ""
+        parsedExpense = nil
+        saveFeedback = nil
+        parseFeedback = nil
+        selectedCategory = defaultCategory
+        draftSource = .manual
+        draftConfidence = 1.0
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            isResettingDraft = false
+        }
+    }
+
+    func loadImportedTextAndParse(_ text: String) {
+        resetDraftForExternalEntry()
+        importText = text
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            self.parseImportedText()
+        }
+    }
+
     func deleteExpense(at offsets: IndexSet) {
         expenses.remove(atOffsets: offsets)
         persistExpenses()
@@ -181,6 +249,17 @@ final class ExpenseViewModel: ObservableObject {
         parseFeedback = nil
     }
 
+    func clearAllData() {
+        clearAllExpenses()
+        clearAllGoals()
+    }
+
+    func clearAllGoals() {
+        weeklyGoal = nil
+        monthlyGoal = nil
+        persistGoals()
+    }
+
     func saveGoal(cadence: SpendingGoalCadence, limit: Double) {
         guard limit > 0 else { return }
         switch cadence {
@@ -189,7 +268,7 @@ final class ExpenseViewModel: ObservableObject {
         case .monthly:
             monthlyGoal = SpendingGoal(cadence: .monthly, limit: limit, createdAt: monthlyGoal?.createdAt ?? .now, updatedAt: .now)
         }
-        goalStore.saveGoals(SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal))
+        persistGoals()
     }
 
     func removeGoal(cadence: SpendingGoalCadence) {
@@ -199,7 +278,7 @@ final class ExpenseViewModel: ObservableObject {
         case .monthly:
             monthlyGoal = nil
         }
-        goalStore.saveGoals(SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal))
+        persistGoals()
     }
 
     func clearSaveFeedback() {
@@ -209,6 +288,10 @@ final class ExpenseViewModel: ObservableObject {
 
     func clearParseFeedback() {
         parseFeedback = nil
+    }
+
+    func setParseFeedback(message: String, isError: Bool) {
+        parseFeedback = Feedback(message: message, isError: isError)
     }
 
     func expenses(matching category: ExpenseCategory?, timeFilter: HistoryTimeFilter) -> [Expense] {
@@ -248,8 +331,20 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var projectedMonthlySpend: Double {
+        projectedMonthSpend
+    }
+
+    var projectedMonthSpend: Double {
         let daysInCurrentMonth = calendar.range(of: .day, in: .month, for: .now)?.count ?? 30
         return averageDailySpend * Double(daysInCurrentMonth)
+    }
+
+    var daysLeftInMonth: Int {
+        daysLeft(in: .month)
+    }
+
+    var daysLeftInWeek: Int {
+        daysLeft(in: .week)
     }
 
     var highestExpense: Expense? {
@@ -433,22 +528,25 @@ final class ExpenseViewModel: ObservableObject {
         return min((goalSpentAmount(for: cadence) / goal.limit) * 100, 999)
     }
 
+    func goalStatusText(for cadence: SpendingGoalCadence) -> String {
+        let strings = AppStrings.current()
+        guard goal(for: cadence) != nil else { return strings.goalsNoGoalStatus }
+
+        switch goalStatus(for: cadence) {
+        case .limitReached:
+            return strings.goalsStatusLimitReached
+        case .closeToLimit:
+            return strings.goalsStatusCloseToLimit
+        case .onTrack:
+            return strings.goalsStatusOnTrack
+        case .none:
+            return strings.goalsNoGoalStatus
+        }
+    }
+
     func goalProgressFraction(for cadence: SpendingGoalCadence) -> Double {
         guard let goal = goal(for: cadence), goal.limit > 0 else { return 0 }
         return min(goalSpentAmount(for: cadence) / goal.limit, 1)
-    }
-
-    func goalStatusText(for cadence: SpendingGoalCadence) -> String {
-        guard goal(for: cadence) != nil else { return "No goal" }
-
-        let percent = goalPercentUsed(for: cadence)
-        if percent >= 100 {
-            return "Limit reached"
-        } else if percent >= 75 {
-            return "Close to limit"
-        } else {
-            return "On track"
-        }
     }
 
     func goalStatus(for cadence: SpendingGoalCadence) -> GoalStatus {
@@ -465,36 +563,37 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     func goalMotivationText(for cadence: SpendingGoalCadence) -> String {
+        let strings = AppStrings.current()
         guard let goal = goal(for: cadence) else {
-            return "Create a simple spending limit to see your progress."
+            return strings.goalsNoGoalMessage
         }
 
-        switch goal.cadence {
-        case .weekly:
-            if goalPercentUsed(for: cadence) >= 100 {
-                return "Weekly spending has reached the limit. Pause and reset before the next cycle."
-            } else if goalPercentUsed(for: cadence) >= 75 {
-                return "You are getting close. Keep the rest of the week intentional."
+        switch (goal.cadence, goalStatus(for: cadence)) {
+        case (_, .limitReached):
+            return goal.cadence == .weekly ? strings.goalsWeeklyLimitReachedMessage : strings.goalsMonthlyLimitReachedMessage
+        case (_, .closeToLimit):
+            return goal.cadence == .weekly ? strings.goalsWeeklyCloseToLimitMessage : strings.goalsMonthlyCloseToLimitMessage
+        case (_, .onTrack):
+            if goal.cadence == .weekly {
+                return String(format: strings.goalsWeeklyOnTrackMessageTemplate, currency(remainingDailyBudget(for: cadence)))
             } else {
-                return "You still have room this week. Small purchases stay visible."
+                return String(
+                    format: strings.goalsMonthlyOnTrackMessageTemplate,
+                    currency(remainingDailyBudget(for: cadence)),
+                    currency(projectedMonthSpend)
+                )
             }
-        case .monthly:
-            if goalPercentUsed(for: cadence) >= 100 {
-                return "This month has reached the limit. Keep the next spend intentional."
-            } else if goalPercentUsed(for: cadence) >= 75 {
-                return "You are in the caution zone. Watch the remaining budget carefully."
-            } else {
-                return "There is still room in the monthly budget."
-            }
+        case (_, .none):
+            return strings.goalsNoGoalMessage
         }
     }
 
     func goalPeriodLabel(for cadence: SpendingGoalCadence) -> String {
         switch cadence {
         case .weekly:
-            return "this week"
+            return AppStrings.current().goalsPeriodThisWeek
         case .monthly:
-            return "this month"
+            return AppStrings.current().goalsPeriodThisMonth
         }
     }
 
@@ -509,6 +608,67 @@ final class ExpenseViewModel: ObservableObject {
 
     func goalRemainingText(for cadence: SpendingGoalCadence) -> String {
         currency(goalRemainingAmount(for: cadence))
+    }
+
+    func goalPercentUsedText(for cadence: SpendingGoalCadence) -> String {
+        String(format: "%.0f%%", goalPercentUsed(for: cadence))
+    }
+
+    func goalDaysLeftText(for cadence: SpendingGoalCadence) -> String {
+        let daysLeft = cadence == .weekly ? daysLeftInWeek : daysLeftInMonth
+        return "\(daysLeft)"
+    }
+
+    func goalRemainingDailyBudgetText(for cadence: SpendingGoalCadence) -> String {
+        currency(remainingDailyBudget(for: cadence))
+    }
+
+    func goalProjectedMonthSpendText() -> String {
+        currency(projectedMonthSpend)
+    }
+
+    func goalOverview(for cadence: SpendingGoalCadence) -> GoalOverview? {
+        guard let goal = goal(for: cadence) else { return nil }
+
+        let spent = goalSpentAmount(for: cadence)
+        let remaining = goalRemainingAmount(for: cadence)
+        let percentUsed = goalPercentUsed(for: cadence)
+        let status = goalStatus(for: cadence)
+
+        return GoalOverview(
+            cadence: cadence,
+            goal: goal,
+            spent: spent,
+            remaining: remaining,
+            percentUsed: percentUsed,
+            progressFraction: goalProgressFraction(for: cadence),
+            status: status,
+            daysLeftInPeriod: cadence == .weekly ? daysLeftInWeek : daysLeftInMonth,
+            remainingDailyBudget: remainingDailyBudget(for: cadence),
+            projectedMonthSpend: projectedMonthSpend,
+            statusText: goalStatusText(for: cadence),
+            motivationText: goalMotivationText(for: cadence)
+        )
+    }
+
+    var goalOverviews: [GoalOverview] {
+        [goalOverview(for: .weekly), goalOverview(for: .monthly)].compactMap { $0 }
+    }
+
+    func remainingDailyBudget(for cadence: SpendingGoalCadence) -> Double {
+        let remaining = goalRemainingAmount(for: cadence)
+        let daysLeft = max(cadence == .weekly ? daysLeftInWeek : daysLeftInMonth, 1)
+        return remaining / Double(daysLeft)
+    }
+
+    func remainingWeeklyBudget(for cadence: SpendingGoalCadence) -> Double {
+        switch cadence {
+        case .weekly:
+            return goalRemainingAmount(for: cadence)
+        case .monthly:
+            let weeksLeft = max(daysLeftInMonth / 7, 1)
+            return goalRemainingAmount(for: cadence) / Double(weeksLeft)
+        }
     }
 
     var hasWeeklyGoal: Bool {
@@ -610,6 +770,16 @@ final class ExpenseViewModel: ObservableObject {
 
     private func persistExpenses() {
         store.saveExpenses(expenses)
+        expenses = store.loadExpenses()
+        syncWidgetSummary()
+    }
+
+    private func persistGoals() {
+        goalStore.saveGoals(SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal))
+        let savedGoals = goalStore.loadGoals()
+        weeklyGoal = savedGoals.weekly
+        monthlyGoal = savedGoals.monthly
+        syncWidgetSummary()
     }
 
     private func resetDraftForm() {
@@ -693,6 +863,66 @@ final class ExpenseViewModel: ObservableObject {
         selectedCategory = suggestion.category
         draftSource = suggestion.source
         draftConfidence = suggestion.confidence
+    }
+
+    private func daysLeft(in range: TimeRange) -> Int {
+        switch range {
+        case .today:
+            return 1
+        case .week:
+            guard let interval = calendar.dateInterval(of: .weekOfYear, for: .now) else { return 7 }
+            let start = calendar.startOfDay(for: .now)
+            let end = calendar.startOfDay(for: interval.end)
+            let difference = calendar.dateComponents([.day], from: start, to: end).day ?? 0
+            return max(difference, 1)
+        case .month:
+            guard let interval = calendar.dateInterval(of: .month, for: .now) else { return 30 }
+            let start = calendar.startOfDay(for: .now)
+            let end = calendar.startOfDay(for: interval.end)
+            let difference = calendar.dateComponents([.day], from: start, to: end).day ?? 0
+            return max(difference, 1)
+        }
+    }
+
+    private func syncWidgetSummary() {
+        let hasContent = !expenses.isEmpty || hasGoal
+        guard hasContent else {
+            widgetSummaryStore.clearSummary()
+            #if canImport(WidgetKit)
+            WidgetCenter.shared.reloadAllTimelines()
+            #endif
+            return
+        }
+
+        let summary = WidgetSummary(
+            date: .now,
+            todayTotal: todayTotal,
+            weekTotal: weekTotal,
+            monthTotal: monthTotal,
+            topCategory: topCategory?.displayName ?? "No spending yet",
+            weeklyGoalStatus: widgetGoalStatus(for: .weekly),
+            monthlyGoalStatus: widgetGoalStatus(for: .monthly),
+            categoryTop3: categoryBreakdown.prefix(3).map { WidgetCategorySummary(name: $0.category.displayName, amount: $0.total) }
+        )
+
+        widgetSummaryStore.saveSummary(summary)
+
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
+    }
+
+    private func widgetGoalStatus(for cadence: SpendingGoalCadence) -> WidgetGoalStatus {
+        switch goalStatus(for: cadence) {
+        case .none:
+            return .none
+        case .onTrack:
+            return .onTrack
+        case .closeToLimit:
+            return .closeToLimit
+        case .limitReached:
+            return .limitReached
+        }
     }
 }
 

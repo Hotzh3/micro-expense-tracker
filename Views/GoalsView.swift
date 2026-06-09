@@ -23,7 +23,7 @@ struct GoalsView: View {
             VStack(alignment: .leading, spacing: 14) {
                 ScreenHeaderView(
                     title: strings.goalsHeader,
-                    subtitle: "Set weekly and monthly limits, then watch both update as you spend.",
+                    subtitle: strings.goalsHeaderSubtitle,
                     showsSettingsButton: true
                 )
 
@@ -79,19 +79,20 @@ struct GoalsView: View {
     }
 
     private func goalSection(for cadence: SpendingGoalCadence) -> some View {
-        let goal = viewModel.goal(for: cadence)
-        let title = cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle
+        let summary = viewModel.goalOverview(for: cadence)
         let emptyTitle = cadence == .weekly ? strings.goalsEmptyWeekly : strings.goalsEmptyMonthly
         let createTitle = cadence == .weekly ? strings.goalsCreateWeekly : strings.goalsCreateMonthly
+        let sectionTitle = cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle
+        let periodLabel = cadence == .weekly ? strings.goalsPeriodThisWeek : strings.goalsPeriodThisMonth
 
         return GlassCardView {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 10) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(title)
+                        Text(sectionTitle)
                             .font(.system(size: 20 * scale, weight: .semibold, design: .rounded))
                             .foregroundStyle(AppTheme.primaryText)
-                        Text(cadence == .weekly ? "This week" : "This month")
+                        Text(periodLabel)
                             .font(.system(size: 14 * scale))
                             .foregroundStyle(AppTheme.secondaryText)
                     }
@@ -101,24 +102,45 @@ struct GoalsView: View {
                     statusChip(for: cadence)
                 }
 
-                if let goal {
+                if let summary {
                     VStack(alignment: .leading, spacing: 12) {
                         progressBar(for: cadence)
 
-                        HStack(spacing: 10) {
-                            goalMetric(label: strings.goalsLimitLabel, value: viewModel.goalLimitText(for: cadence))
-                            goalMetric(label: strings.goalsSpentLabel, value: viewModel.goalSpentText(for: cadence))
-                            goalMetric(label: strings.goalsRemainingLabel, value: viewModel.goalRemainingText(for: cadence))
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                            goalMetric(label: strings.goalsLimitLabel, value: summary.limitText)
+                            goalMetric(label: strings.goalsSpentLabel, value: summary.spentText)
+                            goalMetric(label: strings.goalsRemainingLabel, value: summary.remainingText)
+                            goalMetric(label: strings.goalsPercentUsedLabel, value: viewModel.goalPercentUsedText(for: cadence))
                         }
 
-                        Text(viewModel.goalMotivationText(for: cadence))
+                        VStack(alignment: .leading, spacing: 8) {
+                            helperRow(
+                                label: strings.goalsDaysLeftLabel,
+                                value: viewModel.goalDaysLeftText(for: cadence)
+                            )
+                            helperRow(
+                                label: strings.goalsRemainingDailyBudgetLabel,
+                                value: viewModel.goalRemainingDailyBudgetText(for: cadence)
+                            )
+
+                            if cadence == .monthly {
+                                helperRow(
+                                    label: strings.goalsProjectedMonthSpendLabel,
+                                    value: viewModel.goalProjectedMonthSpendText()
+                                )
+                            }
+                        }
+
+                        Text(summary.motivationText)
                             .font(.system(size: 14 * scale))
                             .foregroundStyle(AppTheme.secondaryText)
 
                         HStack(spacing: 10) {
                             Button {
                                 selectedCadence = cadence
-                                limitText = String(format: "%.2f", goal.limit)
+                                if let goal = viewModel.goal(for: cadence) {
+                                    limitText = String(format: "%.2f", goal.limit)
+                                }
                                 focusedField = .limit
                             } label: {
                                 HStack(spacing: 6) {
@@ -202,7 +224,7 @@ struct GoalsView: View {
 
                 Picker(strings.goalsEditorTitle, selection: $selectedCadence) {
                     ForEach(SpendingGoalCadence.allCases) { cadence in
-                        Text(cadence.title).tag(cadence)
+                        Text(cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle).tag(cadence)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -244,7 +266,7 @@ struct GoalsView: View {
 
         switch viewModel.goalStatus(for: cadence) {
         case .onTrack:
-            fill = Color.white.opacity(0.12)
+            fill = AppTheme.primaryText.opacity(0.12)
         case .closeToLimit:
             fill = Color.yellow.opacity(0.18)
         case .limitReached:
@@ -281,16 +303,34 @@ struct GoalsView: View {
         .frame(height: 14)
     }
 
+    private func helperRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 13 * appTextSize.scale))
+                .foregroundStyle(AppTheme.secondaryText)
+            Spacer()
+            Text(value)
+                .font(.system(size: 13 * appTextSize.scale, weight: .semibold))
+                .foregroundStyle(AppTheme.primaryText)
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppTheme.cardFill)
+        )
+    }
+
     private func progressFill(for cadence: SpendingGoalCadence) -> Color {
         switch viewModel.goalStatus(for: cadence) {
         case .onTrack:
-            return Color.white
+            return AppTheme.primaryText
         case .closeToLimit:
-            return Color.yellow
+            return Color.orange
         case .limitReached:
             return Color.red
         case .none:
-            return Color.white
+            return AppTheme.primaryText
         }
     }
 

@@ -1,17 +1,30 @@
 # Widget Foundation
 
-Pocket Leak includes a basic WidgetKit extension that shows static demo values for today, this week, this month, and a top category.
+Pocket Leak includes a WidgetKit extension that can read a shared summary written by the main app. If App Group is not enabled, the widget falls back to a demo/empty state instead of crashing.
 
 ## Current State
 
 - The widget builds as a lightweight foundation.
-- It does not read shared app storage yet.
-- It is intentionally safe and demo-ready without App Group wiring.
+- The main app writes a shared `WidgetSummary` snapshot through `WidgetSummaryStore`.
+- The widget reads the same summary from the App Group container when available.
+- It falls back to demo/empty states when the shared container cannot be read.
 - It supports small, medium, and large families with black-and-white layouts.
+- The widget can show today, week, month, top category, weekly/monthly goal status, and the top 3 categories.
 
 ## Future Work
 
-- Add shared App Group storage.
-- Read the live spending summary from the main app container.
-- Surface a real weekly or monthly trend once shared persistence is in place.
-- Add a shared summary provider once the App Group container is enabled in Signing & Capabilities.
+- Add richer goal progress rendering once widgets need limit percentages.
+- Surface a live weekly or monthly trend once the shared payload grows.
+- Add optional tap-through deep links from the widget to Quick Add or Goals.
+
+## App Group Setup
+
+- App Group identifier: `group.com.josema.PocketLeak`
+- The project is prepared with entitlements in `JTap.entitlements` and `Widgets/PocketLeakWidget/PocketLeakWidget.entitlements`.
+- If Personal Team signing blocks the capability, enable App Groups manually in Xcode for both targets and confirm the App Group exists in the Apple Developer portal.
+
+## Troubleshooting
+
+- If the widget only shows demo data, verify the App Group entitlement is enabled for both targets.
+- If the widget shows an empty state, open Pocket Leak and save at least one expense so the app can write the shared summary.
+- If the widget does not refresh, confirm the main app is calling `WidgetCenter.shared.reloadAllTimelines()` after expense or goal changes.

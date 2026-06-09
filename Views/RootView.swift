@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Combine
 
 struct RootView: View {
     enum AppTab: Hashable, CaseIterable {
@@ -15,19 +16,21 @@ struct RootView: View {
     @AppStorage(AppPreferenceKeys.textSize) private var textSizeRaw = AppTextSize.medium.rawValue
     @AppStorage(AppPreferenceKeys.language) private var languageRaw = AppLanguage.english.rawValue
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
+    @Environment(\.openURL) private var openURL
 
     @State private var selectedTab: AppTab = .quickAdd
     @State private var showLaunchSplash = true
     @State private var didRunSplashTimer = false
     @State private var showSettings = false
     @State private var splashPhrase = LaunchSplashView.randomPhrase()
+    @State private var isKeyboardVisible = false
 
     var body: some View {
         let appearance = AppAppearance(rawValue: appearanceRaw) ?? .dark
         let textSize = AppTextSize(rawValue: textSizeRaw) ?? .medium
         let language = AppLanguage(rawValue: languageRaw) ?? .english
         let strings = AppStrings.current()
-        let bottomContentInset: CGFloat = 132
+        let bottomContentInset: CGFloat = isKeyboardVisible ? 24 : 132
         let tabBarBottomPadding: CGFloat = 2
         let tabBarContainerHeight: CGFloat = 104
 
@@ -45,14 +48,13 @@ struct RootView: View {
                     .environment(\.locale, language.locale)
                     .preferredColorScheme(appearance.colorScheme)
                     .padding(.bottom, bottomContentInset)
-                    .ignoresSafeArea(.keyboard, edges: .bottom)
 
                 if showLaunchSplash {
                     LaunchSplashView(phrase: splashPhrase)
                         .ignoresSafeArea()
                         .transition(.opacity)
                         .zIndex(20)
-                } else {
+                } else if !isKeyboardVisible {
                     VStack(spacing: 0) {
                         Spacer(minLength: 0)
 
@@ -70,7 +72,12 @@ struct RootView: View {
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
-            .ignoresSafeArea(.keyboard, edges: .bottom)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            isKeyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            isKeyboardVisible = false
         }
         .task {
             guard !didRunSplashTimer else { return }
@@ -107,8 +114,15 @@ struct RootView: View {
                 onCopyQuickAddURL: {
                     UIPasteboard.general.string = "pocketleak://quick-add"
                 },
+                onCopyPrefillURLExample: {
+                    UIPasteboard.general.string = "pocketleak://add?amount=120&merchant=Oxxo&category=food"
+                },
+                onOpenQuickAddRoute: {
+                    guard let url = URL(string: "pocketleak://quick-add") else { return }
+                    openURL(url)
+                },
                 onResetLocalData: {
-                    viewModel.clearAllExpenses()
+                    viewModel.clearAllData()
                 }
             )
         }
@@ -126,6 +140,7 @@ struct RootView: View {
                 selectedTab = .goals
             case .quickAdd(let draft):
                 selectedTab = .quickAdd
+                viewModel.resetDraftForExternalEntry()
                 viewModel.prefillDraft(
                     amount: draft.amount,
                     merchant: draft.merchant,
@@ -133,6 +148,9 @@ struct RootView: View {
                     source: draft.hasPrefill ? .imported : .manual
                 )
                 viewModel.clearParseFeedback()
+            case .parseText(let text):
+                selectedTab = .quickAdd
+                viewModel.loadImportedTextAndParse(text)
             }
         }
     }
@@ -172,14 +190,14 @@ struct RootView: View {
             .background(AppTheme.background)
         }
         .frame(height: 92 * scale)
-        .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(AppTheme.background)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(AppTheme.cardBorder, lineWidth: 1)
-                )
-        )
+            .background(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(AppTheme.cardFill)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            .stroke(AppTheme.cardBorder, lineWidth: 1)
+                    )
+            )
         .shadow(color: .black.opacity(0.28), radius: 20, x: 0, y: 12)
     }
 
@@ -236,6 +254,7 @@ private enum PocketLeakRoute {
     case history
     case insights
     case goals
+    case parseText(String)
 
     init?(url: URL) {
         guard let scheme = url.scheme?.lowercased(), ["jtap", "pocketleak"].contains(scheme) else {
@@ -256,6 +275,9 @@ private enum PocketLeakRoute {
             self = .insights
         case "goals":
             self = .goals
+        case "parse":
+            let text = Self.queryValue(named: "text", in: queryItems) ?? ""
+            self = .parseText(text)
         case "add", "quick-add", "quickadd", "":
             let draft = QuickAddDraft(
                 amount: Self.queryValue(named: "amount", in: queryItems),

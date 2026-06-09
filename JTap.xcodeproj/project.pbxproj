@@ -10,16 +10,21 @@
 		0BDCD10B88237D0CEDDDA48C /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0F11CF5730320D4AAC50BC8 /* QuickAddView.swift */; };
 		19AFDA6C7B8C4EF11A9B8831 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A442EA48F29B0B0E0C9744A6 /* HistoryView.swift */; };
 		1ED52494759FE144AC3C0927 /* ScreenHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEC44A49ECF410342E39AEA1 /* ScreenHeaderView.swift */; };
+		2623D6569CAB84CE8FCB94DF /* WidgetSummaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC04FA705318868C3B6619FA /* WidgetSummaryStore.swift */; };
 		32F0830027148034CFA631B6 /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = C879640230F5C9FE3109AB05 /* Expense.swift */; };
 		40539938AA0B3D0152BF8602 /* ExpenseTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */; };
 		4B4C472BC7AF1E95C6C9F187 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FDE24A0CC7C4AB709DA7C0 /* DashboardView.swift */; };
 		4CED521D51A7BCB44B702A05 /* GoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09ABF81BE8B2231F82E79045 /* GoalsView.swift */; };
 		4CF52795AFA522FCF0F823DE /* ExpenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */; };
 		5693FEFE719BEEB2C97DA03D /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */; };
+		5A15308E9B2C48E45F436523 /* ExpenseTextParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9F6E3EDECA62759847B25D /* ExpenseTextParserTests.swift */; };
 		6DB02DD256C195E94E19C1A9 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF8C91F013BFC9F006FF742 /* AppTheme.swift */; };
+		7DDA59AC68BD5DCE61E401E6 /* WidgetSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3381D146B3956102E5D5925D /* WidgetSummary.swift */; };
 		8F3CFC9678B38E0B42DE06DD /* LaunchSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E3ABD1CB31A26030C2045ED /* LaunchSplashView.swift */; };
+		9023536FA369F6AB58AFE27A /* WidgetSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3381D146B3956102E5D5925D /* WidgetSummary.swift */; };
 		9319939C894C2063EF69BCCD /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0708AE58614758F77DC4A5 /* PrimaryButton.swift */; };
 		9EACBDD6BF8D6FDF477F4A9B /* SpendingGoal.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEC18AF50EA83BA39FC2A50 /* SpendingGoal.swift */; };
+		A1B07216CAF4DDDFA962B909 /* WidgetSummaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC04FA705318868C3B6619FA /* WidgetSummaryStore.swift */; };
 		B3B5DFC6979C639EBE29F03F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F1861775BC0F4EB582B26B /* Assets.xcassets */; };
 		B85A4CFE82C62DFE72779400 /* JTapApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB8E6910BD6B24989A22861D /* JTapApp.swift */; };
 		BDDD29FC1D96F39B2BC86141 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25A7D50F01059CAEA99CE4C /* RootView.swift */; };
@@ -47,6 +52,13 @@
 			remoteGlobalIDString = 0730112666379B323D4781A4;
 			remoteInfo = PocketLeakWidget;
 		};
+		7FE0C55D6BB388D4785F4964 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 721AD8BEF16B0A94DB85C85F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 29858ECD7DA6FD28E8B22A7C;
+			remoteInfo = JTap;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -71,6 +83,7 @@
 		23440D26C2CD475D6FD16A68 /* PocketLeakWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PocketLeakWidget.swift; sourceTree = "<group>"; };
 		2400B34CA586FB694B7FBC85 /* JTap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JTap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		3381D146B3956102E5D5925D /* WidgetSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSummary.swift; sourceTree = "<group>"; };
 		3D99359ED59F8CD20BCCAF4A /* PocketLeakWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PocketLeakWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		476EA1D36938A3260F78056A /* SettingsAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAction.swift; sourceTree = "<group>"; };
 		4E3ABD1CB31A26030C2045ED /* LaunchSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSplashView.swift; sourceTree = "<group>"; };
@@ -79,12 +92,15 @@
 		57F9119760DF1AB8519002B8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		68AEAC3B57EA1315B4B34AD7 /* ExpenseJSONExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseJSONExport.swift; sourceTree = "<group>"; };
 		697605CC219504DC542E8B53 /* MetricCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCardView.swift; sourceTree = "<group>"; };
+		6A9F6E3EDECA62759847B25D /* ExpenseTextParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseTextParserTests.swift; sourceTree = "<group>"; };
 		9934F8C17BF826DD6A372998 /* ExpenseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseViewModel.swift; sourceTree = "<group>"; };
 		A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseTextParser.swift; sourceTree = "<group>"; };
 		A442EA48F29B0B0E0C9744A6 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseStore.swift; sourceTree = "<group>"; };
 		ABF8C91F013BFC9F006FF742 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		AC04FA705318868C3B6619FA /* WidgetSummaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSummaryStore.swift; sourceTree = "<group>"; };
 		ACEC18AF50EA83BA39FC2A50 /* SpendingGoal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingGoal.swift; sourceTree = "<group>"; };
+		B4C0027C385733B5B924FCD5 /* JTapTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JTapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4E89F1506DA204E117366DB /* CategoryPillView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPillView.swift; sourceTree = "<group>"; };
 		C879640230F5C9FE3109AB05 /* Expense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expense.swift; sourceTree = "<group>"; };
 		D0F11CF5730320D4AAC50BC8 /* QuickAddView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddView.swift; sourceTree = "<group>"; };
@@ -137,6 +153,22 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		40D7E4F010179CB545A928F1 /* JTapTests */ = {
+			isa = PBXGroup;
+			children = (
+				6A9F6E3EDECA62759847B25D /* ExpenseTextParserTests.swift */,
+			);
+			path = JTapTests;
+			sourceTree = "<group>";
+		};
+		417F24B9BAA6ADB741ED9AF4 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				40D7E4F010179CB545A928F1 /* JTapTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
 		A03A0F803EF7F6F62E9DD0C3 /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -145,6 +177,7 @@
 				A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */,
 				A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */,
 				D833AAC8B8EC5FD77B1FDD1C /* GoalStore.swift */,
+				AC04FA705318868C3B6619FA /* WidgetSummaryStore.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -172,6 +205,7 @@
 				2D1E9D0D093D75369E66BA80 /* App */,
 				D9DABE4ADCB0454E641AF714 /* Models */,
 				A03A0F803EF7F6F62E9DD0C3 /* Services */,
+				417F24B9BAA6ADB741ED9AF4 /* Tests */,
 				B293835595BE8FEFF4E63761 /* Theme */,
 				F5F96B89E1A55795DDB0D7CF /* ViewModels */,
 				2B7696E02031B3648B3BA892 /* Views */,
@@ -186,6 +220,7 @@
 				C879640230F5C9FE3109AB05 /* Expense.swift */,
 				F2EE9E8808FBF2D8C177AAE4 /* ExpenseCategory.swift */,
 				ACEC18AF50EA83BA39FC2A50 /* SpendingGoal.swift */,
+				3381D146B3956102E5D5925D /* WidgetSummary.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -194,6 +229,7 @@
 			isa = PBXGroup;
 			children = (
 				2400B34CA586FB694B7FBC85 /* JTap.app */,
+				B4C0027C385733B5B924FCD5 /* JTapTests.xctest */,
 				3D99359ED59F8CD20BCCAF4A /* PocketLeakWidget.appex */,
 			);
 			name = Products;
@@ -247,6 +283,24 @@
 			productReference = 2400B34CA586FB694B7FBC85 /* JTap.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B69C9FA86621189D658CCF34 /* JTapTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FDFFDD37B4754C29EC6054DC /* Build configuration list for PBXNativeTarget "JTapTests" */;
+			buildPhases = (
+				5D41F06866451A86DF9333B6 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E1AC11E3442A2186FC65FF3C /* PBXTargetDependency */,
+			);
+			name = JTapTests;
+			packageProductDependencies = (
+			);
+			productName = JTapTests;
+			productReference = B4C0027C385733B5B924FCD5 /* JTapTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -260,6 +314,9 @@
 						ProvisioningStyle = Automatic;
 					};
 					29858ECD7DA6FD28E8B22A7C = {
+						ProvisioningStyle = Automatic;
+					};
+					B69C9FA86621189D658CCF34 = {
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -279,6 +336,7 @@
 			projectRoot = "";
 			targets = (
 				29858ECD7DA6FD28E8B22A7C /* JTap */,
+				B69C9FA86621189D658CCF34 /* JTapTests */,
 				0730112666379B323D4781A4 /* PocketLeakWidget */,
 			);
 		};
@@ -327,6 +385,16 @@
 				CDEEB59D76C791E58D1821D8 /* SettingsAction.swift in Sources */,
 				FBF6EFAE68754841E50AEFDB /* SettingsView.swift in Sources */,
 				9EACBDD6BF8D6FDF477F4A9B /* SpendingGoal.swift in Sources */,
+				7DDA59AC68BD5DCE61E401E6 /* WidgetSummary.swift in Sources */,
+				2623D6569CAB84CE8FCB94DF /* WidgetSummaryStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5D41F06866451A86DF9333B6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5A15308E9B2C48E45F436523 /* ExpenseTextParserTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -335,6 +403,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				F1645F14BF4DF909B0B99FD0 /* PocketLeakWidget.swift in Sources */,
+				9023536FA369F6AB58AFE27A /* WidgetSummary.swift in Sources */,
+				A1B07216CAF4DDDFA962B909 /* WidgetSummaryStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -346,12 +416,18 @@
 			target = 0730112666379B323D4781A4 /* PocketLeakWidget */;
 			targetProxy = 7AAA7D33CB0505571C51CFD4 /* PBXContainerItemProxy */;
 		};
+		E1AC11E3442A2186FC65FF3C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 29858ECD7DA6FD28E8B22A7C /* JTap */;
+			targetProxy = 7FE0C55D6BB388D4785F4964 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		087E7CD966AAB80A05EC2BD3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Widgets/PocketLeakWidget/PocketLeakWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -431,6 +507,26 @@
 			};
 			name = Debug;
 		};
+		725EBA8A2626257C7AC3848B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.josema.JTapTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/JTap.app/JTap";
+			};
+			name = Release;
+		};
 		7983D5B307D1994C26182D3B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -490,6 +586,7 @@
 		A8B55071270B6088F070171C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Widgets/PocketLeakWidget/PocketLeakWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -510,6 +607,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = JTap.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 8FXCTDGXSV;
@@ -526,10 +624,31 @@
 			};
 			name = Release;
 		};
+		E506B8A8AD79732C42902F7B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.josema.JTapTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/JTap.app/JTap";
+			};
+			name = Debug;
+		};
 		FD90990729778C48C5E455C2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = JTap.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 8FXCTDGXSV;
@@ -572,6 +691,15 @@
 			buildConfigurations = (
 				FD90990729778C48C5E455C2 /* Debug */,
 				D2704303E8FCEB85345F1A80 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FDFFDD37B4754C29EC6054DC /* Build configuration list for PBXNativeTarget "JTapTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E506B8A8AD79732C42902F7B /* Debug */,
+				725EBA8A2626257C7AC3848B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
