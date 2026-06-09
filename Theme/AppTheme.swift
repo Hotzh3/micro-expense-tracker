@@ -16,7 +16,7 @@ enum AppTheme {
         case .system, .dark:
             return Color.black
         case .light:
-            return Color.white
+            return Color(red: 0.98, green: 0.98, blue: 0.975)
         }
     }
 
@@ -30,11 +30,21 @@ enum AppTheme {
     }
 
     static var secondaryText: Color {
-        primaryText.opacity(0.7)
+        switch appearance {
+        case .system, .dark:
+            return primaryText.opacity(0.7)
+        case .light:
+            return Color(red: 0.20, green: 0.20, blue: 0.22)
+        }
     }
 
     static var tertiaryText: Color {
-        primaryText.opacity(0.45)
+        switch appearance {
+        case .system, .dark:
+            return primaryText.opacity(0.45)
+        case .light:
+            return Color(red: 0.38, green: 0.38, blue: 0.40)
+        }
     }
 
     static var cardFill: Color {
@@ -42,7 +52,7 @@ enum AppTheme {
         case .system, .dark:
             return Color.white.opacity(0.06)
         case .light:
-            return Color.black.opacity(0.04)
+            return Color.white
         }
     }
 
@@ -51,7 +61,7 @@ enum AppTheme {
         case .system, .dark:
             return Color.white.opacity(0.14)
         case .light:
-            return Color.black.opacity(0.12)
+            return Color.black.opacity(0.14)
         }
     }
 
@@ -64,7 +74,7 @@ enum AppTheme {
         case .system, .dark:
             return Color.white.opacity(0.08)
         case .light:
-            return Color.black.opacity(0.05)
+            return Color.black.opacity(0.04)
         }
     }
 
@@ -73,7 +83,25 @@ enum AppTheme {
         case .system, .dark:
             return Color.white.opacity(0.18)
         case .light:
-            return Color.black.opacity(0.12)
+            return Color.black.opacity(0.08)
+        }
+    }
+
+    static var inputFill: Color {
+        switch appearance {
+        case .system, .dark:
+            return Color.white.opacity(0.06)
+        case .light:
+            return Color.black.opacity(0.04)
+        }
+    }
+
+    static var inputBorder: Color {
+        switch appearance {
+        case .system, .dark:
+            return Color.white.opacity(0.14)
+        case .light:
+            return Color.black.opacity(0.18)
         }
     }
 }

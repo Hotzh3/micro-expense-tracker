@@ -75,9 +75,11 @@ struct AppStrings {
     let goalsTab: String
     let quickAddHeader: String
     let dashboardHeader: String
+    let dashboardHeaderSubtitle: String
     let historyHeader: String
     let insightsHeader: String
     let goalsHeader: String
+    let goalsHeaderSubtitle: String
     let settingsTitle: String
     let settingsDescription: String
     let appearanceTitle: String
@@ -98,11 +100,13 @@ struct AppStrings {
     let resetButton: String
     let resetConfirmationTitle: String
     let resetConfirmationMessage: String
-    let deleteAllExpenses: String
+    let deleteAllData: String
     let cancel: String
     let backTapTitle: String
     let backTapDescription: String
     let copyQuickAddURL: String
+    let copyPrefillURLExample: String
+    let openQuickAddRoute: String
     let openQuickAdd: String
     let openHistoryExports: String
     let openGoals: String
@@ -112,6 +116,12 @@ struct AppStrings {
     let language: String
     let resetLocalData: String
     let backTapQuickAdd: String
+    let backTapStepOpenShortcuts: String
+    let backTapStepCreateShortcut: String
+    let backTapStepAddOpenURLs: String
+    let backTapStepUseQuickAddURL: String
+    let backTapStepOpenAccessibility: String
+    let backTapStepSelectShortcut: String
     let emptyNoExpenses: String
     let emptyNoInsights: String
     let emptyNoGoals: String
@@ -127,13 +137,29 @@ struct AppStrings {
     let notePlaceholder: String
     let pasteTitle: String
     let pasteDescription: String
+    let pasteFromClipboard: String
+    let clipboardEmptyMessage: String
     let parseTextButton: String
     let useParsedExpenseButton: String
     let saveExpenseButton: String
     let expenseSaved: String
+    let parsedPreviewTitle: String
+    let parsedPreviewSubtitle: String
+    let merchantLabel: String
+    let confidenceLabel: String
+    let sourceLabel: String
+    let parsedTextSource: String
+    let ready: String
+    let needsAttention: String
+    let missingAmountParseError: String
     let dashboardQuickSnapshotTitle: String
     let dashboardCategoryDistributionTitle: String
     let dashboardRecentTrendTitle: String
+    let dashboardGoalsTitle: String
+    let dashboardGoalsSubtitle: String
+    let dashboardGoalsCtaTitle: String
+    let dashboardGoalsCtaSubtitle: String
+    let dashboardGoalsCtaButton: String
     let dashboardNoCategoryDistribution: String
     let dashboardNoRecentTrend: String
     let historyExportsTitle: String
@@ -156,9 +182,23 @@ struct AppStrings {
     let goalsLimitLabel: String
     let goalsSpentLabel: String
     let goalsRemainingLabel: String
+    let goalsPercentUsedLabel: String
+    let goalsDaysLeftLabel: String
+    let goalsRemainingDailyBudgetLabel: String
+    let goalsProjectedMonthSpendLabel: String
     let goalsStatusOnTrack: String
     let goalsStatusCloseToLimit: String
     let goalsStatusLimitReached: String
+    let goalsNoGoalStatus: String
+    let goalsNoGoalMessage: String
+    let goalsPeriodThisWeek: String
+    let goalsPeriodThisMonth: String
+    let goalsWeeklyOnTrackMessageTemplate: String
+    let goalsWeeklyCloseToLimitMessage: String
+    let goalsWeeklyLimitReachedMessage: String
+    let goalsMonthlyOnTrackMessageTemplate: String
+    let goalsMonthlyCloseToLimitMessage: String
+    let goalsMonthlyLimitReachedMessage: String
     let goalsEmptyWeekly: String
     let goalsEmptyMonthly: String
     let goalsEditorTitle: String
@@ -179,9 +219,11 @@ struct AppStrings {
                 goalsTab: "Goals",
                 quickAddHeader: "Quick Add",
                 dashboardHeader: "Dashboard",
+                dashboardHeaderSubtitle: "Track daily spend, month totals, and the categories leaking the most.",
                 historyHeader: "History",
                 insightsHeader: "Insights",
                 goalsHeader: "Goals",
+                goalsHeaderSubtitle: "Track weekly and monthly limits side by side so the pace stays visible.",
                 settingsTitle: "Settings",
                 settingsDescription: "Minimal local-first expense capture with parsing, exports, and goal tracking.",
                 appearanceTitle: "Appearance",
@@ -201,12 +243,14 @@ struct AppStrings {
                 resetTitle: "Reset",
                 resetButton: "Reset Local Data",
                 resetConfirmationTitle: "Reset local data?",
-                resetConfirmationMessage: "This deletes the local expense store on this device. It cannot be undone.",
-                deleteAllExpenses: "Delete All Expenses",
+                resetConfirmationMessage: "This deletes local expenses and goals on this device. It cannot be undone.",
+                deleteAllData: "Delete All Data",
                 cancel: "Cancel",
                 backTapTitle: "Back Tap Quick Add",
-                backTapDescription: "iOS cannot let Pocket Leak detect Back Tap directly. Use a Shortcut that opens pocketleak://quick-add, then assign that Shortcut to Back Tap.",
+                backTapDescription: "iOS cannot let Pocket Leak detect Back Tap directly. Build a Shortcut with Open URLs, point it at pocketleak://quick-add, then assign that Shortcut to Back Tap.",
                 copyQuickAddURL: "Copy pocketleak://quick-add",
+                copyPrefillURLExample: "Copy Prefill URL Example",
+                openQuickAddRoute: "Open Quick Add Route",
                 openQuickAdd: "Open Quick Add",
                 openHistoryExports: "Open History Exports",
                 openGoals: "Open Goals",
@@ -216,6 +260,12 @@ struct AppStrings {
                 language: "Language",
                 resetLocalData: "Reset Local Data",
                 backTapQuickAdd: "Back Tap Quick Add",
+                backTapStepOpenShortcuts: "1. Open the Shortcuts app.",
+                backTapStepCreateShortcut: "2. Create a new shortcut.",
+                backTapStepAddOpenURLs: "3. Add the Open URLs action.",
+                backTapStepUseQuickAddURL: "4. Set the URL to pocketleak://quick-add.",
+                backTapStepOpenAccessibility: "5. Go to Settings > Accessibility > Touch > Back Tap.",
+                backTapStepSelectShortcut: "6. Choose Double Tap and select your shortcut.",
                 emptyNoExpenses: "Add your first micro-expense from Quick Add.",
                 emptyNoInsights: "Add a few expenses and the app will surface spending patterns here.",
                 emptyNoGoals: "Create a spending goal to track your limit.",
@@ -231,13 +281,29 @@ struct AppStrings {
                 notePlaceholder: "Optional note",
                 pasteTitle: "Paste Notification Text",
                 pasteDescription: "Paste a bank alert or transaction message. Pocket Leak only parses text you paste yourself, keeping the flow privacy-safe.",
+                pasteFromClipboard: "Paste from Clipboard",
+                clipboardEmptyMessage: "Clipboard is empty. Copy transaction text first.",
                 parseTextButton: "Parse Text",
                 useParsedExpenseButton: "Use Parsed Expense",
                 saveExpenseButton: "Save Expense",
                 expenseSaved: "Expense saved",
+                parsedPreviewTitle: "Parsed Preview",
+                parsedPreviewSubtitle: "Review the extracted details before saving.",
+                merchantLabel: "Merchant",
+                confidenceLabel: "Confidence",
+                sourceLabel: "Source",
+                parsedTextSource: "Parsed text",
+                ready: "Ready",
+                needsAttention: "Needs attention",
+                missingAmountParseError: "I could not find an amount. Include the charge total, then try Parse Text again.",
                 dashboardQuickSnapshotTitle: "Quick Snapshot",
                 dashboardCategoryDistributionTitle: "Category Distribution",
                 dashboardRecentTrendTitle: "Recent Spending Trend",
+                dashboardGoalsTitle: "Goals snapshot",
+                dashboardGoalsSubtitle: "Keep both budget cadences visible without leaving the dashboard.",
+                dashboardGoalsCtaTitle: "Add a goal",
+                dashboardGoalsCtaSubtitle: "Create a weekly or monthly limit to see your remaining budget here.",
+                dashboardGoalsCtaButton: "Go to Goals",
                 dashboardNoCategoryDistribution: "Add a few expenses to see where the leaks cluster.",
                 dashboardNoRecentTrend: "Add expenses to see your recent spending trend.",
                 historyExportsTitle: "Exports",
@@ -260,9 +326,23 @@ struct AppStrings {
                 goalsLimitLabel: "Limit",
                 goalsSpentLabel: "Spent",
                 goalsRemainingLabel: "Remaining",
+                goalsPercentUsedLabel: "% Used",
+                goalsDaysLeftLabel: "Days Left",
+                goalsRemainingDailyBudgetLabel: "Remaining per day",
+                goalsProjectedMonthSpendLabel: "Projected month spend",
                 goalsStatusOnTrack: "On track",
                 goalsStatusCloseToLimit: "Close to limit",
                 goalsStatusLimitReached: "Limit reached",
+                goalsNoGoalStatus: "No goal",
+                goalsNoGoalMessage: "Create a weekly or monthly spending limit to track progress locally.",
+                goalsPeriodThisWeek: "this week",
+                goalsPeriodThisMonth: "this month",
+                goalsWeeklyOnTrackMessageTemplate: "You have %@ per day left this week.",
+                goalsWeeklyCloseToLimitMessage: "You are getting close. Keep the rest of the week intentional.",
+                goalsWeeklyLimitReachedMessage: "Weekly spending has reached the limit. Pause before the next cycle.",
+                goalsMonthlyOnTrackMessageTemplate: "You have %@ per day left this month. At this pace, you would spend %@ this month.",
+                goalsMonthlyCloseToLimitMessage: "You are in the caution zone. Watch the remaining budget carefully.",
+                goalsMonthlyLimitReachedMessage: "This month has reached the limit. Keep the next spend intentional.",
                 goalsEmptyWeekly: "No weekly goal yet.",
                 goalsEmptyMonthly: "No monthly goal yet.",
                 goalsEditorTitle: "Goal Editor",
@@ -280,9 +360,11 @@ struct AppStrings {
                 goalsTab: "Metas",
                 quickAddHeader: "Captura rápida",
                 dashboardHeader: "Panel",
+                dashboardHeaderSubtitle: "Sigue el gasto diario, totales mensuales y las categorías que más fugan.",
                 historyHeader: "Historial",
                 insightsHeader: "Análisis",
                 goalsHeader: "Metas",
+                goalsHeaderSubtitle: "Sigue límites semanales y mensuales al mismo tiempo para ver el ritmo.",
                 settingsTitle: "Ajustes",
                 settingsDescription: "Captura de gastos minimalista y local con análisis, exportaciones y metas.",
                 appearanceTitle: "Apariencia",
@@ -302,12 +384,14 @@ struct AppStrings {
                 resetTitle: "Restablecer",
                 resetButton: "Borrar datos locales",
                 resetConfirmationTitle: "¿Borrar datos locales?",
-                resetConfirmationMessage: "Esto borra el almacenamiento local de gastos en este dispositivo. No se puede deshacer.",
-                deleteAllExpenses: "Borrar todos los gastos",
+                resetConfirmationMessage: "Esto borra los gastos y las metas locales en este dispositivo. No se puede deshacer.",
+                deleteAllData: "Borrar todos los datos",
                 cancel: "Cancelar",
                 backTapTitle: "Quick Add con Back Tap",
-                backTapDescription: "iOS no permite que Pocket Leak detecte Back Tap directamente. Usa un Shortcut que abra pocketleak://quick-add y asígnalo a Back Tap.",
+                backTapDescription: "iOS no permite que Pocket Leak detecte Back Tap directamente. Crea un Shortcut con Abrir URLs, apunta a pocketleak://quick-add y asígnalo a Back Tap.",
                 copyQuickAddURL: "Copiar pocketleak://quick-add",
+                copyPrefillURLExample: "Copiar ejemplo de URL prellenada",
+                openQuickAddRoute: "Abrir ruta de Captura",
                 openQuickAdd: "Abrir Captura",
                 openHistoryExports: "Abrir exportaciones",
                 openGoals: "Abrir metas",
@@ -317,6 +401,12 @@ struct AppStrings {
                 language: "Idioma",
                 resetLocalData: "Borrar datos locales",
                 backTapQuickAdd: "Quick Add con Back Tap",
+                backTapStepOpenShortcuts: "1. Abre la app Atajos.",
+                backTapStepCreateShortcut: "2. Crea un nuevo atajo.",
+                backTapStepAddOpenURLs: "3. Agrega la acción Abrir URLs.",
+                backTapStepUseQuickAddURL: "4. Define la URL como pocketleak://quick-add.",
+                backTapStepOpenAccessibility: "5. Ve a Ajustes > Accesibilidad > Tocar > Back Tap.",
+                backTapStepSelectShortcut: "6. Elige Doble toque y selecciona tu atajo.",
                 emptyNoExpenses: "Agrega tu primer microgasto desde Captura.",
                 emptyNoInsights: "Agrega algunos gastos y aquí aparecerán patrones de gasto.",
                 emptyNoGoals: "Crea una meta de gasto para seguir tu límite.",
@@ -332,13 +422,29 @@ struct AppStrings {
                 notePlaceholder: "Nota opcional",
                 pasteTitle: "Pegar texto de notificación",
                 pasteDescription: "Pega una alerta bancaria o mensaje de transacción. Pocket Leak solo analiza texto que tú pegas, manteniendo el flujo privado.",
+                pasteFromClipboard: "Pegar desde portapapeles",
+                clipboardEmptyMessage: "El portapapeles está vacío. Copia primero el texto de la compra.",
                 parseTextButton: "Analizar texto",
                 useParsedExpenseButton: "Usar gasto analizado",
                 saveExpenseButton: "Guardar gasto",
                 expenseSaved: "Gasto guardado",
+                parsedPreviewTitle: "Vista previa analizada",
+                parsedPreviewSubtitle: "Revisa los datos extraídos antes de guardar.",
+                merchantLabel: "Comerciante",
+                confidenceLabel: "Confianza",
+                sourceLabel: "Fuente",
+                parsedTextSource: "Texto analizado",
+                ready: "Listo",
+                needsAttention: "Requiere atención",
+                missingAmountParseError: "No pude encontrar un monto. Incluye el total del cargo e intenta Analizar texto de nuevo.",
                 dashboardQuickSnapshotTitle: "Resumen rápido",
                 dashboardCategoryDistributionTitle: "Distribución por categoría",
                 dashboardRecentTrendTitle: "Tendencia reciente",
+                dashboardGoalsTitle: "Resumen de metas",
+                dashboardGoalsSubtitle: "Mantén visibles ambos ritmos de presupuesto sin salir del panel.",
+                dashboardGoalsCtaTitle: "Agregar una meta",
+                dashboardGoalsCtaSubtitle: "Crea un límite semanal o mensual para ver aquí tu presupuesto restante.",
+                dashboardGoalsCtaButton: "Ir a Metas",
                 dashboardNoCategoryDistribution: "Agrega algunos gastos para ver dónde se concentran las fugas.",
                 dashboardNoRecentTrend: "Agrega gastos para ver tu tendencia reciente.",
                 historyExportsTitle: "Exportaciones",
@@ -361,9 +467,23 @@ struct AppStrings {
                 goalsLimitLabel: "Límite",
                 goalsSpentLabel: "Gastado",
                 goalsRemainingLabel: "Restante",
+                goalsPercentUsedLabel: "% usado",
+                goalsDaysLeftLabel: "Días restantes",
+                goalsRemainingDailyBudgetLabel: "Restante por día",
+                goalsProjectedMonthSpendLabel: "Proyección mensual",
                 goalsStatusOnTrack: "En control",
                 goalsStatusCloseToLimit: "Cerca del límite",
                 goalsStatusLimitReached: "Límite alcanzado",
+                goalsNoGoalStatus: "Sin meta",
+                goalsNoGoalMessage: "Crea un límite semanal o mensual para seguir tu progreso localmente.",
+                goalsPeriodThisWeek: "esta semana",
+                goalsPeriodThisMonth: "este mes",
+                goalsWeeklyOnTrackMessageTemplate: "Te quedan %@ por día esta semana.",
+                goalsWeeklyCloseToLimitMessage: "Te estás acercando. Mantén el resto de la semana intencional.",
+                goalsWeeklyLimitReachedMessage: "El gasto semanal alcanzó el límite. Pausa antes del siguiente ciclo.",
+                goalsMonthlyOnTrackMessageTemplate: "Te quedan %@ por día este mes. A este ritmo gastarías %@ este mes.",
+                goalsMonthlyCloseToLimitMessage: "Estás en zona de precaución. Vigila el presupuesto restante.",
+                goalsMonthlyLimitReachedMessage: "Este mes alcanzó el límite. Haz que el siguiente gasto sea intencional.",
                 goalsEmptyWeekly: "Todavía no hay meta semanal.",
                 goalsEmptyMonthly: "Todavía no hay meta mensual.",
                 goalsEditorTitle: "Editor de metas",

@@ -34,3 +34,18 @@ struct SpendingGoals: Codable, Equatable {
         weekly == nil && monthly == nil
     }
 }
+
+extension SpendingGoals {
+    func goal(for cadence: SpendingGoalCadence) -> SpendingGoal? {
+        switch cadence {
+        case .weekly:
+            return weekly
+        case .monthly:
+            return monthly
+        }
+    }
+
+    var activeGoals: [SpendingGoal] {
+        [weekly, monthly].compactMap { $0 }
+    }
+}

@@ -10,8 +10,8 @@ Notification permissions in iOS apply to the app's own notifications, not to rea
 
 - Manual quick add as the core flow
 - Back Tap through a user-created Shortcut
-- URL scheme for fast invocation
-- Optional paste-based parsing only as an editable helper
+- URL scheme for fast invocation, including `pocketleak://parse?text=...`
+- Optional paste-based parsing only after an explicit tap
 - Future user-driven import flows should require explicit sharing or export from the source app
 
 ## Persistence Constraint
@@ -31,6 +31,11 @@ The repository should stay focused on the local-first Pocket Leak scope:
 ## Privacy Constraint
 
 The product should stay local-first and avoid collecting sensitive banking data by default. The manual parser is privacy-safe because the user explicitly pastes the text they want parsed.
+
+- The app must not read cross-app notifications automatically.
+- The app must not poll the clipboard.
+- Clipboard intake is allowed only when the user taps an explicit button.
+- URL-based text intake is allowed because the user or Shortcut explicitly passes the text into Pocket Leak.
 
 UI copy should stay aligned with this constraint: "Pocket Leak stores expenses locally and only parses text you paste manually."
 
