@@ -4,10 +4,12 @@ struct GoalsView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var selectedCadence: SpendingGoalCadence = .weekly
     @State private var limitText: String = ""
     @State private var pendingRemovalCadence: SpendingGoalCadence?
+    @State private var didAnimateIn = false
     @FocusState private var focusedField: Field?
 
     private var scale: CGFloat {
@@ -31,8 +33,12 @@ struct GoalsView: View {
                     goalSection(for: .weekly)
                     goalSection(for: .monthly)
                 }
+                .opacity(didAnimateIn ? 1 : 0)
+                .offset(y: didAnimateIn ? 0 : 8)
 
                 editorCard
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
             }
             .padding(.horizontal, 16)
             .padding(.top, 0)
@@ -49,6 +55,17 @@ struct GoalsView: View {
         .onChange(of: viewModel.monthlyGoal) { _, _ in
             syncEditorFromSelectedGoal()
         }
+        .onAppear {
+            guard !didAnimateIn else { return }
+            if reduceMotion {
+                didAnimateIn = true
+            } else {
+                withAnimation(AppMotion.standard) {
+                    didAnimateIn = true
+                }
+            }
+        }
+        .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard), value: didAnimateIn)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -150,6 +167,7 @@ struct GoalsView: View {
                                 .font(.system(size: 15 * scale, weight: .semibold))
                                 .foregroundStyle(AppTheme.primaryText)
                                 .frame(maxWidth: .infinity)
+                                .frame(minHeight: 44)
                                 .padding(.vertical, 12)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -161,6 +179,8 @@ struct GoalsView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel(strings.goalsEdit)
+                            .accessibilityHint(cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle)
 
                             Button {
                                 pendingRemovalCadence = cadence
@@ -172,6 +192,7 @@ struct GoalsView: View {
                                 .font(.system(size: 15 * scale, weight: .semibold))
                                 .foregroundStyle(AppTheme.background)
                                 .frame(maxWidth: .infinity)
+                                .frame(minHeight: 44)
                                 .padding(.vertical, 12)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -179,6 +200,8 @@ struct GoalsView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel(strings.goalsRemove)
+                            .accessibilityHint(strings.goalsRemoveConfirmationMessage)
                         }
                     }
                 } else {
@@ -196,6 +219,7 @@ struct GoalsView: View {
                         .font(.system(size: 15 * scale, weight: .semibold))
                         .foregroundStyle(AppTheme.background)
                         .frame(maxWidth: .infinity)
+                        .frame(minHeight: 44)
                         .padding(.vertical, 12)
                         .background(
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -203,6 +227,8 @@ struct GoalsView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(createTitle)
+                    .accessibilityHint(strings.goalsGoalLogicDescription)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -228,6 +254,7 @@ struct GoalsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .accessibilityLabel(strings.goalsEditorTitle)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(strings.goalsLimitLabel)
@@ -239,6 +266,8 @@ struct GoalsView: View {
                         .focused($focusedField, equals: .limit)
                         .font(.system(size: 27 * scale, weight: .semibold, design: .rounded))
                         .foregroundStyle(AppTheme.primaryText)
+                        .accessibilityLabel(strings.goalsLimitLabel)
+                        .accessibilityHint(strings.goalsGoalLogicDescription)
                         .padding(.vertical, 14)
                         .padding(.horizontal, 16)
                         .background(
@@ -266,7 +295,7 @@ struct GoalsView: View {
 
         switch viewModel.goalStatus(for: cadence) {
         case .onTrack:
-            fill = AppTheme.primaryText.opacity(0.12)
+            fill = Color.green.opacity(0.22)
         case .closeToLimit:
             fill = Color.yellow.opacity(0.18)
         case .limitReached:
@@ -298,9 +327,13 @@ struct GoalsView: View {
                 Capsule(style: .continuous)
                     .fill(progressFill(for: cadence))
                     .frame(width: max(12, geometry.size.width * viewModel.goalProgressFraction(for: cadence)))
+                    .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.emphasis), value: viewModel.goalProgressFraction(for: cadence))
             }
         }
         .frame(height: 14)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(viewModel.goal(for: cadence) == nil ? strings.goalsNoGoalStatus : viewModel.goalStatusText(for: cadence))
+        .accessibilityValue(viewModel.goalAccessibilityValue(for: cadence))
     }
 
     private func helperRow(label: String, value: String) -> some View {
@@ -319,18 +352,20 @@ struct GoalsView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(AppTheme.cardFill)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
     }
 
     private func progressFill(for cadence: SpendingGoalCadence) -> Color {
         switch viewModel.goalStatus(for: cadence) {
         case .onTrack:
-            return AppTheme.primaryText
+            return Color.green
         case .closeToLimit:
             return Color.orange
         case .limitReached:
             return Color.red
         case .none:
-            return AppTheme.primaryText
+            return Color.green
         }
     }
 
@@ -350,6 +385,8 @@ struct GoalsView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(AppTheme.cardFill)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
     }
 
     private func syncEditorFromSelectedGoal() {

@@ -3,8 +3,11 @@ import SwiftUI
 struct HistoryView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
+    @Environment(\.openURL) private var openURL
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var timeFilter: HistoryTimeFilter = .all
     @State private var selectedCategoryID: UUID? = nil
+    @State private var didAnimateIn = false
 
     var body: some View {
         ScrollView {
@@ -17,30 +20,34 @@ struct HistoryView: View {
 
                 if !viewModel.expenses.isEmpty {
                     exportCard
+                        .opacity(didAnimateIn ? 1 : 0)
+                        .offset(y: didAnimateIn ? 0 : 8)
                 }
 
                 VStack(spacing: 12) {
                     filterCard
+                        .opacity(didAnimateIn ? 1 : 0)
+                        .offset(y: didAnimateIn ? 0 : 8)
 
                     if viewModel.expenses.isEmpty {
                         EmptyStateView(
-                            title: strings.emptyNoExpenses,
-                            message: "Add your first micro-expense from Quick Add."
+                            title: strings.historyEmptyStateTitle,
+                            message: strings.historyEmptyStateMessage,
+                            actionTitle: strings.historyEmptyStateAction,
+                            action: {
+                                guard let url = URL(string: "pocketleak://quick-add") else { return }
+                                openURL(url)
+                            }
                         )
                     } else if filteredExpenses.isEmpty {
                         EmptyStateView(
-                            title: "No matching expenses",
-                            message: "Try a different category or time filter."
-                        )
-                        .overlay(alignment: .bottom) {
-                            Button("Reset filters") {
+                            title: strings.historyNoResultsTitle,
+                            message: strings.historyNoResultsMessage,
+                            actionTitle: strings.historyNoResultsAction,
+                            action: {
                                 resetFilters()
                             }
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(AppTheme.primaryText)
-                            .padding(.top, 8)
-                            .offset(y: 18)
-                        }
+                        )
                     } else {
                         LazyVStack(spacing: 12) {
                             ForEach(filteredExpenses) { expense in
@@ -55,6 +62,17 @@ struct HistoryView: View {
             .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            guard !didAnimateIn else { return }
+            if reduceMotion {
+                didAnimateIn = true
+            } else {
+                withAnimation(AppMotion.standard) {
+                    didAnimateIn = true
+                }
+            }
+        }
+        .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard), value: didAnimateIn)
     }
 
     private var filteredExpenses: [Expense] {
@@ -166,16 +184,22 @@ struct HistoryView: View {
                         exportButtonLabel(title: "Export CSV", systemImage: "doc.text")
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(strings.exportCSV)
+                    .accessibilityHint(strings.exportDescription)
 
                     ShareLink(item: viewModel.jsonExport.fileURL) {
                         exportButtonLabel(title: "Export JSON", systemImage: "curlybraces")
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(strings.exportJSON)
+                    .accessibilityHint(strings.exportDescription)
 
                     ShareLink(item: viewModel.monthlySummaryReportText) {
                         exportButtonLabel(title: "Share Monthly Summary", systemImage: "text.alignleft")
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(strings.exportMonthlySummary)
+                    .accessibilityHint(strings.exportDescription)
                 }
             }
         }
@@ -189,6 +213,7 @@ struct HistoryView: View {
         .font(.subheadline.weight(.semibold))
         .foregroundStyle(AppTheme.background)
         .frame(maxWidth: .infinity)
+        .frame(minHeight: 44)
         .padding(.vertical, 13)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -229,12 +254,16 @@ private struct HistoryRow: View {
                         Text(expense.merchant)
                             .font(.subheadline.weight(.medium))
                             .foregroundStyle(AppTheme.primaryText)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     if !expense.note.isEmpty {
                         Text(expense.note)
                             .font(.subheadline)
                             .foregroundStyle(AppTheme.secondaryText)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Text(expense.date.formatted(date: .abbreviated, time: .shortened))
@@ -250,6 +279,7 @@ private struct HistoryRow: View {
                     Image(systemName: "trash")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AppTheme.secondaryText)
+                        .frame(width: 44, height: 44)
                         .padding(8)
                         .background(
                             Circle()
@@ -257,7 +287,8 @@ private struct HistoryRow: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Delete expense")
+                .accessibilityLabel(AppStrings.current().deleteExpenseAccessibilityLabel)
+                .accessibilityHint(AppStrings.current().deleteExpenseHint)
             }
         }
     }

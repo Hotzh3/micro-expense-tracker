@@ -4,6 +4,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
+    @AppStorage(AppPreferenceKeys.hapticsEnabled) private var hapticsEnabled = true
 
     @Binding var appearanceSelection: AppAppearance
     @Binding var textSizeSelection: AppTextSize
@@ -16,6 +17,7 @@ struct SettingsView: View {
     let onCopyQuickAddURL: (() -> Void)?
     let onCopyPrefillURLExample: (() -> Void)?
     let onOpenQuickAddRoute: (() -> Void)?
+    let onShowOnboardingAgain: (() -> Void)?
     let onResetLocalData: () -> Void
 
     @State private var showResetConfirmation = false
@@ -33,6 +35,8 @@ struct SettingsView: View {
                     appearanceCard
                     textSizeCard
                     languageCard
+                    onboardingCard
+                    hapticsCard
                     privacyCard
                     exportCard
                     backTapCard
@@ -144,6 +148,69 @@ struct SettingsView: View {
         }
     }
 
+    private var onboardingCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(strings.onboardingTitle)
+                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AppTheme.primaryText)
+
+                Text(strings.onboardingDescription)
+                    .font(.system(size: 15 * scale))
+                    .foregroundStyle(AppTheme.secondaryText)
+
+                Button {
+                    dismiss()
+                    DispatchQueue.main.async {
+                        onShowOnboardingAgain?()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "arrow.clockwise.circle")
+                        Text(strings.showOnboardingAgain)
+                    }
+                    .font(.system(size: 15 * scale, weight: .semibold))
+                    .foregroundStyle(AppTheme.background)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppTheme.primaryText)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(strings.showOnboardingAgain)
+                .accessibilityHint(strings.onboardingDescription)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var hapticsCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(strings.hapticsTitle)
+                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AppTheme.primaryText)
+
+                Toggle(isOn: $hapticsEnabled) {
+                    Text(strings.enableHaptics)
+                        .font(.system(size: 15 * scale, weight: .semibold))
+                        .foregroundStyle(AppTheme.primaryText)
+                }
+                .tint(AppTheme.primaryText)
+                .accessibilityLabel(strings.enableHaptics)
+                .accessibilityHint(strings.hapticsDescription)
+
+                Text(strings.hapticsDescription)
+                    .font(.system(size: 13 * scale))
+                    .foregroundStyle(AppTheme.secondaryText)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     private var privacyCard: some View {
         GlassCardView {
             VStack(alignment: .leading, spacing: 8) {
@@ -179,6 +246,7 @@ struct SettingsView: View {
                     .font(.system(size: 15 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.background)
                     .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -186,6 +254,8 @@ struct SettingsView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(strings.openHistoryExports)
+                .accessibilityHint(strings.exportDescription)
 
                 Button {
                     dismiss()
@@ -198,6 +268,7 @@ struct SettingsView: View {
                     .font(.system(size: 15 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.primaryText)
                     .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -209,6 +280,8 @@ struct SettingsView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(strings.openGoals)
+                .accessibilityHint(strings.goalsHeaderSubtitle)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -247,6 +320,7 @@ struct SettingsView: View {
                     .font(.system(size: 15 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.background)
                     .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -254,6 +328,8 @@ struct SettingsView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(strings.copyQuickAddURL)
+                .accessibilityHint(strings.backTapDescription)
 
                 Button {
                     onCopyPrefillURLExample?()
@@ -265,6 +341,7 @@ struct SettingsView: View {
                     .font(.system(size: 15 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.primaryText)
                     .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -276,6 +353,8 @@ struct SettingsView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(strings.copyPrefillURLExample)
+                .accessibilityHint(strings.backTapDescription)
 
                 Button {
                     dismiss()
@@ -288,6 +367,7 @@ struct SettingsView: View {
                     .font(.system(size: 15 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.primaryText)
                     .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -299,6 +379,8 @@ struct SettingsView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(strings.openQuickAdd)
+                .accessibilityHint(strings.backTapDescription)
 
                 Button {
                     dismiss()
@@ -313,6 +395,7 @@ struct SettingsView: View {
                     .font(.system(size: 15 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.primaryText)
                     .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -324,6 +407,8 @@ struct SettingsView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(strings.openQuickAddRoute)
+                .accessibilityHint(strings.backTapDescription)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -349,6 +434,7 @@ struct SettingsView: View {
                     .font(.system(size: 15 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.background)
                     .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -356,6 +442,8 @@ struct SettingsView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(strings.deleteAllData)
+                .accessibilityHint(strings.resetConfirmationMessage)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

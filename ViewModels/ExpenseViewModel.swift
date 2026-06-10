@@ -100,6 +100,7 @@ final class ExpenseViewModel: ObservableObject {
     @Published var parseFeedback: Feedback?
     @Published var weeklyGoal: SpendingGoal?
     @Published var monthlyGoal: SpendingGoal?
+    @Published var isQuickAddInputFocused: Bool = false
 
     let categories: [ExpenseCategory]
 
@@ -135,11 +136,15 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     func saveDraftExpense() {
+        let previousWeeklyStatus = goalStatus(for: .weekly)
+        let previousMonthlyStatus = goalStatus(for: .monthly)
+        let strings = AppStrings.current()
         let sanitizedAmount = amountText.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedAmount = sanitizedAmount.replacingOccurrences(of: ",", with: ".")
         let parsedAmount = parsedExpense?.amount
         guard let amount = Double(normalizedAmount) ?? parsedAmount, amount > 0 else {
-            showSaveFeedback(message: "Enter a valid amount greater than zero.", isError: true)
+            showSaveFeedback(message: strings.saveMissingAmountError, isError: true)
+            HapticsService.shared.error()
             return
         }
 
@@ -155,20 +160,24 @@ final class ExpenseViewModel: ObservableObject {
         expenses.insert(expense, at: 0)
         persistExpenses()
         resetDraftForm()
+        triggerPostSaveHaptic(previousWeeklyStatus: previousWeeklyStatus, previousMonthlyStatus: previousMonthlyStatus)
         showSaveFeedback(message: "Expense saved", isError: false)
     }
 
     func parseImportedText() {
+        let strings = AppStrings.current()
         let suggestion = parser.parse(importText, categories: categories)
         guard let suggestion else {
             parsedExpense = nil
-            showParseFeedback(message: "No usable text found. Paste a transaction with an amount, then try Parse Text.", isError: true)
+            showParseFeedback(message: strings.parseNoResultMessage, isError: true)
+            HapticsService.shared.error()
             return
         }
 
         guard suggestion.amount != nil else {
             parsedExpense = nil
-            showParseFeedback(message: "I could not find an amount. Include the charge total, then try Parse Text again.", isError: true)
+            showParseFeedback(message: strings.missingAmountParseError, isError: true)
+            HapticsService.shared.error()
             return
         }
 
@@ -374,11 +383,15 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var topCategorySharesThisMonth: [CategoryShare] {
+        Array(categorySharesThisMonth.prefix(3))
+    }
+
+    var categorySharesThisMonth: [CategoryShare] {
         let monthBreakdown = categoryBreakdown
         let monthTotal = self.monthTotal
         guard monthTotal > 0 else { return [] }
 
-        return monthBreakdown.prefix(3).map { item in
+        return monthBreakdown.map { item in
             CategoryShare(
                 category: item.category,
                 total: item.total,
@@ -462,6 +475,47 @@ final class ExpenseViewModel: ObservableObject {
         }
 
         return "\(topShare.category.displayName) is \(percentageString(topShare.percentage)) of your tracked leaks this month."
+    }
+
+    var categoryDistributionAccessibilitySummary: String {
+        let shares = categorySharesThisMonth
+        guard !shares.isEmpty else {
+            return AppStrings.current().dashboardNoCategoryDistribution
+        }
+
+        return shares
+            .map { "\($0.category.displayName) \(percentageString($0.percentage))" }
+            .joined(separator: ", ")
+    }
+
+    var recentTrendAccessibilitySummary: String {
+        let points = recentSpendTrendData
+        guard !points.isEmpty else {
+            return AppStrings.current().dashboardNoRecentTrend
+        }
+
+        let total = points.reduce(0) { $0 + $1.total }
+        guard let peak = points.max(by: { $0.total < $1.total }) else {
+            return "14-day trend. Total \(currency(total))."
+        }
+
+        let peakDate = peak.date.formatted(date: .abbreviated, time: .omitted)
+        return "14-day trend. Total \(currency(total)). Peak \(currency(peak.total)) on \(peakDate)."
+    }
+
+    var weeklyTrendAccessibilitySummary: String {
+        let points = weeklySpendTrendData
+        guard !points.isEmpty else {
+            return AppStrings.current().insightsWeeklyTotalsTitle
+        }
+
+        let total = points.reduce(0) { $0 + $1.total }
+        guard let peak = points.max(by: { $0.total < $1.total }) else {
+            return "6-week trend. Total \(currency(total))."
+        }
+
+        let peakDate = peak.weekStart.formatted(date: .abbreviated, time: .omitted)
+        return "6-week trend. Total \(currency(total)). Peak \(currency(peak.total)) on \(peakDate)."
     }
 
     var largestExpenseThisMonthText: String {
@@ -651,6 +705,29 @@ final class ExpenseViewModel: ObservableObject {
         )
     }
 
+    func goalAccessibilityValue(for cadence: SpendingGoalCadence) -> String {
+        guard let overview = goalOverview(for: cadence) else {
+            return AppStrings.current().goalsNoGoalMessage
+        }
+
+        return [
+            overview.limitText,
+            overview.spentText,
+            overview.remainingText,
+            overview.percentUsedText,
+            overview.statusText,
+            overview.motivationText
+        ]
+        .joined(separator: ". ")
+    }
+
+    func expenseAccessibilitySummary(for expense: Expense) -> String {
+        let merchant = expense.merchant.isEmpty ? expense.category.displayName : expense.merchant
+        let note = expense.note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let noteText = note.isEmpty ? "" : ". Note: \(note)"
+        return "\(currency(expense.amount)) in \(expense.category.displayName). Merchant: \(merchant). \(expense.date.formatted(date: .abbreviated, time: .shortened))\(noteText)"
+    }
+
     var goalOverviews: [GoalOverview] {
         [goalOverview(for: .weekly), goalOverview(for: .monthly)].compactMap { $0 }
     }
@@ -800,11 +877,17 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     private func showSaveFeedback(message: String, isError: Bool) {
+        if saveFeedback?.message == message, saveFeedback?.isError == isError {
+            return
+        }
         saveFeedback = Feedback(message: message, isError: isError)
         clearFeedbackLater(kind: .save, message: message)
     }
 
     private func showParseFeedback(message: String, isError: Bool) {
+        if parseFeedback?.message == message, parseFeedback?.isError == isError {
+            return
+        }
         parseFeedback = Feedback(message: message, isError: isError)
         clearFeedbackLater(kind: .parse, message: message)
     }
@@ -922,6 +1005,27 @@ final class ExpenseViewModel: ObservableObject {
             return .closeToLimit
         case .limitReached:
             return .limitReached
+        }
+    }
+
+    private func triggerPostSaveHaptic(previousWeeklyStatus: GoalStatus, previousMonthlyStatus: GoalStatus) {
+        let newWeeklyStatus = goalStatus(for: .weekly)
+        let newMonthlyStatus = goalStatus(for: .monthly)
+
+        if didCrossGoalThreshold(from: previousWeeklyStatus, to: newWeeklyStatus) ||
+            didCrossGoalThreshold(from: previousMonthlyStatus, to: newMonthlyStatus) {
+            HapticsService.shared.warning()
+        } else {
+            HapticsService.shared.success()
+        }
+    }
+
+    private func didCrossGoalThreshold(from previous: GoalStatus, to new: GoalStatus) -> Bool {
+        switch (previous, new) {
+        case (.onTrack, .closeToLimit), (.onTrack, .limitReached), (.none, .closeToLimit), (.none, .limitReached):
+            return true
+        default:
+            return false
         }
     }
 }

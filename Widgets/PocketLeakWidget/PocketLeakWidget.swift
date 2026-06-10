@@ -15,22 +15,22 @@ enum WidgetDisplayState {
     var badgeTitle: String {
         switch self {
         case .live:
-            return "Live snapshot"
+            return "Live"
         case .empty:
             return "Waiting for data"
         case .demo:
-            return "Demo snapshot"
+            return "Preview"
         }
     }
 
     var helperText: String {
         switch self {
         case .live:
-            return "Updated from the app"
+            return "Updated in the app"
         case .empty:
-            return "Open Pocket Leak and save a few expenses"
+            return "Open Pocket Leak to sync live data"
         case .demo:
-            return "Enable App Group to show live data"
+            return "Enable App Group for live data"
         }
     }
 }
@@ -128,6 +128,9 @@ struct PocketLeakWidgetView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Pocket Leak")
+        .accessibilityValue("Today \(compactCurrency(entry.summary.todayTotal)). \(smallSignalText ?? entry.displayState.helperText)")
     }
 
     private var mediumView: some View {
@@ -164,6 +167,9 @@ struct PocketLeakWidgetView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Pocket Leak")
+        .accessibilityValue("Today \(currency(entry.summary.todayTotal)). Top category \(entry.summary.topCategory).")
     }
 
     private var largeView: some View {
@@ -217,6 +223,9 @@ struct PocketLeakWidgetView: View {
             Spacer(minLength: 0)
         }
         .padding(16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Pocket Leak")
+        .accessibilityValue(statusLine + " Category summary available.")
     }
 
     private var header: some View {
@@ -265,9 +274,9 @@ struct PocketLeakWidgetView: View {
         case .live:
             return entry.summary.weeklyGoalStatus.displayTitle
         case .empty:
-            return nil
+            return "No data yet"
         case .demo:
-            return "Demo"
+            return "Preview mode"
         }
     }
 
