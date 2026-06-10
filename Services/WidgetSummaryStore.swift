@@ -35,9 +35,16 @@ final class WidgetSummaryStore {
             }
 
             let data = try Data(contentsOf: fileURL)
-            return try decoder.decode(WidgetSummary.self, from: data)
+            let summary = try decoder.decode(WidgetSummary.self, from: data)
+            guard summary.isValid else {
+                print("Invalid widget summary ignored")
+                clearSummary()
+                return nil
+            }
+            return summary
         } catch {
             print("Failed to load widget summary: \(error)")
+            clearSummary()
             return nil
         }
     }
@@ -81,5 +88,14 @@ final class WidgetSummaryStore {
         return containerURL
             .appendingPathComponent("PocketLeakShared", isDirectory: true)
             .appendingPathComponent("widget-summary.json")
+    }
+}
+
+private extension WidgetSummary {
+    var isValid: Bool {
+        guard date.timeIntervalSince1970.isFinite else { return false }
+        guard todayTotal.isFinite, weekTotal.isFinite, monthTotal.isFinite else { return false }
+        guard categoryTop3.allSatisfy({ $0.amount.isFinite }) else { return false }
+        return true
     }
 }

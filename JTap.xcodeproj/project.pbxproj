@@ -19,10 +19,14 @@
 		2623D6569CAB84CE8FCB94DF /* WidgetSummaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC04FA705318868C3B6619FA /* WidgetSummaryStore.swift */; };
 		32F0830027148034CFA631B6 /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = C879640230F5C9FE3109AB05 /* Expense.swift */; };
 		40539938AA0B3D0152BF8602 /* ExpenseTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */; };
+		434A38320768F280F11D5E1D /* ShareExtensionStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E790A7B440F17CDCD3B329ED /* ShareExtensionStrings.swift */; };
+		46182385A73F2299773D3606 /* SharedTextStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBF2B191054766C9F432F9F6 /* SharedTextStore.swift */; };
 		49020D8B8C0D090493E25289 /* SmartAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43757A35CE1048C7E2690FE1 /* SmartAlert.swift */; };
 		4B4C472BC7AF1E95C6C9F187 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FDE24A0CC7C4AB709DA7C0 /* DashboardView.swift */; };
 		4CED521D51A7BCB44B702A05 /* GoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09ABF81BE8B2231F82E79045 /* GoalsView.swift */; };
 		4CF52795AFA522FCF0F823DE /* ExpenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */; };
+		4EBDAD42CD0203F01E7CC561 /* ExpensePDFExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7DAE35B60F307F34C08E2B /* ExpensePDFExport.swift */; };
+		501C69AA43F733748C2D4B51 /* QuickAddImportCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93307D68627E911C30F59847 /* QuickAddImportCardView.swift */; };
 		5693FEFE719BEEB2C97DA03D /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */; };
 		59FD3CBDBB0077EAE8124098 /* MerchantNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A74CF091CB8A93F84893F4A2 /* MerchantNormalizer.swift */; };
 		5A15308E9B2C48E45F436523 /* ExpenseTextParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9F6E3EDECA62759847B25D /* ExpenseTextParserTests.swift */; };
@@ -32,9 +36,11 @@
 		6F540A7683F8ED7FCE936A43 /* SmartInsightsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE90286C46A8135EF7E7751 /* SmartInsightsService.swift */; };
 		77E20630EE4DA0D57F74EC59 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44048E144E9D5752313C299C /* OnboardingView.swift */; };
 		7DDA59AC68BD5DCE61E401E6 /* WidgetSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3381D146B3956102E5D5925D /* WidgetSummary.swift */; };
+		8BC22A65E6BC9442A7D4145B /* PocketLeakShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF1C1099D46688760F770349 /* PocketLeakShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8F3CFC9678B38E0B42DE06DD /* LaunchSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E3ABD1CB31A26030C2045ED /* LaunchSplashView.swift */; };
 		9023536FA369F6AB58AFE27A /* WidgetSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3381D146B3956102E5D5925D /* WidgetSummary.swift */; };
 		9319939C894C2063EF69BCCD /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0708AE58614758F77DC4A5 /* PrimaryButton.swift */; };
+		9424373275814817C9C5D0B5 /* SharedTextStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBF2B191054766C9F432F9F6 /* SharedTextStore.swift */; };
 		94AEA55BB9EC810C9E8EAEFA /* SmartAlertServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 129E77F98A1B39358CA3978A /* SmartAlertServiceTests.swift */; };
 		985623E98908A5C518D6724F /* SmartAlertCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00525A2761D9F005F6A034E3 /* SmartAlertCardView.swift */; };
 		9EACBDD6BF8D6FDF477F4A9B /* SpendingGoal.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEC18AF50EA83BA39FC2A50 /* SpendingGoal.swift */; };
@@ -43,8 +49,10 @@
 		B85A4CFE82C62DFE72779400 /* JTapApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB8E6910BD6B24989A22861D /* JTapApp.swift */; };
 		B9693C7F6B2DA40FA24A6D78 /* HapticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AC19EB6ECA6DBAC6126C8D2 /* HapticsService.swift */; };
 		BDDD29FC1D96F39B2BC86141 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25A7D50F01059CAEA99CE4C /* RootView.swift */; };
+		C1B4B95511E784240B37CB95 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 173A00ECC7362DA4043E6F35 /* ShareViewController.swift */; };
 		C271C7FB9FA7CA5068AEDE72 /* SmartAlertService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6453A2C1907CD7FF57BA2B /* SmartAlertService.swift */; };
 		C501E9BE2AE79EB93925E16E /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06BDBBDE64C4BABFBF2F5326 /* AppSettings.swift */; };
+		C99CBF3A1ABA6F128DF49CC6 /* LocalNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A9441768B54CB2D2F943A7 /* LocalNotificationService.swift */; };
 		CDEEB59D76C791E58D1821D8 /* SettingsAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 476EA1D36938A3260F78056A /* SettingsAction.swift */; };
 		CEDD8779E682D4D9948B6DCD /* CategoryPillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E89F1506DA204E117366DB /* CategoryPillView.swift */; };
 		D2CAC0396C85E83039C51928 /* ExpenseJSONExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68AEAC3B57EA1315B4B34AD7 /* ExpenseJSONExport.swift */; };
@@ -82,6 +90,13 @@
 			remoteGlobalIDString = 29858ECD7DA6FD28E8B22A7C;
 			remoteInfo = JTap;
 		};
+		BEC6F5502939C8A8D57CC218 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 721AD8BEF16B0A94DB85C85F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0FE13F1622849AEA5CD1DDE0;
+			remoteInfo = PocketLeakShareExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -92,6 +107,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				D9D003B42CDA9E11981986CB /* PocketLeakWidget.appex in Embed Foundation Extensions */,
+				8BC22A65E6BC9442A7D4145B /* PocketLeakShareExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -105,9 +121,11 @@
 		0D74627E2BC53685EDB2B328 /* SmartInsightCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartInsightCardView.swift; sourceTree = "<group>"; };
 		0F84A76C8664B6A028CA9945 /* SpendingComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingComparison.swift; sourceTree = "<group>"; };
 		129E77F98A1B39358CA3978A /* SmartAlertServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartAlertServiceTests.swift; sourceTree = "<group>"; };
+		173A00ECC7362DA4043E6F35 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		1D0708AE58614758F77DC4A5 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		1D25343254B4EAFCA5A4E523 /* ExpenseCSVExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseCSVExport.swift; sourceTree = "<group>"; };
 		1DB55C1245F585B698B4592D /* WeeklyDigestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyDigestView.swift; sourceTree = "<group>"; };
+		213F025111AB8C3989BEA54B /* PocketLeakShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PocketLeakShareExtension.entitlements; sourceTree = "<group>"; };
 		23440D26C2CD475D6FD16A68 /* PocketLeakWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PocketLeakWidget.swift; sourceTree = "<group>"; };
 		2400B34CA586FB694B7FBC85 /* JTap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JTap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
@@ -126,10 +144,12 @@
 		5EE90286C46A8135EF7E7751 /* SmartInsightsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartInsightsService.swift; sourceTree = "<group>"; };
 		68AEAC3B57EA1315B4B34AD7 /* ExpenseJSONExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseJSONExport.swift; sourceTree = "<group>"; };
 		697605CC219504DC542E8B53 /* MetricCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCardView.swift; sourceTree = "<group>"; };
+		69C9AFAA3C33674CD8FD6AB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6A9F6E3EDECA62759847B25D /* ExpenseTextParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseTextParserTests.swift; sourceTree = "<group>"; };
 		6BC1652BABC901622DA6A40F /* GoalIntelligenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalIntelligenceService.swift; sourceTree = "<group>"; };
 		7BF3C01F93BB956D3E49FD03 /* GoalForecast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalForecast.swift; sourceTree = "<group>"; };
 		7D6453A2C1907CD7FF57BA2B /* SmartAlertService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartAlertService.swift; sourceTree = "<group>"; };
+		93307D68627E911C30F59847 /* QuickAddImportCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddImportCardView.swift; sourceTree = "<group>"; };
 		9934F8C17BF826DD6A372998 /* ExpenseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseViewModel.swift; sourceTree = "<group>"; };
 		9B465C2136AF2CCDDBC1593F /* SpendingComparisonService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingComparisonService.swift; sourceTree = "<group>"; };
 		A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseTextParser.swift; sourceTree = "<group>"; };
@@ -139,6 +159,7 @@
 		ABF8C91F013BFC9F006FF742 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		AC04FA705318868C3B6619FA /* WidgetSummaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSummaryStore.swift; sourceTree = "<group>"; };
 		ACEC18AF50EA83BA39FC2A50 /* SpendingGoal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingGoal.swift; sourceTree = "<group>"; };
+		AF1C1099D46688760F770349 /* PocketLeakShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PocketLeakShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B17D6DA79AF62D5D00DD994B /* ShareCardRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardRenderer.swift; sourceTree = "<group>"; };
 		B4C0027C385733B5B924FCD5 /* JTapTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JTapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4E89F1506DA204E117366DB /* CategoryPillView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPillView.swift; sourceTree = "<group>"; };
@@ -151,7 +172,11 @@
 		D593A9E6E910973A72C2E5EF /* SmartInsight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartInsight.swift; sourceTree = "<group>"; };
 		D833AAC8B8EC5FD77B1FDD1C /* GoalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalStore.swift; sourceTree = "<group>"; };
 		DB8E6910BD6B24989A22861D /* JTapApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JTapApp.swift; sourceTree = "<group>"; };
+		DD7DAE35B60F307F34C08E2B /* ExpensePDFExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpensePDFExport.swift; sourceTree = "<group>"; };
 		E2A128B801B304B2EED5283E /* PlaceholderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderTests.swift; sourceTree = "<group>"; };
+		E790A7B440F17CDCD3B329ED /* ShareExtensionStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtensionStrings.swift; sourceTree = "<group>"; };
+		EBF2B191054766C9F432F9F6 /* SharedTextStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTextStore.swift; sourceTree = "<group>"; };
+		F0A9441768B54CB2D2F943A7 /* LocalNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalNotificationService.swift; sourceTree = "<group>"; };
 		F25A7D50F01059CAEA99CE4C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		F2EE9E8808FBF2D8C177AAE4 /* ExpenseCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseCategory.swift; sourceTree = "<group>"; };
 		FAE221EDF72EB9849AB59C26 /* SpendingComparisonCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingComparisonCardView.swift; sourceTree = "<group>"; };
@@ -160,6 +185,17 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		022DF29B578FECE93C5435A1 /* ShareExtension */ = {
+			isa = PBXGroup;
+			children = (
+				69C9AFAA3C33674CD8FD6AB6 /* Info.plist */,
+				213F025111AB8C3989BEA54B /* PocketLeakShareExtension.entitlements */,
+				E790A7B440F17CDCD3B329ED /* ShareExtensionStrings.swift */,
+				173A00ECC7362DA4043E6F35 /* ShareViewController.swift */,
+			);
+			path = ShareExtension;
+			sourceTree = "<group>";
+		};
 		04839BD2D6E83F39CB2784DA /* PocketLeakWidget */ = {
 			isa = PBXGroup;
 			children = (
@@ -185,6 +221,7 @@
 				25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */,
 				4E3ABD1CB31A26030C2045ED /* LaunchSplashView.swift */,
 				44048E144E9D5752313C299C /* OnboardingView.swift */,
+				93307D68627E911C30F59847 /* QuickAddImportCardView.swift */,
 				D0F11CF5730320D4AAC50BC8 /* QuickAddView.swift */,
 				F25A7D50F01059CAEA99CE4C /* RootView.swift */,
 				57F9119760DF1AB8519002B8 /* SettingsView.swift */,
@@ -226,13 +263,16 @@
 			children = (
 				1D25343254B4EAFCA5A4E523 /* ExpenseCSVExport.swift */,
 				68AEAC3B57EA1315B4B34AD7 /* ExpenseJSONExport.swift */,
+				DD7DAE35B60F307F34C08E2B /* ExpensePDFExport.swift */,
 				A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */,
 				A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */,
 				6BC1652BABC901622DA6A40F /* GoalIntelligenceService.swift */,
 				D833AAC8B8EC5FD77B1FDD1C /* GoalStore.swift */,
 				2AC19EB6ECA6DBAC6126C8D2 /* HapticsService.swift */,
+				F0A9441768B54CB2D2F943A7 /* LocalNotificationService.swift */,
 				A74CF091CB8A93F84893F4A2 /* MerchantNormalizer.swift */,
 				B17D6DA79AF62D5D00DD994B /* ShareCardRenderer.swift */,
+				EBF2B191054766C9F432F9F6 /* SharedTextStore.swift */,
 				7D6453A2C1907CD7FF57BA2B /* SmartAlertService.swift */,
 				5EE90286C46A8135EF7E7751 /* SmartInsightsService.swift */,
 				9B465C2136AF2CCDDBC1593F /* SpendingComparisonService.swift */,
@@ -269,6 +309,7 @@
 				2D1E9D0D093D75369E66BA80 /* App */,
 				D9DABE4ADCB0454E641AF714 /* Models */,
 				A03A0F803EF7F6F62E9DD0C3 /* Services */,
+				022DF29B578FECE93C5435A1 /* ShareExtension */,
 				417F24B9BAA6ADB741ED9AF4 /* Tests */,
 				B293835595BE8FEFF4E63761 /* Theme */,
 				F5F96B89E1A55795DDB0D7CF /* ViewModels */,
@@ -299,6 +340,7 @@
 			children = (
 				2400B34CA586FB694B7FBC85 /* JTap.app */,
 				B4C0027C385733B5B924FCD5 /* JTapTests.xctest */,
+				AF1C1099D46688760F770349 /* PocketLeakShareExtension.appex */,
 				3D99359ED59F8CD20BCCAF4A /* PocketLeakWidget.appex */,
 			);
 			name = Products;
@@ -332,6 +374,23 @@
 			productReference = 3D99359ED59F8CD20BCCAF4A /* PocketLeakWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		0FE13F1622849AEA5CD1DDE0 /* PocketLeakShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0E367114C7CB547D910C13C5 /* Build configuration list for PBXNativeTarget "PocketLeakShareExtension" */;
+			buildPhases = (
+				91BAD7942D52B270D73AD40B /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PocketLeakShareExtension;
+			packageProductDependencies = (
+			);
+			productName = PocketLeakShareExtension;
+			productReference = AF1C1099D46688760F770349 /* PocketLeakShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		29858ECD7DA6FD28E8B22A7C /* JTap */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = DDC930BFA1DA108E44E0270D /* Build configuration list for PBXNativeTarget "JTap" */;
@@ -344,6 +403,7 @@
 			);
 			dependencies = (
 				01023CE12843D86C29F69C54 /* PBXTargetDependency */,
+				DF99E16765FB1F6078097DA5 /* PBXTargetDependency */,
 			);
 			name = JTap;
 			packageProductDependencies = (
@@ -382,6 +442,9 @@
 					0730112666379B323D4781A4 = {
 						ProvisioningStyle = Automatic;
 					};
+					0FE13F1622849AEA5CD1DDE0 = {
+						ProvisioningStyle = Automatic;
+					};
 					29858ECD7DA6FD28E8B22A7C = {
 						ProvisioningStyle = Automatic;
 					};
@@ -406,6 +469,7 @@
 			targets = (
 				29858ECD7DA6FD28E8B22A7C /* JTap */,
 				B69C9FA86621189D658CCF34 /* JTapTests */,
+				0FE13F1622849AEA5CD1DDE0 /* PocketLeakShareExtension */,
 				0730112666379B323D4781A4 /* PocketLeakWidget */,
 			);
 		};
@@ -437,6 +501,7 @@
 				ECAAC336CE4692AB49CEECAE /* ExpenseCSVExport.swift in Sources */,
 				D6B5C3519B80E085005D8141 /* ExpenseCategory.swift in Sources */,
 				D2CAC0396C85E83039C51928 /* ExpenseJSONExport.swift in Sources */,
+				4EBDAD42CD0203F01E7CC561 /* ExpensePDFExport.swift in Sources */,
 				4CF52795AFA522FCF0F823DE /* ExpenseStore.swift in Sources */,
 				40539938AA0B3D0152BF8602 /* ExpenseTextParser.swift in Sources */,
 				DB6EFDFFF4E22697EF5F0F01 /* ExpenseViewModel.swift in Sources */,
@@ -450,10 +515,12 @@
 				5693FEFE719BEEB2C97DA03D /* InsightsView.swift in Sources */,
 				B85A4CFE82C62DFE72779400 /* JTapApp.swift in Sources */,
 				8F3CFC9678B38E0B42DE06DD /* LaunchSplashView.swift in Sources */,
+				C99CBF3A1ABA6F128DF49CC6 /* LocalNotificationService.swift in Sources */,
 				59FD3CBDBB0077EAE8124098 /* MerchantNormalizer.swift in Sources */,
 				DE33318207E74B105E08AEEA /* MetricCardView.swift in Sources */,
 				77E20630EE4DA0D57F74EC59 /* OnboardingView.swift in Sources */,
 				9319939C894C2063EF69BCCD /* PrimaryButton.swift in Sources */,
+				501C69AA43F733748C2D4B51 /* QuickAddImportCardView.swift in Sources */,
 				0BDCD10B88237D0CEDDDA48C /* QuickAddView.swift in Sources */,
 				BDDD29FC1D96F39B2BC86141 /* RootView.swift in Sources */,
 				1ED52494759FE144AC3C0927 /* ScreenHeaderView.swift in Sources */,
@@ -461,6 +528,7 @@
 				FBF6EFAE68754841E50AEFDB /* SettingsView.swift in Sources */,
 				617CCC6B891E98B40CBD8FE0 /* ShareCardRenderer.swift in Sources */,
 				6A1A58C166E1D61011B0A275 /* ShareCardView.swift in Sources */,
+				46182385A73F2299773D3606 /* SharedTextStore.swift in Sources */,
 				49020D8B8C0D090493E25289 /* SmartAlert.swift in Sources */,
 				985623E98908A5C518D6724F /* SmartAlertCardView.swift in Sources */,
 				C271C7FB9FA7CA5068AEDE72 /* SmartAlertService.swift in Sources */,
@@ -490,6 +558,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		91BAD7942D52B270D73AD40B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				434A38320768F280F11D5E1D /* ShareExtensionStrings.swift in Sources */,
+				C1B4B95511E784240B37CB95 /* ShareViewController.swift in Sources */,
+				9424373275814817C9C5D0B5 /* SharedTextStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E01424E583B26DE4ED399CAF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -508,6 +586,11 @@
 			target = 0730112666379B323D4781A4 /* PocketLeakWidget */;
 			targetProxy = 7AAA7D33CB0505571C51CFD4 /* PBXContainerItemProxy */;
 		};
+		DF99E16765FB1F6078097DA5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0FE13F1622849AEA5CD1DDE0 /* PocketLeakShareExtension */;
+			targetProxy = BEC6F5502939C8A8D57CC218 /* PBXContainerItemProxy */;
+		};
 		E1AC11E3442A2186FC65FF3C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 29858ECD7DA6FD28E8B22A7C /* JTap */;
@@ -521,6 +604,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Widgets/PocketLeakWidget/PocketLeakWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 50;
 				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Widgets/PocketLeakWidget/Info.plist;
@@ -530,6 +614,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.josema.JTap.PocketLeakWidget;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -570,6 +655,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 50;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -588,6 +674,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.5.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -653,6 +740,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 50;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -665,6 +753,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.5.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -680,6 +769,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Widgets/PocketLeakWidget/PocketLeakWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 50;
 				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Widgets/PocketLeakWidget/Info.plist;
@@ -689,6 +779,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.josema.JTap.PocketLeakWidget;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -702,6 +793,7 @@
 				CODE_SIGN_ENTITLEMENTS = JTap.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 50;
 				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
@@ -710,6 +802,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.josema.JTap;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -736,6 +829,50 @@
 			};
 			name = Debug;
 		};
+		E733F12C2F1D5A018972ED48 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/PocketLeakShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 50;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.5.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.josema.JTap.PocketLeakShareExtension;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		EC18960C0D78A24940A3904E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/PocketLeakShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 50;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.5.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.josema.JTap.PocketLeakShareExtension;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		FD90990729778C48C5E455C2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -743,6 +880,7 @@
 				CODE_SIGN_ENTITLEMENTS = JTap.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 50;
 				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
@@ -751,6 +889,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.josema.JTap;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -760,6 +899,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		0E367114C7CB547D910C13C5 /* Build configuration list for PBXNativeTarget "PocketLeakShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E733F12C2F1D5A018972ED48 /* Debug */,
+				EC18960C0D78A24940A3904E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		4E0D0E5699CB09E535FD7C82 /* Build configuration list for PBXNativeTarget "PocketLeakWidget" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

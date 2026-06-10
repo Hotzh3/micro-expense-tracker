@@ -1,6 +1,6 @@
 # Shortcuts And Back Tap
 
-Pocket Leak stays privacy-safe: it does not read system notifications from other apps. The supported fast-entry path is explicit user action through Shortcuts, URL schemes, or manual paste.
+Pocket Leak stays privacy-safe: it does not read system notifications from other apps. The supported fast-entry path is explicit user action through Shortcuts, URL schemes, manual paste, or a user-initiated Share Extension.
 
 ## Supported URL Schemes
 
@@ -20,15 +20,16 @@ Both schemes below resolve to the same in-app routes:
 - `pocketleak://add?amount=120&merchant=Oxxo&category=food`
 
 The `add` route opens Quick Add and can prefill fields when query parameters are present.
-The `parse` route opens Quick Add, places decoded text into the pasted-text area, and runs the local parser so the preview can appear without saving anything automatically.
+The `parse` route opens Quick Add and places decoded text into the pasted-text area so the user can tap `Parse Text` manually.
 
 ## Quick Add Behavior
 
 - `quick-add` opens the Quick Add screen.
-- `parse?text=...` opens Quick Add, loads the text into the pasted-text area, and parses it locally.
+- `parse?text=...` opens Quick Add and loads the text into the pasted-text area. Parsing remains manual unless the user taps `Parse Text`.
 - `add?amount=...&merchant=...&category=...` opens Quick Add and pre-fills the form.
 - Prefill is explicit only; Pocket Leak never saves automatically from a URL.
 - When a URL arrives, the current draft state is cleared first so stale parser output does not leak into the new entry.
+- When a Share Extension sends text, Pocket Leak stores it locally in the App Group and opens Quick Add with the pasted-text area ready.
 
 ## Build A Shortcut
 
@@ -82,6 +83,8 @@ For manual workflows, copy the bank text from a notification, open Pocket Leak, 
 - The app only handles text that the user explicitly passes through Shortcuts, the clipboard, or paste actions.
 - URL prefill is local-only and does not auto-save.
 - Clipboard intake happens only after an explicit tap in the app.
+- The Share Extension accepts text only and never reads notifications directly.
+- If the Share Extension cannot open the app automatically, the shared text remains in the App Group until the main app consumes it on launch.
 
 ## Troubleshooting
 

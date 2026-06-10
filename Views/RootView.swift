@@ -100,6 +100,11 @@ struct RootView: View {
                     showOnboarding = true
                 }
             }
+
+            if let sharedText = SharedTextStore.shared.consumePendingText() {
+                setSelectedTab(.quickAdd, playHaptic: false)
+                viewModel.loadImportedText(sharedText)
+            }
         }
         .sheet(isPresented: $showSettings) {
             SettingsView(
@@ -115,7 +120,7 @@ struct RootView: View {
                     get: { AppLanguage(rawValue: languageRaw) ?? .english },
                     set: { languageRaw = $0.rawValue }
                 ),
-                versionText: "v0.1",
+                versionText: appVersionText,
                 onOpenHistory: {
                     setSelectedTab(.history)
                 },
@@ -134,6 +139,9 @@ struct RootView: View {
                 onOpenQuickAddRoute: {
                     guard let url = URL(string: "pocketleak://quick-add") else { return }
                     openURL(url)
+                },
+                onSyncNotifications: {
+                    viewModel.syncLocalNotifications()
                 },
                 onShowOnboardingAgain: {
                     withAnimation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard)) {
@@ -169,9 +177,17 @@ struct RootView: View {
                 viewModel.clearParseFeedback()
             case .parseText(let text):
                 setSelectedTab(.quickAdd, playHaptic: false)
-                viewModel.loadImportedTextAndParse(text)
+                viewModel.loadImportedText(text)
+                SharedTextStore.shared.clearPendingText()
             }
         }
+    }
+
+    private var appVersionText: String {
+        let info = Bundle.main.infoDictionary
+        let marketingVersion = info?["CFBundleShortVersionString"] as? String ?? "0.5.0"
+        let buildNumber = info?["CFBundleVersion"] as? String ?? "50"
+        return "\(marketingVersion) (\(buildNumber))"
     }
 
     @ViewBuilder

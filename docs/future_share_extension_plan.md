@@ -1,14 +1,14 @@
-# Future Share Extension Plan
+# Share Extension Notes
 
-Pocket Leak can add a Share Extension later if the product needs a lower-friction way to receive text from other apps.
+Pocket Leak now includes a minimal Share Extension for explicit user-shared text. The notes below remain useful for understanding the constraints and the privacy-safe implementation choices.
 
-## Why It Is Deferred
+## Why It Was Deferred
 
 - A Share Extension adds another target, more XcodeGen wiring, and extra validation surface.
-- This phase is intentionally focused on safe text intake through explicit tap, clipboard, and Shortcuts URL handoff.
-- The app already has a local-first parser flow, so the low-risk path is to refine that before expanding into an extension.
+- This phase was intentionally focused on safe text intake through explicit tap, clipboard, and Shortcuts URL handoff.
+- The app already had a local-first parser flow, so the low-risk path was to refine that before expanding into an extension.
 
-## Proposed Scope
+## Implemented Scope
 
 - Accept `text/plain`
 - Preserve privacy by only receiving user-shared content
@@ -17,13 +17,12 @@ Pocket Leak can add a Share Extension later if the product needs a lower-frictio
 
 ## Implementation Notes
 
-- Add the extension only if the repo can keep XcodeGen stable and the signing setup remains simple.
-- Reuse the existing parser in the main app instead of adding duplicate parsing logic in the extension.
-- Keep the extension tiny: capture text, hand it off, and exit.
+- The extension stays tiny: capture text, hand it off, and exit.
+- The main app owns parsing and never saves automatically from the share handoff.
+- The App Group identifier must match the widget and the share extension.
 
-## Risks
+## Remaining Risks
 
 - Extension configuration can increase project complexity.
-- App-group setup may require manual Apple Developer capability work.
-- If signing is fragile, this should stay a future phase rather than being forced into the current one.
-
+- App-group setup may still require manual Apple Developer capability work for a Personal Team. If XcodeGen cannot enable it automatically, turn on App Groups manually for both the app and extension targets using the same group identifier.
+- If signing is fragile, keep the extension minimal and avoid extra logic in the share target.

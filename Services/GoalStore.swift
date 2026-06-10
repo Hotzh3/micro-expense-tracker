@@ -30,6 +30,7 @@ final class GoalStore {
             if let goals = try? decoder.decode(SpendingGoals.self, from: data) {
                 let sanitized = goals.sanitized
                 if sanitized != goals {
+                    print("Invalid goal ignored: sanitized stored goals")
                     saveGoals(sanitized)
                 }
                 return sanitized
@@ -37,6 +38,7 @@ final class GoalStore {
 
             if let legacyGoal = try? decoder.decode(SpendingGoal.self, from: data) {
                 guard legacyGoal.isValid else {
+                    print("Invalid goal ignored:", legacyGoal)
                     removeCorruptGoalsFile()
                     return .empty
                 }
@@ -51,10 +53,12 @@ final class GoalStore {
                 return goals
             }
 
+            print("GoalStore decode failed; clearing corrupt goals")
             removeCorruptGoalsFile()
             return .empty
         } catch {
             print("Failed to load goals: \(error)")
+            print("GoalStore decode failed; clearing corrupt goals")
             removeCorruptGoalsFile()
             return .empty
         }
