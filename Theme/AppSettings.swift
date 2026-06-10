@@ -5,6 +5,8 @@ enum AppPreferenceKeys {
     static let textSize = "app.textSize"
     static let language = "app.language"
     static let hapticsEnabled = "app.hapticsEnabled"
+    static let smartAlertsEnabled = "app.smartAlertsEnabled"
+    static let dismissedSmartAlertIDs = "app.dismissedSmartAlertIDs"
     static let hasSeenOnboarding = "app.hasSeenOnboarding"
 }
 
@@ -193,6 +195,8 @@ struct AppStrings {
     let parseNoResultMessage: String
     let parsedPreviewTitle: String
     let parsedPreviewSubtitle: String
+    let rawMerchantLabel: String
+    let normalizedMerchantLabel: String
     let merchantLabel: String
     let confidenceLabel: String
     let sourceLabel: String
@@ -203,6 +207,8 @@ struct AppStrings {
     let dashboardQuickSnapshotTitle: String
     let dashboardCategoryDistributionTitle: String
     let dashboardRecentTrendTitle: String
+    let dashboardSignalTitle: String
+    let dashboardSignalSubtitle: String
     let dashboardGoalsTitle: String
     let dashboardGoalsSubtitle: String
     let dashboardGoalsCtaTitle: String
@@ -218,9 +224,96 @@ struct AppStrings {
     let exportCSV: String
     let exportJSON: String
     let exportMonthlySummary: String
+    let shareSummaryButton: String
+    let shareSummaryWeeklyCardTitle: String
+    let shareSummaryMonthlyCardTitle: String
+    let shareSummaryGoalCardTitle: String
+    let shareSummaryTopCategoryCardTitle: String
+    let shareSummaryBadgeWeekly: String
+    let shareSummaryBadgeMonthly: String
+    let shareSummaryBadgeGoal: String
+    let shareSummaryBadgeTopCategory: String
+    let shareSummaryTopCategoryChipPrefix: String
+    let shareSummaryTopCategoryShareTemplate: String
+    let shareSummaryTopCategoryCountTemplate: String
+    let shareSummaryWeeklyMessage: String
+    let shareSummaryMonthlyMessage: String
+    let shareSummaryGoalMessage: String
+    let shareSummaryTopCategoryMessage: String
     let insightsWeeklyTotalsTitle: String
     let insightsCategoryBreakdownTitle: String
     let insightsNoCategoryBreakdown: String
+    let trendsTitle: String
+    let trendsSubtitle: String
+    let trendTodayVsYesterdayTitle: String
+    let trendWeekVsLastWeekTitle: String
+    let trendMonthVsLastMonthTitle: String
+    let trendDailyAverageWeekTitle: String
+    let trendTopCategoryComparisonTitleTemplate: String
+    let trendCurrentLabel: String
+    let trendPreviousLabel: String
+    let trendNoPreviousDataMessage: String
+    let trendHigherMessageTemplate: String
+    let trendLowerMessageTemplate: String
+    let trendFlatMessage: String
+    let weeklyDigestTitle: String
+    let weeklyDigestSubtitle: String
+    let weeklyDigestEmptyTitle: String
+    let weeklyDigestEmptyMessage: String
+    let weeklyDigestEmptyAction: String
+    let weeklyDigestDateRangeTemplate: String
+    let weeklyDigestExpenseCountTemplate: String
+    let weeklyDigestTopCategoryLabel: String
+    let weeklyDigestAverageDailyLabel: String
+    let weeklyDigestLargestExpenseLabel: String
+    let weeklyDigestGoalStatusLabel: String
+    let weeklyDigestBestInsightLabel: String
+    let weeklyDigestComparisonLabel: String
+    let weeklyDigestNoComparisonMessage: String
+    let weeklyDigestShareButton: String
+    let smartAlertsTitle: String
+    let smartAlertsSubtitle: String
+    let smartAlertsDescription: String
+    let enableSmartAlerts: String
+    let smartAlertsDismiss: String
+    let smartAlertsNoDataTitle: String
+    let smartAlertsNoDataMessage: String
+    let smartAlertsGoalRiskTitle: String
+    let smartAlertsGoalWatchWeeklyMessageTemplate: String
+    let smartAlertsGoalWatchMonthlyMessageTemplate: String
+    let smartAlertsGoalRiskWeeklyMessageTemplate: String
+    let smartAlertsGoalRiskMonthlyMessageTemplate: String
+    let smartAlertsGoalOverWeeklyMessageTemplate: String
+    let smartAlertsGoalOverMonthlyMessageTemplate: String
+    let smartAlertsTodayAboveAverageTitle: String
+    let smartAlertsTodayAboveAverageMessageTemplate: String
+    let smartAlertsCategorySpikeTitle: String
+    let smartAlertsCategorySpikeMessageTemplate: String
+    let smartAlertsPositiveTrendTitle: String
+    let smartAlertsPositiveTrendMessageTemplate: String
+    let smartInsightsTitle: String
+    let smartInsightsSubtitle: String
+    let smartInsightsNoDataTitle: String
+    let smartInsightsNoDataMessage: String
+    let smartInsightsTopCategoryWeekTitle: String
+    let smartInsightsTopCategoryMonthTitle: String
+    let smartInsightsTopCategoryWeekMessage: String
+    let smartInsightsTopCategoryMonthMessage: String
+    let smartInsightsDailyAverageWeekTitle: String
+    let smartInsightsDailyAverageMonthTitle: String
+    let smartInsightsDailyAverageWeekMessage: String
+    let smartInsightsDailyAverageMonthMessage: String
+    let smartInsightsSpendingIncreaseTitle: String
+    let smartInsightsSpendingDecreaseTitle: String
+    let smartInsightsSpendingIncreaseMessage: String
+    let smartInsightsSpendingDecreaseMessage: String
+    let smartInsightsGoalRiskTitle: String
+    let smartInsightsPositiveTrendTitle: String
+    let smartInsightsNeutralTitle: String
+    let smartInsightsGoalRiskWeeklyLimitReachedMessage: String
+    let smartInsightsGoalRiskMonthlyLimitReachedMessage: String
+    let smartInsightsGoalRiskWeeklyCloseToLimitMessage: String
+    let smartInsightsGoalRiskMonthlyCloseToLimitMessage: String
     let goalsWeeklyTitle: String
     let goalsMonthlyTitle: String
     let goalsCreateWeekly: String
@@ -251,6 +344,18 @@ struct AppStrings {
     let goalsEmptyMonthly: String
     let goalsEditorTitle: String
     let goalsGoalLogicDescription: String
+    let goalsForecastTitle: String
+    let goalsForecastAtThisPaceTemplate: String
+    let goalsForecastDailyBudgetTemplate: String
+    let goalsForecastStayUnderTemplate: String
+    let goalsForecastGoOverTemplate: String
+    let goalsForecastOverSummary: String
+    let goalForecastStatusSafe: String
+    let goalForecastStatusWatch: String
+    let goalForecastStatusRisk: String
+    let goalForecastStatusOver: String
+    let dashboardGoalAtRiskTitleTemplate: String
+    let dashboardGoalAtRiskSubtitleTemplate: String
     let goalsRemoveConfirmationTitle: String
     let goalsRemoveConfirmationMessage: String
 
@@ -383,6 +488,8 @@ struct AppStrings {
                 parseNoResultMessage: "No useful text found. Paste a transaction and try again.",
                 parsedPreviewTitle: "Parsed Preview",
                 parsedPreviewSubtitle: "Review the extracted details before saving.",
+                rawMerchantLabel: "Raw merchant",
+                normalizedMerchantLabel: "Normalized merchant",
                 merchantLabel: "Merchant",
                 confidenceLabel: "Confidence",
                 sourceLabel: "Source",
@@ -393,6 +500,8 @@ struct AppStrings {
                 dashboardQuickSnapshotTitle: "Quick Snapshot",
                 dashboardCategoryDistributionTitle: "Category Distribution",
                 dashboardRecentTrendTitle: "Recent Spending Trend",
+                dashboardSignalTitle: "Today’s signal",
+                dashboardSignalSubtitle: "A short, local read on your spending pattern.",
                 dashboardGoalsTitle: "Goals snapshot",
                 dashboardGoalsSubtitle: "Keep both budget cadences visible without leaving the dashboard.",
                 dashboardGoalsCtaTitle: "Add a goal",
@@ -408,9 +517,96 @@ struct AppStrings {
                 exportCSV: "Export CSV",
                 exportJSON: "Export JSON",
                 exportMonthlySummary: "Share Monthly Summary",
+                shareSummaryButton: "Share Summary",
+                shareSummaryWeeklyCardTitle: "Weekly Summary",
+                shareSummaryMonthlyCardTitle: "Monthly Summary",
+                shareSummaryGoalCardTitle: "Goal Progress",
+                shareSummaryTopCategoryCardTitle: "Top Category",
+                shareSummaryBadgeWeekly: "Weekly",
+                shareSummaryBadgeMonthly: "Monthly",
+                shareSummaryBadgeGoal: "Goal",
+                shareSummaryBadgeTopCategory: "Top",
+                shareSummaryTopCategoryChipPrefix: "Top",
+                shareSummaryTopCategoryShareTemplate: "%@ of total",
+                shareSummaryTopCategoryCountTemplate: "%d expenses",
+                shareSummaryWeeklyMessage: "A quick look at your week.",
+                shareSummaryMonthlyMessage: "A quick look at your month.",
+                shareSummaryGoalMessage: "Your goal progress at a glance.",
+                shareSummaryTopCategoryMessage: "Your biggest leak this month.",
                 insightsWeeklyTotalsTitle: "Weekly Totals",
                 insightsCategoryBreakdownTitle: "Category Breakdown",
                 insightsNoCategoryBreakdown: "No breakdown yet.",
+                trendsTitle: "Trends",
+                trendsSubtitle: "Clear local comparisons across recent periods.",
+                trendTodayVsYesterdayTitle: "Today vs Yesterday",
+                trendWeekVsLastWeekTitle: "This Week vs Last Week",
+                trendMonthVsLastMonthTitle: "This Month vs Last Month",
+                trendDailyAverageWeekTitle: "Daily Average This Week",
+                trendTopCategoryComparisonTitleTemplate: "%@ vs %@",
+                trendCurrentLabel: "Current",
+                trendPreviousLabel: "Previous",
+                trendNoPreviousDataMessage: "No previous data yet.",
+                trendHigherMessageTemplate: "%@ higher than last period",
+                trendLowerMessageTemplate: "%@ lower than last period",
+                trendFlatMessage: "About the same as the previous period.",
+                weeklyDigestTitle: "Weekly Digest",
+                weeklyDigestSubtitle: "A quick summary of how the week is going.",
+                weeklyDigestEmptyTitle: "Weekly digest will appear here",
+                weeklyDigestEmptyMessage: "Add a few expenses during the week and Pocket Leak will build a clear digest automatically.",
+                weeklyDigestEmptyAction: "Add First Expense",
+                weeklyDigestDateRangeTemplate: "%@ - %@",
+                weeklyDigestExpenseCountTemplate: "%d expenses this week",
+                weeklyDigestTopCategoryLabel: "Top category",
+                weeklyDigestAverageDailyLabel: "Average daily",
+                weeklyDigestLargestExpenseLabel: "Largest expense",
+                weeklyDigestGoalStatusLabel: "Goal status",
+                weeklyDigestBestInsightLabel: "Best insight",
+                weeklyDigestComparisonLabel: "Compared with last week",
+                weeklyDigestNoComparisonMessage: "No week-over-week comparison yet.",
+                weeklyDigestShareButton: "Share digest",
+                smartAlertsTitle: "Smart Alerts",
+                smartAlertsSubtitle: "Live alerts based on your local spending patterns.",
+                smartAlertsDescription: "Shows in-app alerts for risk, spikes, and positive trends.",
+                enableSmartAlerts: "Enable Smart Alerts",
+                smartAlertsDismiss: "Dismiss",
+                smartAlertsNoDataTitle: "No spending yet",
+                smartAlertsNoDataMessage: "Add your first expense and Pocket Leak will start surfacing alerts here.",
+                smartAlertsGoalRiskTitle: "Goal at risk",
+                smartAlertsGoalWatchWeeklyMessageTemplate: "%@ is close to the limit. You have %@/day left.",
+                smartAlertsGoalWatchMonthlyMessageTemplate: "%@ is close to the limit. You have %@/day left.",
+                smartAlertsGoalRiskWeeklyMessageTemplate: "%@ is in danger of going over by %@.",
+                smartAlertsGoalRiskMonthlyMessageTemplate: "%@ is in danger of going over by %@.",
+                smartAlertsGoalOverWeeklyMessageTemplate: "%@ is already over by %@.",
+                smartAlertsGoalOverMonthlyMessageTemplate: "%@ is already over by %@.",
+                smartAlertsTodayAboveAverageTitle: "Today is running hot",
+                smartAlertsTodayAboveAverageMessageTemplate: "Today's spend is %@ above your daily average (%@).",
+                smartAlertsCategorySpikeTitle: "Category spike",
+                smartAlertsCategorySpikeMessageTemplate: "%@ is up %@ vs last week (%@).",
+                smartAlertsPositiveTrendTitle: "Positive trend",
+                smartAlertsPositiveTrendMessageTemplate: "You spent %@ less than last week (%@).",
+                smartInsightsTitle: "Smart Insights",
+                smartInsightsSubtitle: "Local patterns from your saved expenses.",
+                smartInsightsNoDataTitle: "No insights yet",
+                smartInsightsNoDataMessage: "Add a few expenses and Pocket Leak will start surfacing patterns here.",
+                smartInsightsTopCategoryWeekTitle: "Top category this week",
+                smartInsightsTopCategoryMonthTitle: "Top category this month",
+                smartInsightsTopCategoryWeekMessage: "%@ is %@ of your tracked leaks this week.",
+                smartInsightsTopCategoryMonthMessage: "%@ is %@ of your tracked leaks this month.",
+                smartInsightsDailyAverageWeekTitle: "Daily average this week",
+                smartInsightsDailyAverageMonthTitle: "Daily average this month",
+                smartInsightsDailyAverageWeekMessage: "You are averaging %@ per day this week.",
+                smartInsightsDailyAverageMonthMessage: "You are averaging %@ per day this month.",
+                smartInsightsSpendingIncreaseTitle: "Spending is up",
+                smartInsightsSpendingDecreaseTitle: "Spending is down",
+                smartInsightsSpendingIncreaseMessage: "You spent %@ more than last week (%@).",
+                smartInsightsSpendingDecreaseMessage: "You spent %@ less than last week (%@).",
+                smartInsightsGoalRiskTitle: "Goal at risk",
+                smartInsightsPositiveTrendTitle: "On track",
+                smartInsightsNeutralTitle: "Neutral",
+                smartInsightsGoalRiskWeeklyLimitReachedMessage: "You are %@ over your weekly limit.",
+                smartInsightsGoalRiskMonthlyLimitReachedMessage: "You are %@ over your monthly limit.",
+                smartInsightsGoalRiskWeeklyCloseToLimitMessage: "You have %@ left this week.",
+                smartInsightsGoalRiskMonthlyCloseToLimitMessage: "You have %@ left this month.",
                 goalsWeeklyTitle: "Weekly Goal",
                 goalsMonthlyTitle: "Monthly Goal",
                 goalsCreateWeekly: "Create Weekly Goal",
@@ -441,6 +637,18 @@ struct AppStrings {
                 goalsEmptyMonthly: "No monthly goal yet.",
                 goalsEditorTitle: "Goal Editor",
                 goalsGoalLogicDescription: "Stay under your selected limit by week or by month.",
+                goalsForecastTitle: "Forecast",
+                goalsForecastAtThisPaceTemplate: "At this pace, you'll end at %@.",
+                goalsForecastDailyBudgetTemplate: "You have %@/day left.",
+                goalsForecastStayUnderTemplate: "You are projected to stay under by %@.",
+                goalsForecastGoOverTemplate: "You are projected to go over by %@.",
+                goalsForecastOverSummary: "You are already over by %@.",
+                goalForecastStatusSafe: "Safe",
+                goalForecastStatusWatch: "Watch",
+                goalForecastStatusRisk: "Risk",
+                goalForecastStatusOver: "Over",
+                dashboardGoalAtRiskTitleTemplate: "%@ at risk",
+                dashboardGoalAtRiskSubtitleTemplate: "You have %@/day left.",
                 goalsRemoveConfirmationTitle: "Remove spending goal?",
                 goalsRemoveConfirmationMessage: "This removes the local goal from this device."
             )
@@ -570,6 +778,8 @@ struct AppStrings {
                 parseNoResultMessage: "No encontré texto útil. Pega una transacción e inténtalo de nuevo.",
                 parsedPreviewTitle: "Vista previa analizada",
                 parsedPreviewSubtitle: "Revisa los datos extraídos antes de guardar.",
+                rawMerchantLabel: "Comerciante original",
+                normalizedMerchantLabel: "Comerciante normalizado",
                 merchantLabel: "Comerciante",
                 confidenceLabel: "Confianza",
                 sourceLabel: "Fuente",
@@ -580,6 +790,8 @@ struct AppStrings {
                 dashboardQuickSnapshotTitle: "Resumen rápido",
                 dashboardCategoryDistributionTitle: "Distribución por categoría",
                 dashboardRecentTrendTitle: "Tendencia reciente",
+                dashboardSignalTitle: "Señal de hoy",
+                dashboardSignalSubtitle: "Una lectura breve y local de tu patrón de gasto.",
                 dashboardGoalsTitle: "Resumen de metas",
                 dashboardGoalsSubtitle: "Mantén visibles ambos ritmos de presupuesto sin salir del panel.",
                 dashboardGoalsCtaTitle: "Agregar una meta",
@@ -595,9 +807,96 @@ struct AppStrings {
                 exportCSV: "Exportar CSV",
                 exportJSON: "Exportar JSON",
                 exportMonthlySummary: "Compartir resumen mensual",
+                shareSummaryButton: "Compartir resumen",
+                shareSummaryWeeklyCardTitle: "Resumen semanal",
+                shareSummaryMonthlyCardTitle: "Resumen mensual",
+                shareSummaryGoalCardTitle: "Progreso de meta",
+                shareSummaryTopCategoryCardTitle: "Categoría principal",
+                shareSummaryBadgeWeekly: "Semanal",
+                shareSummaryBadgeMonthly: "Mensual",
+                shareSummaryBadgeGoal: "Meta",
+                shareSummaryBadgeTopCategory: "Principal",
+                shareSummaryTopCategoryChipPrefix: "Principal",
+                shareSummaryTopCategoryShareTemplate: "%@ del total",
+                shareSummaryTopCategoryCountTemplate: "%d gastos",
+                shareSummaryWeeklyMessage: "Una vista rápida de tu semana.",
+                shareSummaryMonthlyMessage: "Una vista rápida de tu mes.",
+                shareSummaryGoalMessage: "Tu progreso de meta de un vistazo.",
+                shareSummaryTopCategoryMessage: "Tu mayor fuga de este mes.",
                 insightsWeeklyTotalsTitle: "Totales semanales",
                 insightsCategoryBreakdownTitle: "Desglose por categoría",
                 insightsNoCategoryBreakdown: "Aún no hay desglose.",
+                trendsTitle: "Tendencias",
+                trendsSubtitle: "Comparaciones locales y claras de los últimos periodos.",
+                trendTodayVsYesterdayTitle: "Hoy vs Ayer",
+                trendWeekVsLastWeekTitle: "Esta semana vs la pasada",
+                trendMonthVsLastMonthTitle: "Este mes vs el pasado",
+                trendDailyAverageWeekTitle: "Promedio diario de la semana",
+                trendTopCategoryComparisonTitleTemplate: "%@ vs %@",
+                trendCurrentLabel: "Actual",
+                trendPreviousLabel: "Anterior",
+                trendNoPreviousDataMessage: "Aún no hay datos previos.",
+                trendHigherMessageTemplate: "%@ más que el periodo anterior",
+                trendLowerMessageTemplate: "%@ menos que el periodo anterior",
+                trendFlatMessage: "Casi igual que el periodo anterior.",
+                weeklyDigestTitle: "Resumen semanal",
+                weeklyDigestSubtitle: "Un resumen rápido de cómo va la semana.",
+                weeklyDigestEmptyTitle: "El resumen semanal aparecerá aquí",
+                weeklyDigestEmptyMessage: "Agrega algunos gastos durante la semana y Pocket Leak construirá un resumen claro automáticamente.",
+                weeklyDigestEmptyAction: "Agregar primer gasto",
+                weeklyDigestDateRangeTemplate: "%@ - %@",
+                weeklyDigestExpenseCountTemplate: "%d gastos esta semana",
+                weeklyDigestTopCategoryLabel: "Categoría principal",
+                weeklyDigestAverageDailyLabel: "Promedio diario",
+                weeklyDigestLargestExpenseLabel: "Gasto más alto",
+                weeklyDigestGoalStatusLabel: "Estado de meta",
+                weeklyDigestBestInsightLabel: "Mejor insight",
+                weeklyDigestComparisonLabel: "Comparado con la semana pasada",
+                weeklyDigestNoComparisonMessage: "Aún no hay comparación semana a semana.",
+                weeklyDigestShareButton: "Compartir resumen",
+                smartAlertsTitle: "Alertas inteligentes",
+                smartAlertsSubtitle: "Alertas en vivo basadas en tus patrones locales de gasto.",
+                smartAlertsDescription: "Muestra alertas dentro de la app para riesgo, picos y tendencias positivas.",
+                enableSmartAlerts: "Activar alertas inteligentes",
+                smartAlertsDismiss: "Descartar",
+                smartAlertsNoDataTitle: "Aún no hay gasto",
+                smartAlertsNoDataMessage: "Agrega tu primer gasto y Pocket Leak empezará a mostrar alertas aquí.",
+                smartAlertsGoalRiskTitle: "Meta en riesgo",
+                smartAlertsGoalWatchWeeklyMessageTemplate: "%@ está cerca del límite. Te quedan %@/día.",
+                smartAlertsGoalWatchMonthlyMessageTemplate: "%@ está cerca del límite. Te quedan %@/día.",
+                smartAlertsGoalRiskWeeklyMessageTemplate: "%@ tiene riesgo de pasarse por %@.",
+                smartAlertsGoalRiskMonthlyMessageTemplate: "%@ tiene riesgo de pasarse por %@.",
+                smartAlertsGoalOverWeeklyMessageTemplate: "%@ ya está por encima por %@.",
+                smartAlertsGoalOverMonthlyMessageTemplate: "%@ ya está por encima por %@.",
+                smartAlertsTodayAboveAverageTitle: "Hoy va alto",
+                smartAlertsTodayAboveAverageMessageTemplate: "El gasto de hoy está %@ por encima de tu promedio diario (%@).",
+                smartAlertsCategorySpikeTitle: "Pico por categoría",
+                smartAlertsCategorySpikeMessageTemplate: "%@ subió %@ vs la semana pasada (%@).",
+                smartAlertsPositiveTrendTitle: "Tendencia positiva",
+                smartAlertsPositiveTrendMessageTemplate: "Gastaste %@ menos que la semana pasada (%@).",
+                smartInsightsTitle: "Insights inteligentes",
+                smartInsightsSubtitle: "Patrones locales de tus gastos guardados.",
+                smartInsightsNoDataTitle: "Aún no hay insights",
+                smartInsightsNoDataMessage: "Agrega algunos gastos y Pocket Leak empezará a mostrar patrones aquí.",
+                smartInsightsTopCategoryWeekTitle: "Categoría principal de la semana",
+                smartInsightsTopCategoryMonthTitle: "Categoría principal del mes",
+                smartInsightsTopCategoryWeekMessage: "%@ representa %@ de tus fugas registradas esta semana.",
+                smartInsightsTopCategoryMonthMessage: "%@ representa %@ de tus fugas registradas este mes.",
+                smartInsightsDailyAverageWeekTitle: "Promedio diario de la semana",
+                smartInsightsDailyAverageMonthTitle: "Promedio diario del mes",
+                smartInsightsDailyAverageWeekMessage: "Promedias %@ por día esta semana.",
+                smartInsightsDailyAverageMonthMessage: "Promedias %@ por día este mes.",
+                smartInsightsSpendingIncreaseTitle: "El gasto subió",
+                smartInsightsSpendingDecreaseTitle: "El gasto bajó",
+                smartInsightsSpendingIncreaseMessage: "Gastaste %@ más que la semana pasada (%@).",
+                smartInsightsSpendingDecreaseMessage: "Gastaste %@ menos que la semana pasada (%@).",
+                smartInsightsGoalRiskTitle: "Meta en riesgo",
+                smartInsightsPositiveTrendTitle: "En control",
+                smartInsightsNeutralTitle: "Neutral",
+                smartInsightsGoalRiskWeeklyLimitReachedMessage: "Estás %@ por encima de tu límite semanal.",
+                smartInsightsGoalRiskMonthlyLimitReachedMessage: "Estás %@ por encima de tu límite mensual.",
+                smartInsightsGoalRiskWeeklyCloseToLimitMessage: "Te quedan %@ esta semana.",
+                smartInsightsGoalRiskMonthlyCloseToLimitMessage: "Te quedan %@ este mes.",
                 goalsWeeklyTitle: "Meta semanal",
                 goalsMonthlyTitle: "Meta mensual",
                 goalsCreateWeekly: "Crear meta semanal",
@@ -628,6 +927,18 @@ struct AppStrings {
                 goalsEmptyMonthly: "Todavía no hay meta mensual.",
                 goalsEditorTitle: "Editor de metas",
                 goalsGoalLogicDescription: "Mantente por debajo del límite seleccionado por semana o por mes.",
+                goalsForecastTitle: "Pronóstico",
+                goalsForecastAtThisPaceTemplate: "A este ritmo, terminarás en %@.",
+                goalsForecastDailyBudgetTemplate: "Te quedan %@/día.",
+                goalsForecastStayUnderTemplate: "Se proyecta que te mantengas por debajo por %@.",
+                goalsForecastGoOverTemplate: "Se proyecta que te pases por %@.",
+                goalsForecastOverSummary: "Ya estás por encima por %@.",
+                goalForecastStatusSafe: "Seguro",
+                goalForecastStatusWatch: "Atento",
+                goalForecastStatusRisk: "En riesgo",
+                goalForecastStatusOver: "Excedido",
+                dashboardGoalAtRiskTitleTemplate: "%@ en riesgo",
+                dashboardGoalAtRiskSubtitleTemplate: "Te quedan %@/día.",
                 goalsRemoveConfirmationTitle: "¿Eliminar meta de gasto?",
                 goalsRemoveConfirmationMessage: "Esto elimina la meta local de este dispositivo."
             )

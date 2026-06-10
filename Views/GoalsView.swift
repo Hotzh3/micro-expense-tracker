@@ -21,28 +21,48 @@ struct GoalsView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                ScreenHeaderView(
-                    title: strings.goalsHeader,
-                    subtitle: strings.goalsHeaderSubtitle,
-                    showsSettingsButton: true
-                )
+        ScrollViewReader { scrollProxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    ScreenHeaderView(
+                        title: strings.goalsHeader,
+                        subtitle: strings.goalsHeaderSubtitle,
+                        showsSettingsButton: true
+                    )
 
-                VStack(spacing: 12) {
-                    goalSection(for: .weekly)
-                    goalSection(for: .monthly)
-                }
-                .opacity(didAnimateIn ? 1 : 0)
-                .offset(y: didAnimateIn ? 0 : 8)
-
-                editorCard
+                    VStack(spacing: 12) {
+                        goalSection(for: .weekly)
+                        goalSection(for: .monthly)
+                    }
                     .opacity(didAnimateIn ? 1 : 0)
                     .offset(y: didAnimateIn ? 0 : 8)
+
+                    editorCard
+                        .id("goal-editor")
+                        .opacity(didAnimateIn ? 1 : 0)
+                        .offset(y: didAnimateIn ? 0 : 8)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 0)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 0)
-            .padding(.bottom, 24)
+            .scrollDismissesKeyboard(.interactively)
+            .foregroundColor(AppTheme.primaryText)
+            .tint(AppTheme.primaryText)
+            .accentColor(AppTheme.primaryText)
+            .onChange(of: focusedField) { _, newValue in
+                viewModel.isGoalsInputFocused = newValue != nil
+                guard newValue != nil else { return }
+                withAnimation(.easeOut(duration: 0.25)) {
+                    scrollProxy.scrollTo("goal-editor", anchor: .center)
+                }
+            }
+            .onAppear {
+                viewModel.isGoalsInputFocused = focusedField != nil
+            }
+            .onDisappear {
+                viewModel.isGoalsInputFocused = false
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onAppear(perform: syncEditorFromSelectedGoal)
@@ -129,28 +149,6 @@ struct GoalsView: View {
                             goalMetric(label: strings.goalsRemainingLabel, value: summary.remainingText)
                             goalMetric(label: strings.goalsPercentUsedLabel, value: viewModel.goalPercentUsedText(for: cadence))
                         }
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            helperRow(
-                                label: strings.goalsDaysLeftLabel,
-                                value: viewModel.goalDaysLeftText(for: cadence)
-                            )
-                            helperRow(
-                                label: strings.goalsRemainingDailyBudgetLabel,
-                                value: viewModel.goalRemainingDailyBudgetText(for: cadence)
-                            )
-
-                            if cadence == .monthly {
-                                helperRow(
-                                    label: strings.goalsProjectedMonthSpendLabel,
-                                    value: viewModel.goalProjectedMonthSpendText()
-                                )
-                            }
-                        }
-
-                        Text(summary.motivationText)
-                            .font(.system(size: 14 * scale))
-                            .foregroundStyle(AppTheme.secondaryText)
 
                         HStack(spacing: 10) {
                             Button {
@@ -263,16 +261,23 @@ struct GoalsView: View {
 
                     TextField("0.00", text: $limitText)
                         .keyboardType(.decimalPad)
+                        .textFieldStyle(.plain)
                         .focused($focusedField, equals: .limit)
                         .font(.system(size: 27 * scale, weight: .semibold, design: .rounded))
-                        .foregroundStyle(AppTheme.primaryText)
+                        .foregroundColor(AppTheme.primaryText)
+                        .tint(AppTheme.primaryText)
+                        .accentColor(AppTheme.primaryText)
                         .accessibilityLabel(strings.goalsLimitLabel)
                         .accessibilityHint(strings.goalsGoalLogicDescription)
                         .padding(.vertical, 14)
                         .padding(.horizontal, 16)
                         .background(
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .fill(AppTheme.cardFill)
+                                .fill(AppTheme.inputFill)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                        .stroke(AppTheme.inputBorder, lineWidth: 1)
+                                )
                         )
                 }
 
@@ -295,11 +300,11 @@ struct GoalsView: View {
 
         switch viewModel.goalStatus(for: cadence) {
         case .onTrack:
-            fill = Color.green.opacity(0.22)
+            fill = Color(red: 0.19, green: 0.64, blue: 0.38).opacity(0.18)
         case .closeToLimit:
-            fill = Color.yellow.opacity(0.18)
+            fill = Color(red: 0.92, green: 0.69, blue: 0.15).opacity(0.18)
         case .limitReached:
-            fill = Color.red.opacity(0.18)
+            fill = Color(red: 0.86, green: 0.25, blue: 0.24).opacity(0.18)
         case .none:
             fill = AppTheme.chipFill
         }
@@ -336,36 +341,16 @@ struct GoalsView: View {
         .accessibilityValue(viewModel.goalAccessibilityValue(for: cadence))
     }
 
-    private func helperRow(label: String, value: String) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 13 * appTextSize.scale))
-                .foregroundStyle(AppTheme.secondaryText)
-            Spacer()
-            Text(value)
-                .font(.system(size: 13 * appTextSize.scale, weight: .semibold))
-                .foregroundStyle(AppTheme.primaryText)
-        }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(AppTheme.cardFill)
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label): \(value)")
-    }
-
     private func progressFill(for cadence: SpendingGoalCadence) -> Color {
         switch viewModel.goalStatus(for: cadence) {
         case .onTrack:
-            return Color.green
+            return Color(red: 0.19, green: 0.64, blue: 0.38)
         case .closeToLimit:
-            return Color.orange
+            return Color(red: 0.92, green: 0.69, blue: 0.15)
         case .limitReached:
-            return Color.red
+            return Color(red: 0.86, green: 0.25, blue: 0.24)
         case .none:
-            return Color.green
+            return Color(red: 0.19, green: 0.64, blue: 0.38)
         }
     }
 

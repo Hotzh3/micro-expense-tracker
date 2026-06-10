@@ -13,6 +13,8 @@ Notification permissions in iOS apply to the app's own notifications, not to rea
 - URL scheme for fast invocation, including `pocketleak://parse?text=...`
 - Optional paste-based parsing only after an explicit tap
 - Future user-driven import flows should require explicit sharing or export from the source app
+- Local merchant normalization is allowed when the user pastes or passes text explicitly.
+- Parser examples supported locally include `OXXO 89`, `89 OXXO`, `STARBUCKS REFORMA $120`, `BBVA COMPRA APROBADA STARBUCKS $85.50`, `NU: UBER TRIP MXN 65`, `Mercado Pago cargo de $220 en Amazon`, `Tarjeta terminación 1234 compra $75.50 7 ELEVEN`, `Apple.com/bill $199`, and `Pago en Restaurante Toks 430.00 MXN`.
 
 ## Persistence Constraint
 

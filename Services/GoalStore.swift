@@ -28,21 +28,34 @@ final class GoalStore {
 
             let data = try Data(contentsOf: fileURL)
             if let goals = try? decoder.decode(SpendingGoals.self, from: data) {
-                return goals
+                let sanitized = goals.sanitized
+                if sanitized != goals {
+                    saveGoals(sanitized)
+                }
+                return sanitized
             }
 
             if let legacyGoal = try? decoder.decode(SpendingGoal.self, from: data) {
+                guard legacyGoal.isValid else {
+                    removeCorruptGoalsFile()
+                    return .empty
+                }
+                let goals: SpendingGoals
                 switch legacyGoal.cadence {
                 case .weekly:
-                    return SpendingGoals(weekly: legacyGoal, monthly: nil)
+                    goals = SpendingGoals(weekly: legacyGoal, monthly: nil)
                 case .monthly:
-                    return SpendingGoals(weekly: nil, monthly: legacyGoal)
+                    goals = SpendingGoals(weekly: nil, monthly: legacyGoal)
                 }
+                saveGoals(goals)
+                return goals
             }
 
+            removeCorruptGoalsFile()
             return .empty
         } catch {
             print("Failed to load goals: \(error)")
+            removeCorruptGoalsFile()
             return .empty
         }
     }
@@ -50,14 +63,15 @@ final class GoalStore {
     func saveGoals(_ goals: SpendingGoals) {
         do {
             try ensureStoreDirectoryExists()
-            if goals.isEmpty {
+            let sanitizedGoals = goals.sanitized
+            if sanitizedGoals.isEmpty {
                 if fileManager.fileExists(atPath: fileURL.path) {
                     try fileManager.removeItem(at: fileURL)
                 }
                 return
             }
 
-            let data = try encoder.encode(goals)
+            let data = try encoder.encode(sanitizedGoals)
             try data.write(to: fileURL, options: [.atomic])
         } catch {
             print("Failed to save goals: \(error)")
@@ -71,9 +85,20 @@ final class GoalStore {
         }
     }
 
+    private func removeCorruptGoalsFile() {
+        do {
+            if fileManager.fileExists(atPath: fileURL.path) {
+                try fileManager.removeItem(at: fileURL)
+            }
+        } catch {
+            print("Failed to remove corrupt goals file: \(error)")
+        }
+    }
+
     private static func makeFileURL(fileManager: FileManager) -> URL {
         let baseDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+            ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
         return baseDirectory
             .appendingPathComponent("JTap", isDirectory: true)
             .appendingPathComponent("goal.json")
