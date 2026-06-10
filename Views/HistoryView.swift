@@ -8,6 +8,9 @@ struct HistoryView: View {
     @State private var timeFilter: HistoryTimeFilter = .all
     @State private var selectedCategoryID: UUID? = nil
     @State private var didAnimateIn = false
+    @State private var pdfExports: [ExpensePDFReportType: ExpensePDFExport] = [:]
+    @State private var pdfExportErrorMessage: String?
+    private let pdfExportService = ExpensePDFExportService()
 
     var body: some View {
         ScrollView {
@@ -18,11 +21,9 @@ struct HistoryView: View {
                     showsSettingsButton: true
                 )
 
-                if !viewModel.expenses.isEmpty {
-                    exportCard
-                        .opacity(didAnimateIn ? 1 : 0)
-                        .offset(y: didAnimateIn ? 0 : 8)
-                }
+                exportCard
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
 
                 VStack(spacing: 12) {
                     filterCard
@@ -73,6 +74,9 @@ struct HistoryView: View {
             }
         }
         .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard), value: didAnimateIn)
+        .task(id: viewModel.pdfExportSnapshotSignature) {
+            await preparePDFExports()
+        }
     }
 
     private var filteredExpenses: [Expense] {
@@ -171,35 +175,49 @@ struct HistoryView: View {
         GlassCardView {
             VStack(alignment: .leading, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Exports")
+                    Text(strings.exportData)
                         .font(.headline)
                         .foregroundStyle(AppTheme.primaryText)
-                    Text("Share your expenses as CSV, JSON, or a plain-English monthly summary.")
+                    Text(strings.exportDescription)
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.secondaryText)
                 }
 
                 VStack(spacing: 10) {
                     ShareLink(item: viewModel.csvExport.fileURL) {
-                        exportButtonLabel(title: "Export CSV", systemImage: "doc.text")
+                        exportButtonLabel(title: strings.exportCSV, systemImage: "doc.text")
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(strings.exportCSV)
                     .accessibilityHint(strings.exportDescription)
 
                     ShareLink(item: viewModel.jsonExport.fileURL) {
-                        exportButtonLabel(title: "Export JSON", systemImage: "curlybraces")
+                        exportButtonLabel(title: strings.exportJSON, systemImage: "curlybraces")
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(strings.exportJSON)
                     .accessibilityHint(strings.exportDescription)
 
                     ShareLink(item: viewModel.monthlySummaryReportText) {
-                        exportButtonLabel(title: "Share Monthly Summary", systemImage: "text.alignleft")
+                        exportButtonLabel(title: strings.exportMonthlySummary, systemImage: "text.alignleft")
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(strings.exportMonthlySummary)
                     .accessibilityHint(strings.exportDescription)
+
+                    Text(strings.exportPDF)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AppTheme.tertiaryText)
+
+                    pdfShareLink(for: .weekly, title: strings.shareWeeklyPDFReport)
+                    pdfShareLink(for: .monthly, title: strings.shareMonthlyPDFReport)
+                    pdfShareLink(for: .allData, title: strings.shareAllDataPDFReport)
+                }
+
+                if let pdfExportErrorMessage {
+                    Text(pdfExportErrorMessage)
+                        .font(.caption)
+                        .foregroundStyle(Color.red)
                 }
             }
         }
@@ -224,6 +242,51 @@ struct HistoryView: View {
     private func resetFilters() {
         timeFilter = .all
         selectedCategoryID = nil
+    }
+
+    @ViewBuilder
+    private func pdfShareLink(for type: ExpensePDFReportType, title: String) -> some View {
+        if let export = pdfExports[type] {
+            ShareLink(item: export.fileURL) {
+                exportButtonLabel(title: title, systemImage: "doc.richtext")
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(title)
+            .accessibilityHint(strings.exportDescription)
+        } else {
+            Button {
+                // Intentionally left empty. The PDF is prepared in the background.
+            } label: {
+                exportButtonLabel(title: title, systemImage: "doc.richtext")
+            }
+            .buttonStyle(.plain)
+            .disabled(true)
+            .accessibilityLabel(title)
+            .accessibilityHint(strings.exportDescription)
+        }
+    }
+
+    @MainActor
+    private func preparePDFExports() async {
+        let monthlyReport = viewModel.pdfReportData(for: .monthly)
+        let weeklyReport = viewModel.pdfReportData(for: .weekly)
+        let allDataReport = viewModel.pdfReportData(for: .allData)
+
+        let monthlyExport = pdfExportService.export(report: monthlyReport)
+        let weeklyExport = pdfExportService.export(report: weeklyReport)
+        let allDataExport = pdfExportService.export(report: allDataReport)
+
+        var exports: [ExpensePDFReportType: ExpensePDFExport] = [:]
+        if let weeklyExport { exports[.weekly] = weeklyExport }
+        if let monthlyExport { exports[.monthly] = monthlyExport }
+        if let allDataExport { exports[.allData] = allDataExport }
+        pdfExports = exports
+
+        if monthlyExport == nil || weeklyExport == nil || allDataExport == nil {
+            pdfExportErrorMessage = strings.pdfExportFailed
+        } else {
+            pdfExportErrorMessage = nil
+        }
     }
 }
 

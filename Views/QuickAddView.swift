@@ -13,7 +13,7 @@ struct QuickAddView: View {
         appTextSize.scale
     }
 
-    private enum Field {
+    enum Field {
         case amount
         case merchant
         case note
@@ -24,207 +24,7 @@ struct QuickAddView: View {
         ZStack(alignment: .top) {
             ScrollViewReader { scrollProxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
-                        ScreenHeaderView(
-                            title: strings.quickAddHeader,
-                            subtitle: strings.quickAddIntro,
-                            showsSettingsButton: true
-                        )
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            GlassCardView {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text(strings.quickAddIntro)
-                                        .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
-                                        .foregroundStyle(AppTheme.primaryText)
-
-                                    amountField
-                                }
-                            }
-
-                            GlassCardView {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text(strings.categoryTitle)
-                                        .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
-                                        .foregroundStyle(AppTheme.primaryText)
-
-                                    Text(strings.categorySubtitle)
-                                        .font(.system(size: 14 * scale))
-                                        .foregroundStyle(AppTheme.secondaryText)
-
-                                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 108), spacing: 10)], spacing: 8) {
-                                        ForEach(viewModel.categories) { category in
-                                            CategoryPillView(category: category, isSelected: viewModel.selectedCategory == category)
-                                                .onTapGesture {
-                                                    guard viewModel.selectedCategory != category else { return }
-                                                    HapticsService.shared.lightTap()
-                                                    viewModel.selectedCategory = category
-                                                }
-                                        }
-                                    }
-                                }
-                            }
-
-                            GlassCardView {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text(strings.detailsTitle)
-                                        .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
-                                        .foregroundStyle(AppTheme.primaryText)
-
-                                    TextField(
-                                        "",
-                                        text: $viewModel.merchantText,
-                                        prompt: Text(strings.merchantPlaceholder)
-                                            .foregroundStyle(AppTheme.tertiaryText)
-                                    )
-                                        .id(Field.merchant)
-                                        .textFieldStyle(.plain)
-                                        .foregroundColor(AppTheme.primaryText)
-                                        .tint(AppTheme.primaryText)
-                                        .accentColor(AppTheme.primaryText)
-                                        .focused($focusedField, equals: .merchant)
-                                        .submitLabel(.next)
-                                        .font(.system(size: 15 * scale))
-                                        .padding(.vertical, 14)
-                                        .padding(.horizontal, 14)
-                                        .accessibilityLabel(strings.merchantPlaceholder)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                .fill(AppTheme.inputFill)
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                        .stroke(AppTheme.inputBorder, lineWidth: 1)
-                                                )
-                                        )
-
-                                    TextField(
-                                        "",
-                                        text: $viewModel.noteText,
-                                        prompt: Text(strings.notePlaceholder)
-                                            .foregroundStyle(AppTheme.tertiaryText)
-                                    )
-                                        .id(Field.note)
-                                        .textFieldStyle(.plain)
-                                        .foregroundColor(AppTheme.primaryText)
-                                        .tint(AppTheme.primaryText)
-                                        .accentColor(AppTheme.primaryText)
-                                        .focused($focusedField, equals: .note)
-                                        .submitLabel(.done)
-                                        .font(.system(size: 15 * scale))
-                                        .padding(.vertical, 14)
-                                        .padding(.horizontal, 14)
-                                        .accessibilityLabel(strings.notePlaceholder)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                .fill(AppTheme.inputFill)
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                        .stroke(AppTheme.inputBorder, lineWidth: 1)
-                                                )
-                                        )
-                                }
-                            }
-
-                            GlassCardView {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Text(strings.pasteTitle)
-                                        .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
-                                        .foregroundStyle(AppTheme.primaryText)
-
-                                    Text(strings.pasteDescription)
-                                        .font(.system(size: 14 * scale))
-                                        .foregroundStyle(AppTheme.secondaryText)
-
-                                    TextEditor(text: $viewModel.importText)
-                                        .id(Field.importText)
-                                        .scrollContentBackground(.hidden)
-                                        .focused($focusedField, equals: .importText)
-                                        .font(.system(size: 15 * scale))
-                                        .foregroundColor(AppTheme.primaryText)
-                                        .tint(AppTheme.primaryText)
-                                        .accentColor(AppTheme.primaryText)
-                                        .accessibilityLabel(strings.pasteTitle)
-                                        .accessibilityHint(strings.pasteDescription)
-                                        .frame(minHeight: 120)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 12)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                .fill(AppTheme.inputFill)
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                        .stroke(AppTheme.inputBorder, lineWidth: 1)
-                                                )
-                                        )
-
-                                    Button {
-                                        let clipboardText = UIPasteboard.general.string?
-                                            .trimmingCharacters(in: .whitespacesAndNewlines)
-                                        guard let clipboardText, !clipboardText.isEmpty else {
-                                            viewModel.setParseFeedback(message: strings.clipboardEmptyMessage, isError: true)
-                                            return
-                                        }
-
-                                        viewModel.importText = clipboardText
-                                        viewModel.parsedExpense = nil
-                                        viewModel.clearParseFeedback()
-                                        focusedField = .importText
-                                    } label: {
-                                        HStack {
-                                            Image(systemName: "doc.on.clipboard")
-                                            Text(strings.pasteFromClipboard)
-                                        }
-                                        .font(.system(size: 15 * scale, weight: .semibold))
-                                        .foregroundStyle(AppTheme.primaryText)
-                                        .frame(maxWidth: .infinity)
-                                        .frame(minHeight: 44)
-                                        .padding(.vertical, 14)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                .fill(AppTheme.cardFill)
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                        .stroke(AppTheme.cardBorder, lineWidth: 1)
-                                                )
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-                                    .accessibilityLabel(strings.pasteFromClipboard)
-                                    .accessibilityHint(strings.pasteDescription)
-
-                                    Button {
-                                        viewModel.parseImportedText()
-                                    } label: {
-                                        HStack {
-                                            Image(systemName: "wand.and.stars")
-                                            Text(strings.parseTextButton)
-                                        }
-                                        .font(.system(size: 15 * scale, weight: .semibold))
-                                        .foregroundStyle(AppTheme.background)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 14)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                .fill(AppTheme.primaryText)
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-                                    .accessibilityLabel(strings.parseTextButton)
-                                    .accessibilityHint(strings.parseNoResultMessage)
-
-                                    if let parseFeedback = viewModel.parseFeedback {
-                                        feedbackBanner(for: parseFeedback)
-                                    }
-                                }
-                            }
-
-                            PrimaryButton(title: strings.saveExpenseButton) {
-                                viewModel.saveDraftExpense()
-                            }
-                            .accessibilityLabel(strings.saveExpenseButton)
-                            .accessibilityHint(strings.saveMissingAmountError)
-                        }
-                    }
+                    quickAddContent
                     .padding(.horizontal, 16)
                     .padding(.top, 0)
                     .padding(.bottom, 18)
@@ -254,11 +54,7 @@ struct QuickAddView: View {
                 .onChange(of: viewModel.selectedCategory) { _, _ in viewModel.clearSaveFeedback() }
                 .onChange(of: viewModel.importText) { _, _ in viewModel.clearParseFeedback() }
                 .onChange(of: viewModel.parseFeedback) { _, newValue in
-                    guard let newValue, !newValue.isError else { return }
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        focusedField = .amount
-                        scrollProxy.scrollTo(Field.amount, anchor: .top)
-                    }
+                    handleParseFeedbackChange(newValue, scrollProxy: scrollProxy)
                 }
             }
 
@@ -349,34 +145,144 @@ struct QuickAddView: View {
         .id(Field.amount)
     }
 
-    @ViewBuilder
-    private func feedbackBanner(for feedback: ExpenseViewModel.Feedback) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: feedback.isError ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
-                .foregroundStyle(feedback.isError ? Color.white : Color.green)
+    private var quickAddContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ScreenHeaderView(
+                title: strings.quickAddHeader,
+                subtitle: strings.quickAddIntro,
+                showsSettingsButton: true
+            )
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(feedback.isError ? strings.needsAttention : strings.ready)
-                    .font(.system(size: 15 * scale, weight: .semibold))
-                    .foregroundStyle(AppTheme.primaryText)
-                Text(feedback.message)
-                    .font(.system(size: 13 * scale))
-                    .foregroundStyle(AppTheme.secondaryText)
-            }
-
-            Spacer()
+            amountCard
+            categoryCard
+            detailsCard
+            QuickAddImportCardView(focusedField: $focusedField)
+            saveExpenseButton
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(feedback.isError ? Color.red.opacity(0.2) : Color.green.opacity(0.18))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(feedback.isError ? Color.red.opacity(0.55) : Color.green.opacity(0.5), lineWidth: 1)
+    }
+
+    private var amountCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(strings.quickAddIntro)
+                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AppTheme.primaryText)
+
+                amountField
+            }
+        }
+    }
+
+    private var categoryCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(strings.categoryTitle)
+                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AppTheme.primaryText)
+
+                Text(strings.categorySubtitle)
+                    .font(.system(size: 14 * scale))
+                    .foregroundStyle(AppTheme.secondaryText)
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 108), spacing: 10)], spacing: 8) {
+                    ForEach(viewModel.categories) { category in
+                        categoryPill(for: category)
+                    }
+                }
+            }
+        }
+    }
+
+    private var detailsCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(strings.detailsTitle)
+                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AppTheme.primaryText)
+
+                TextField(
+                    "",
+                    text: $viewModel.merchantText,
+                    prompt: Text(strings.merchantPlaceholder)
+                        .foregroundStyle(AppTheme.tertiaryText)
                 )
-        )
-        .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 8)
+                    .id(Field.merchant)
+                    .textFieldStyle(.plain)
+                    .foregroundColor(AppTheme.primaryText)
+                    .tint(AppTheme.primaryText)
+                    .accentColor(AppTheme.primaryText)
+                    .focused($focusedField, equals: .merchant)
+                    .submitLabel(.next)
+                    .font(.system(size: 15 * scale))
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 14)
+                    .accessibilityLabel(strings.merchantPlaceholder)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppTheme.inputFill)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(AppTheme.inputBorder, lineWidth: 1)
+                            )
+                    )
+
+                TextField(
+                    "",
+                    text: $viewModel.noteText,
+                    prompt: Text(strings.notePlaceholder)
+                        .foregroundStyle(AppTheme.tertiaryText)
+                )
+                    .id(Field.note)
+                    .textFieldStyle(.plain)
+                    .foregroundColor(AppTheme.primaryText)
+                    .tint(AppTheme.primaryText)
+                    .accentColor(AppTheme.primaryText)
+                    .focused($focusedField, equals: .note)
+                    .submitLabel(.done)
+                    .font(.system(size: 15 * scale))
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 14)
+                    .accessibilityLabel(strings.notePlaceholder)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppTheme.inputFill)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(AppTheme.inputBorder, lineWidth: 1)
+                            )
+                    )
+            }
+        }
+    }
+
+    private func handleParseFeedbackChange(_ newValue: ExpenseViewModel.Feedback?, scrollProxy: ScrollViewProxy) {
+        guard let newValue, !newValue.isError else { return }
+
+        withAnimation(.easeOut(duration: 0.25)) {
+            focusedField = .amount
+            scrollProxy.scrollTo(Field.amount, anchor: .top)
+        }
+    }
+
+    private func categoryPill(for category: ExpenseCategory) -> some View {
+        CategoryPillView(category: category, isSelected: viewModel.selectedCategory == category)
+            .onTapGesture {
+                selectCategory(category)
+            }
+    }
+
+    private var saveExpenseButton: some View {
+        PrimaryButton(title: strings.saveExpenseButton) {
+            viewModel.saveDraftExpense()
+        }
+        .accessibilityLabel(strings.saveExpenseButton)
+        .accessibilityHint(strings.saveMissingAmountError)
+    }
+
+    private func selectCategory(_ category: ExpenseCategory) {
+        guard viewModel.selectedCategory != category else { return }
+        HapticsService.shared.lightTap()
+        viewModel.selectedCategory = category
     }
 
     private func saveToast(for feedback: ExpenseViewModel.Feedback) -> some View {

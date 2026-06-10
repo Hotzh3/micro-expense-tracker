@@ -6,6 +6,15 @@ enum AppPreferenceKeys {
     static let language = "app.language"
     static let hapticsEnabled = "app.hapticsEnabled"
     static let smartAlertsEnabled = "app.smartAlertsEnabled"
+    static let localNotificationsEnabled = "app.localNotificationsEnabled"
+    static let dailyCheckInEnabled = "app.dailyCheckInEnabled"
+    static let goalWarningsEnabled = "app.goalWarningsEnabled"
+    static let weeklyDigestReminderEnabled = "app.weeklyDigestReminderEnabled"
+    static let dailyCheckInHour = "app.dailyCheckInHour"
+    static let dailyCheckInMinute = "app.dailyCheckInMinute"
+    static let weeklyDigestWeekday = "app.weeklyDigestWeekday"
+    static let weeklyDigestHour = "app.weeklyDigestHour"
+    static let weeklyDigestMinute = "app.weeklyDigestMinute"
     static let dismissedSmartAlertIDs = "app.dismissedSmartAlertIDs"
     static let hasSeenOnboarding = "app.hasSeenOnboarding"
 }
@@ -116,11 +125,33 @@ struct AppStrings {
     let hapticsTitle: String
     let hapticsDescription: String
     let enableHaptics: String
+    let notificationsTitle: String
+    let notificationsDescription: String
+    let enableLocalNotifications: String
+    let dailyCheckInTitle: String
+    let dailyCheckInDescription: String
+    let goalWarningsTitle: String
+    let goalWarningsDescription: String
+    let weeklyDigestReminderTitle: String
+    let weeklyDigestReminderDescription: String
+    let dailyCheckInTimeTitle: String
+    let weeklyDigestDayTitle: String
+    let weeklyDigestTimeTitle: String
+    let notificationsPermissionDeniedMessage: String
+    let openSystemSettings: String
+    let notificationsStatusEnabled: String
+    let notificationsStatusDisabled: String
+    let notificationsStatusDenied: String
+    let notificationsStatusNotDetermined: String
     let privacyTitle: String
     let privacyNote: String
     let dataTitle: String
     let exportData: String
     let exportDescription: String
+    let exportPDF: String
+    let shareWeeklyPDFReport: String
+    let shareMonthlyPDFReport: String
+    let shareAllDataPDFReport: String
     let aboutTitle: String
     let aboutDescription: String
     let versionLabel: String
@@ -224,6 +255,23 @@ struct AppStrings {
     let exportCSV: String
     let exportJSON: String
     let exportMonthlySummary: String
+    let pdfReportTitle: String
+    let pdfWeeklyReportTitle: String
+    let pdfMonthlyReportTitle: String
+    let pdfAllDataReportTitle: String
+    let pdfAllDataPeriod: String
+    let pdfExportedOn: String
+    let pdfPeriod: String
+    let pdfTotalSpent: String
+    let pdfExpenseCount: String
+    let pdfTopCategory: String
+    let pdfCategoryBreakdown: String
+    let pdfGoalSummary: String
+    let pdfSmartInsights: String
+    let pdfRecentExpenses: String
+    let pdfNoDataMessage: String
+    let pdfGeneratedByFooter: String
+    let pdfExportFailed: String
     let shareSummaryButton: String
     let shareSummaryWeeklyCardTitle: String
     let shareSummaryMonthlyCardTitle: String
@@ -409,11 +457,33 @@ struct AppStrings {
                 hapticsTitle: "Haptics",
                 hapticsDescription: "Subtle feedback for taps, saves, parser errors, and tab changes.",
                 enableHaptics: "Enable Haptics",
+                notificationsTitle: "Notifications",
+                notificationsDescription: "Local reminders from Pocket Leak only. The app never reads notifications from other apps.",
+                enableLocalNotifications: "Enable Local Notifications",
+                dailyCheckInTitle: "Daily Check-in",
+                dailyCheckInDescription: "Reminder to add today's leaks before they disappear.",
+                goalWarningsTitle: "Goal Warnings",
+                goalWarningsDescription: "Alert me when a weekly or monthly goal is getting close to the limit.",
+                weeklyDigestReminderTitle: "Weekly Digest Reminder",
+                weeklyDigestReminderDescription: "Reminder to review the weekly digest.",
+                dailyCheckInTimeTitle: "Daily Check-in Time",
+                weeklyDigestDayTitle: "Weekly Digest Day",
+                weeklyDigestTimeTitle: "Weekly Digest Time",
+                notificationsPermissionDeniedMessage: "Notifications are disabled in iOS Settings for Pocket Leak.",
+                openSystemSettings: "Open System Settings",
+                notificationsStatusEnabled: "Notifications enabled",
+                notificationsStatusDisabled: "Notifications disabled",
+                notificationsStatusDenied: "Permission denied",
+                notificationsStatusNotDetermined: "Permission not requested",
                 privacyTitle: "Privacy",
                 privacyNote: "Pocket Leak stores expenses locally and only parses text you paste manually.",
                 dataTitle: "Data",
                 exportData: "Export Data",
-                exportDescription: "Open History to share CSV, JSON, or the monthly summary report.",
+                exportDescription: "Open History to share CSV, JSON, monthly summary, or PDF reports.",
+                exportPDF: "Export PDF",
+                shareWeeklyPDFReport: "Weekly PDF",
+                shareMonthlyPDFReport: "Monthly PDF",
+                shareAllDataPDFReport: "All Data PDF",
                 aboutTitle: "About",
                 aboutDescription: "Built for fast, local-first capture.",
                 versionLabel: "Version",
@@ -517,6 +587,23 @@ struct AppStrings {
                 exportCSV: "Export CSV",
                 exportJSON: "Export JSON",
                 exportMonthlySummary: "Share Monthly Summary",
+                pdfReportTitle: "Pocket Leak Report",
+                pdfWeeklyReportTitle: "Weekly Report",
+                pdfMonthlyReportTitle: "Monthly Report",
+                pdfAllDataReportTitle: "All Data Report",
+                pdfAllDataPeriod: "All data",
+                pdfExportedOn: "Exported",
+                pdfPeriod: "Period",
+                pdfTotalSpent: "Total Spent",
+                pdfExpenseCount: "Expense Count",
+                pdfTopCategory: "Top Category",
+                pdfCategoryBreakdown: "Category Breakdown",
+                pdfGoalSummary: "Goal Summary",
+                pdfSmartInsights: "Smart Insights",
+                pdfRecentExpenses: "Recent Expenses",
+                pdfNoDataMessage: "No expenses saved yet.",
+                pdfGeneratedByFooter: "Generated by Pocket Leak",
+                pdfExportFailed: "Could not generate the PDF report.",
                 shareSummaryButton: "Share Summary",
                 shareSummaryWeeklyCardTitle: "Weekly Summary",
                 shareSummaryMonthlyCardTitle: "Monthly Summary",
@@ -699,11 +786,33 @@ struct AppStrings {
                 hapticsTitle: "Hápticos",
                 hapticsDescription: "Retroalimentación sutil para toques, guardado, errores del parser y cambios de tab.",
                 enableHaptics: "Activar hápticos",
+                notificationsTitle: "Notificaciones",
+                notificationsDescription: "Recordatorios locales solo de Pocket Leak. La app nunca lee notificaciones de otras apps.",
+                enableLocalNotifications: "Activar notificaciones locales",
+                dailyCheckInTitle: "Revisión diaria",
+                dailyCheckInDescription: "Recordatorio para agregar las fugas de hoy antes de que se pierdan.",
+                goalWarningsTitle: "Alertas de metas",
+                goalWarningsDescription: "Avísame cuando una meta semanal o mensual se acerque al límite.",
+                weeklyDigestReminderTitle: "Recordatorio de resumen semanal",
+                weeklyDigestReminderDescription: "Recordatorio para revisar el resumen semanal.",
+                dailyCheckInTimeTitle: "Hora de revisión diaria",
+                weeklyDigestDayTitle: "Día del resumen semanal",
+                weeklyDigestTimeTitle: "Hora del resumen semanal",
+                notificationsPermissionDeniedMessage: "Las notificaciones están desactivadas en Ajustes de iOS para Pocket Leak.",
+                openSystemSettings: "Abrir ajustes del sistema",
+                notificationsStatusEnabled: "Notificaciones activadas",
+                notificationsStatusDisabled: "Notificaciones desactivadas",
+                notificationsStatusDenied: "Permiso denegado",
+                notificationsStatusNotDetermined: "Permiso no solicitado",
                 privacyTitle: "Privacidad",
                 privacyNote: "Pocket Leak guarda los gastos localmente y solo analiza texto que tú pegas manualmente.",
                 dataTitle: "Datos",
                 exportData: "Exportar datos",
-                exportDescription: "Abre Historial para compartir CSV, JSON o el resumen mensual.",
+                exportDescription: "Abre Historial para compartir CSV, JSON, el resumen mensual o reportes PDF.",
+                exportPDF: "Exportar PDF",
+                shareWeeklyPDFReport: "PDF semanal",
+                shareMonthlyPDFReport: "PDF mensual",
+                shareAllDataPDFReport: "PDF de todos los datos",
                 aboutTitle: "Acerca de",
                 aboutDescription: "Hecho para captura rápida y local-first.",
                 versionLabel: "Versión",
@@ -807,6 +916,23 @@ struct AppStrings {
                 exportCSV: "Exportar CSV",
                 exportJSON: "Exportar JSON",
                 exportMonthlySummary: "Compartir resumen mensual",
+                pdfReportTitle: "Reporte de Pocket Leak",
+                pdfWeeklyReportTitle: "Reporte semanal",
+                pdfMonthlyReportTitle: "Reporte mensual",
+                pdfAllDataReportTitle: "Reporte de todos los datos",
+                pdfAllDataPeriod: "Todos los datos",
+                pdfExportedOn: "Exportado",
+                pdfPeriod: "Período",
+                pdfTotalSpent: "Total gastado",
+                pdfExpenseCount: "Número de gastos",
+                pdfTopCategory: "Categoría principal",
+                pdfCategoryBreakdown: "Desglose por categoría",
+                pdfGoalSummary: "Resumen de metas",
+                pdfSmartInsights: "Insights inteligentes",
+                pdfRecentExpenses: "Gastos recientes",
+                pdfNoDataMessage: "Aún no hay gastos guardados.",
+                pdfGeneratedByFooter: "Generado por Pocket Leak",
+                pdfExportFailed: "No se pudo generar el reporte PDF.",
                 shareSummaryButton: "Compartir resumen",
                 shareSummaryWeeklyCardTitle: "Resumen semanal",
                 shareSummaryMonthlyCardTitle: "Resumen mensual",

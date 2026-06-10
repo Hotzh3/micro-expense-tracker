@@ -119,6 +119,7 @@ final class ExpenseViewModel: ObservableObject {
     private let smartAlertService: SmartAlertService
     private let weeklyDigestService: WeeklyDigestService
     private let widgetSummaryStore: WidgetSummaryStore
+    private let localNotificationService: LocalNotificationService
     private let calendar: Calendar
     private let defaultCategory: ExpenseCategory
     private var draftSource: ExpenseSource = .manual
@@ -140,6 +141,7 @@ final class ExpenseViewModel: ObservableObject {
         self.smartAlertService = SmartAlertService()
         self.weeklyDigestService = WeeklyDigestService()
         self.widgetSummaryStore = WidgetSummaryStore()
+        self.localNotificationService = LocalNotificationService.shared
         self.calendar = .current
         self.categories = ExpenseCategory.allDefaults
         let initialCategory = ExpenseCategory.allDefaults.last ?? .other
@@ -167,6 +169,9 @@ final class ExpenseViewModel: ObservableObject {
         refreshSmartAlerts()
         refreshWeeklyDigest()
         syncWidgetSummary()
+        syncLocalNotifications()
+
+        print("Loaded goals:", String(describing: self.weeklyGoal), String(describing: self.monthlyGoal))
 
         smartAlertsDefaultsObserver = NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification,
@@ -309,11 +314,26 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     func loadImportedTextAndParse(_ text: String) {
+        loadImportedText(text, autoParse: true)
+    }
+
+    func loadImportedText(_ text: String) {
+        loadImportedText(text, autoParse: false)
+    }
+
+    private func loadImportedText(_ text: String, autoParse: Bool) {
+        let sanitized = text.trimmingCharacters(in: .whitespacesAndNewlines)
         resetDraftForExternalEntry()
-        importText = text
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 50_000_000)
-            self.parseImportedText()
+            self.importText = sanitized
+            self.parsedExpense = nil
+            self.parseFeedback = nil
+            self.draftSource = .imported
+            self.draftConfidence = 1.0
+            if autoParse {
+                self.parseImportedText()
+            }
         }
     }
 
@@ -341,12 +361,13 @@ final class ExpenseViewModel: ObservableObject {
         clearAllGoals()
         smartAlertService.clearDismissedAlerts()
         refreshSmartAlerts()
+        syncLocalNotifications()
     }
 
     func clearAllGoals() {
         weeklyGoal = nil
         monthlyGoal = nil
-        persistGoals()
+        persistGoals(refreshDerivedState: false)
     }
 
     func dismissSmartAlert(id: String) {
@@ -356,23 +377,25 @@ final class ExpenseViewModel: ObservableObject {
 
     func saveGoal(cadence: SpendingGoalCadence, limit: Double) {
         guard limit.isFinite, limit > 0 else { return }
+        print("Saving \(cadence.rawValue) goal:", limit)
         switch cadence {
         case .weekly:
             weeklyGoal = SpendingGoal(cadence: .weekly, limit: limit, createdAt: weeklyGoal?.createdAt ?? .now, updatedAt: .now)
         case .monthly:
             monthlyGoal = SpendingGoal(cadence: .monthly, limit: limit, createdAt: monthlyGoal?.createdAt ?? .now, updatedAt: .now)
         }
-        persistGoals()
+        persistGoals(refreshDerivedState: false)
     }
 
     func removeGoal(cadence: SpendingGoalCadence) {
+        print("Removing \(cadence.rawValue) goal")
         switch cadence {
         case .weekly:
             weeklyGoal = nil
         case .monthly:
             monthlyGoal = nil
         }
-        persistGoals()
+        persistGoals(refreshDerivedState: false)
     }
 
     func clearSaveFeedback() {
@@ -663,6 +686,80 @@ final class ExpenseViewModel: ObservableObject {
         ].joined(separator: "\n")
     }
 
+    var pdfExportSnapshotSignature: String {
+        let expenseSignature = safeExpenses
+            .map { "\($0.id.uuidString):\($0.amount):\($0.date.timeIntervalSince1970):\($0.category.id.uuidString):\($0.merchant):\($0.note)" }
+            .joined(separator: ",")
+
+        return [
+            AppLanguage.current.rawValue,
+            String(safeExpenses.count),
+            String(format: "%.2f", totalAmount),
+            String(format: "%.2f", weekTotal),
+            String(format: "%.2f", monthTotal),
+            expenseSignature,
+            weeklyGoal.map { "\($0.limit)-\($0.updatedAt.timeIntervalSince1970)" } ?? "no-weekly-goal",
+            monthlyGoal.map { "\($0.limit)-\($0.updatedAt.timeIntervalSince1970)" } ?? "no-monthly-goal",
+            smartInsights.first?.id.uuidString ?? "no-insight",
+            smartAlerts.first?.id ?? "no-alert",
+            weeklyDigest.id.timeIntervalSince1970.description
+        ]
+        .joined(separator: "|")
+    }
+
+    func pdfReportData(for reportType: ExpensePDFReportType) -> ExpensePDFReportData {
+        let strings = AppStrings.current()
+        let reportExpenses = pdfExpenses(for: reportType)
+        let breakdown = categoryBreakdown(from: reportExpenses, sortMode: .amount)
+        let goalSummaries = goalOverviews.map { overview in
+            ExpensePDFGoalSummary(
+                title: overview.cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle,
+                spent: overview.spent,
+                remaining: overview.remaining,
+                limit: overview.goal.limit,
+                statusText: overview.statusText,
+                motivationText: overview.motivationText
+            )
+        }
+        let insights = smartInsights
+            .sorted { $0.priority > $1.priority }
+            .prefix(3)
+            .map { insight in
+                ExpensePDFInsightSummary(
+                    title: insight.title,
+                    message: insight.message,
+                    type: insight.type
+                )
+            }
+
+        return ExpensePDFReportData(
+            reportType: reportType,
+            reportTitle: strings.pdfReportTitle,
+            reportTypeLabel: pdfReportTypeLabel(for: reportType, strings: strings),
+            periodLabel: pdfReportPeriodLabel(for: reportType, strings: strings),
+            exportedOnLabel: strings.pdfExportedOn,
+            totalSpentLabel: strings.pdfTotalSpent,
+            expenseCountLabel: strings.pdfExpenseCount,
+            topCategoryLabel: strings.pdfTopCategory,
+            categoryBreakdownLabel: strings.pdfCategoryBreakdown,
+            goalSummaryLabel: strings.pdfGoalSummary,
+            smartInsightsLabel: strings.pdfSmartInsights,
+            recentExpensesLabel: strings.pdfRecentExpenses,
+            emptyStateMessage: strings.pdfNoDataMessage,
+            footerText: strings.pdfGeneratedByFooter,
+            generatedAt: .now,
+            totalSpent: reportExpenses.reduce(0) { $0 + $1.amount },
+            expenseCount: reportExpenses.count,
+            topCategory: breakdown.first?.category,
+            categoryBreakdown: breakdown.map {
+                ExpensePDFCategorySummary(category: $0.category, total: $0.total, count: $0.count)
+            },
+            goalSummaries: goalSummaries,
+            smartInsights: insights,
+            recentExpenses: reportExpenses.sorted { $0.date > $1.date }
+        )
+    }
+
     func shareCardModel(for variant: ShareCardVariant, strings: AppStrings) -> ShareCardModel? {
         switch variant {
         case .weeklySummary:
@@ -693,9 +790,9 @@ final class ExpenseViewModel: ObservableObject {
     func goal(for cadence: SpendingGoalCadence) -> SpendingGoal? {
         switch cadence {
         case .weekly:
-            return weeklyGoal
+            return weeklyGoal?.isValid == true ? weeklyGoal : nil
         case .monthly:
-            return monthlyGoal
+            return monthlyGoal?.isValid == true ? monthlyGoal : nil
         }
     }
 
@@ -710,12 +807,18 @@ final class ExpenseViewModel: ObservableObject {
 
     func goalRemainingAmount(for cadence: SpendingGoalCadence) -> Double {
         guard let goal = goal(for: cadence) else { return 0 }
-        return max(goal.limit - goalSpentAmount(for: cadence), 0)
+        let spent = goalSpentAmount(for: cadence)
+        guard spent.isFinite else { return 0 }
+        let remaining = goal.limit - spent
+        return remaining.isFinite ? max(remaining, 0) : 0
     }
 
     func goalPercentUsed(for cadence: SpendingGoalCadence) -> Double {
         guard let goal = goal(for: cadence), goal.limit > 0 else { return 0 }
-        return min((goalSpentAmount(for: cadence) / goal.limit) * 100, 999)
+        let spent = goalSpentAmount(for: cadence)
+        guard spent.isFinite else { return 0 }
+        let percent = (spent / goal.limit) * 100
+        return percent.isFinite ? min(percent, 999) : 0
     }
 
     func goalStatusText(for cadence: SpendingGoalCadence) -> String {
@@ -736,7 +839,10 @@ final class ExpenseViewModel: ObservableObject {
 
     func goalProgressFraction(for cadence: SpendingGoalCadence) -> Double {
         guard let goal = goal(for: cadence), goal.limit > 0 else { return 0 }
-        return min(goalSpentAmount(for: cadence) / goal.limit, 1)
+        let spent = goalSpentAmount(for: cadence)
+        guard spent.isFinite else { return 0 }
+        let fraction = spent / goal.limit
+        return fraction.isFinite ? min(fraction, 1) : 0
     }
 
     func goalStatus(for cadence: SpendingGoalCadence) -> GoalStatus {
@@ -824,6 +930,10 @@ final class ExpenseViewModel: ObservableObject {
         let remaining = goalRemainingAmount(for: cadence)
         let percentUsed = goalPercentUsed(for: cadence)
         let status = goalStatus(for: cadence)
+
+        guard spent.isFinite, remaining.isFinite, percentUsed.isFinite else {
+            return nil
+        }
 
         return GoalOverview(
             cadence: cadence,
@@ -1039,11 +1149,14 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     private func categoryBreakdown(by sortMode: CategorySortMode) -> [CategoryBreakdown] {
-        categoryBreakdown(in: .month, sortMode: sortMode)
+        categoryBreakdown(from: expenses(in: .month), sortMode: sortMode)
     }
 
     private func categoryBreakdown(in range: TimeRange, sortMode: CategorySortMode) -> [CategoryBreakdown] {
-        let sourceExpenses = expenses(in: range)
+        categoryBreakdown(from: expenses(in: range), sortMode: sortMode)
+    }
+
+    private func categoryBreakdown(from sourceExpenses: [Expense], sortMode: CategorySortMode) -> [CategoryBreakdown] {
         let grouped = Dictionary(grouping: sourceExpenses, by: { $0.category.id })
 
         let breakdown = grouped.compactMap { categoryID, items -> CategoryBreakdown? in
@@ -1067,6 +1180,39 @@ final class ExpenseViewModel: ObservableObject {
                 }
                 return $0.count > $1.count
             }
+        }
+    }
+
+    private func pdfExpenses(for reportType: ExpensePDFReportType) -> [Expense] {
+        switch reportType {
+        case .weekly:
+            return expenses(in: .week).sorted { $0.date > $1.date }
+        case .monthly:
+            return expenses(in: .month).sorted { $0.date > $1.date }
+        case .allData:
+            return safeExpenses.sorted { $0.date > $1.date }
+        }
+    }
+
+    private func pdfReportTypeLabel(for reportType: ExpensePDFReportType, strings: AppStrings) -> String {
+        switch reportType {
+        case .weekly:
+            return strings.pdfWeeklyReportTitle
+        case .monthly:
+            return strings.pdfMonthlyReportTitle
+        case .allData:
+            return strings.pdfAllDataReportTitle
+        }
+    }
+
+    private func pdfReportPeriodLabel(for reportType: ExpensePDFReportType, strings: AppStrings) -> String {
+        switch reportType {
+        case .weekly:
+            return strings.goalsPeriodThisWeek
+        case .monthly:
+            return strings.goalsPeriodThisMonth
+        case .allData:
+            return strings.pdfAllDataPeriod
         }
     }
 
@@ -1250,19 +1396,26 @@ final class ExpenseViewModel: ObservableObject {
         refreshSmartAlerts()
         refreshWeeklyDigest()
         syncWidgetSummary()
+        syncLocalNotifications()
     }
 
-    private func persistGoals() {
+    private func persistGoals(refreshDerivedState: Bool = true) {
         let sanitizedGoals = SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal).sanitized
         goalStore.saveGoals(sanitizedGoals)
         let savedGoals = goalStore.loadGoals().sanitized
         weeklyGoal = savedGoals.weekly
         monthlyGoal = savedGoals.monthly
+
+        guard refreshDerivedState else {
+            return
+        }
+
         refreshGoalForecasts()
         refreshSmartInsights()
         refreshSmartAlerts()
         refreshWeeklyDigest()
         syncWidgetSummary()
+        syncLocalNotifications()
     }
 
     private func resetDraftForm() {
@@ -1478,6 +1631,14 @@ final class ExpenseViewModel: ObservableObject {
             goals: SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal),
             calendar: calendar
         )
+    }
+
+    func syncLocalNotifications() {
+        let forecasts = goalForecasts
+        Task { [localNotificationService] in
+            await localNotificationService.syncRecurringNotifications()
+            await localNotificationService.syncGoalWarnings(goalForecasts: forecasts)
+        }
     }
 
     private func forecastPriority(lhs: GoalForecast, rhs: GoalForecast) -> Bool {
