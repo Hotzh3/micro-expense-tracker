@@ -163,13 +163,25 @@ struct PocketLeakWidgetView: View {
                 }
             }
 
+            if let forecastText = entry.summary.monthlyGoalForecastText ?? entry.summary.weeklyGoalForecastText {
+                Text(forecastText)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.white.opacity(0.72))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+            }
+
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(16)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Pocket Leak")
-        .accessibilityValue("Today \(currency(entry.summary.todayTotal)). Top category \(entry.summary.topCategory).")
+        .accessibilityValue([
+            "Today \(currency(entry.summary.todayTotal))",
+            entry.summary.topCategory,
+            entry.summary.monthlyGoalForecastText ?? entry.summary.weeklyGoalForecastText ?? entry.displayState.helperText
+        ].joined(separator: ". "))
     }
 
     private var largeView: some View {
@@ -225,7 +237,11 @@ struct PocketLeakWidgetView: View {
         .padding(16)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Pocket Leak")
-        .accessibilityValue(statusLine + " Category summary available.")
+        .accessibilityValue([
+            statusLine,
+            entry.summary.monthlyGoalForecastText ?? entry.summary.weeklyGoalForecastText ?? entry.displayState.helperText,
+            "Category summary available."
+        ].joined(separator: " "))
     }
 
     private var header: some View {
@@ -239,6 +255,13 @@ struct PocketLeakWidgetView: View {
             Text(entry.displayState.helperText)
                 .font(.caption)
                 .foregroundStyle(Color.white.opacity(0.68))
+            if let forecastText = entry.summary.monthlyGoalForecastText ?? entry.summary.weeklyGoalForecastText {
+                Text(forecastText)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.white.opacity(0.68))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+            }
         }
     }
 

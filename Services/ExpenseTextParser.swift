@@ -3,107 +3,37 @@ import Foundation
 struct ExpenseParseResult: Equatable {
     let amount: Double?
     let merchant: String
+    let rawMerchant: String?
     let category: ExpenseCategory
     let confidence: Double
     let source: ExpenseSource
     let summary: String
+
+    var normalizedMerchant: String {
+        merchant
+    }
 }
 
 final class ExpenseTextParser {
-    private struct MerchantRule {
-        let canonicalName: String
-        let category: ExpenseCategory
-        let aliases: [String]
-    }
-
-    private static let merchantRules: [MerchantRule] = [
-        .init(canonicalName: "OXXO", category: .convenience, aliases: ["oxxo"]),
-        .init(canonicalName: "7-Eleven", category: .convenience, aliases: ["7-eleven", "7 eleven", "seven eleven"]),
-        .init(canonicalName: "Starbucks Coffee", category: .coffee, aliases: ["starbucks coffee", "starbucks"]),
-        .init(canonicalName: "Uber", category: .transport, aliases: ["uber"]),
-        .init(canonicalName: "DiDi", category: .transport, aliases: ["didi"]),
-        .init(canonicalName: "Spotify", category: .entertainment, aliases: ["spotify"]),
-        .init(canonicalName: "Netflix", category: .entertainment, aliases: ["netflix"]),
-        .init(canonicalName: "Amazon", category: .shopping, aliases: ["amazon"]),
-        .init(canonicalName: "Toks", category: .food, aliases: ["toks"]),
-        .init(canonicalName: "Mercado Pago", category: .other, aliases: ["mercado pago"])
-    ]
-
-    private static let amountPatterns: [String] = [
-        #"(?:MXN|mxn|\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:[.,][0-9]{1,2})?|[0-9]+(?:[.,][0-9]{1,2})?)"#,
-        #"\b(?:por|de|for|amount of|importe|monto|total)\s*(?:MXN|mxn|\$)?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:[.,][0-9]{1,2})?|[0-9]+(?:[.,][0-9]{1,2})?)"#,
-        #"\b(?:compra|cargo|pago|retiro|purchase|charge|payment|transaction|txn)\s*(?:de|por)?\s*(?:MXN|mxn|\$)?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:[.,][0-9]{1,2})?|[0-9]+(?:[.,][0-9]{1,2})?)"#,
-        #"\b([0-9]{1,3}(?:,[0-9]{3})+(?:[.,][0-9]{1,2})?)\b"#,
-        #"\b([0-9]+(?:[.,][0-9]{1,2})?)\b"#
-    ]
-
-    private static let merchantPrefixes: [String] = [
-        "en",
-        "at",
-        "in",
-        "comercio",
-        "merchant"
-    ]
-
-    private static let merchantStopWords: Set<String> = [
-        "approved",
-        "aprobada",
-        "aprobado",
-        "compra",
-        "cargo",
-        "charged",
-        "charge",
-        "purchase",
-        "pago",
-        "paid",
-        "payment",
-        "transaction",
-        "transaccion",
-        "transacción",
-        "retiro",
-        "withdrawal",
-        "card",
-        "tarjeta",
-        "terminacion",
-        "terminación",
-        "autorizacion",
-        "autorización",
-        "authorization",
-        "auth",
-        "voucher",
-        "num",
-        "no",
-        "ref",
-        "transaction",
-        "bank",
-        "banco",
-        "bbva",
-        "nu",
-        "mxn",
-        "$",
-        "por",
-        "de",
-        "para",
-        "en",
-        "at",
-        "in"
-    ]
-
     func parse(_ text: String, categories: [ExpenseCategory]) -> ExpenseParseResult? {
         let normalizedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedText.isEmpty else { return nil }
 
-        let lowercasedText = normalizedText.lowercased()
         let amount = extractAmount(from: normalizedText)
+        let lowercasedText = normalizedText.lowercased()
         let merchant = extractMerchant(from: normalizedText)
-        let category = suggestCategory(from: lowercasedText, merchant: merchant, categories: categories)
-
-        let confidence = confidence(for: amount, merchant: merchant, category: category)
+        let category = category(for: lowercasedText, merchant: merchant, categories: categories)
+        let confidence = safeConfidence(
+            amount: amount,
+            merchant: merchant,
+            category: category
+        )
         let summary = makeSummary(amount: amount, merchant: merchant, category: category)
 
         return ExpenseParseResult(
             amount: amount,
             merchant: merchant,
+            rawMerchant: merchant.isEmpty ? nil : merchant,
             category: category,
             confidence: confidence,
             source: .parsedText,
@@ -111,40 +41,51 @@ final class ExpenseTextParser {
         )
     }
 
-    private func confidence(for amount: Double?, merchant: String, category: ExpenseCategory) -> Double {
-        switch (amount != nil, !merchant.isEmpty, category != .other) {
-        case (true, true, true):
-            return 0.96
-        case (true, true, false):
-            return 0.84
-        case (true, false, true):
-            return 0.73
-        case (true, false, false):
-            return 0.62
-        case (false, true, true):
-            return 0.38
-        case (false, true, false):
-            return 0.28
-        default:
-            return 0.14
-        }
-    }
-
-    private func makeSummary(amount: Double?, merchant: String, category: ExpenseCategory) -> String {
-        let summaryParts: [String] = [
-            amount.map { String(format: "$%.2f", $0) },
-            merchant.isEmpty ? nil : merchant,
-            category.displayName
-        ].compactMap { $0 }
-
-        return summaryParts.isEmpty
-            ? "No clear amount or merchant was found."
-            : "Parsed from pasted text: " + summaryParts.joined(separator: " • ")
-    }
-
     private func extractAmount(from text: String) -> Double? {
-        for pattern in Self.amountPatterns {
-            if let amount = firstMatchAmount(in: text, pattern: pattern) {
+        let tokens = tokenize(text)
+        if let amount = amountFromCurrencyPrefix(in: text) {
+            return amount
+        }
+
+        if let amount = amountAfterMXNToken(tokens: tokens) {
+            return amount
+        }
+
+        if let amount = amountFromTokenSequence(tokens: tokens) {
+            return amount
+        }
+
+        return nil
+    }
+
+    private func amountFromCurrencyPrefix(in text: String) -> Double? {
+        let searchText = text.lowercased()
+        guard let dollarIndex = searchText.firstIndex(of: "$") else { return nil }
+
+        let afterDollar = searchText[searchText.index(after: dollarIndex)...]
+        let candidate = leadingAmountCandidate(from: String(afterDollar))
+        return parseAmount(candidate)
+    }
+
+    private func amountAfterMXNToken(tokens: [String]) -> Double? {
+        for index in tokens.indices {
+            let token = tokens[index].lowercased()
+            if token == "mxn" || token == "mxn:" || token == "mxn." {
+                let nextIndex = tokens.index(after: index)
+                if nextIndex < tokens.endIndex {
+                    if let amount = parseAmount(tokens[nextIndex]) {
+                        return amount
+                    }
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private func amountFromTokenSequence(tokens: [String]) -> Double? {
+        for token in tokens {
+            if let amount = parseAmount(token) {
                 return amount
             }
         }
@@ -153,215 +94,205 @@ final class ExpenseTextParser {
     }
 
     private func extractMerchant(from text: String) -> String {
-        let normalizedText = normalize(text)
+        let lowercased = text.lowercased()
 
-        if let merchantRule = Self.merchantRules.first(where: { rule in
-            rule.aliases.contains(where: { alias in
-                normalizedText.contains(normalize(alias))
-            })
-        }) {
-            return merchantRule.canonicalName
+        if let enMerchant = merchantAfterKeyword("en", in: lowercased) {
+            return enMerchant
         }
 
-        if let amountRange = amountRange(in: text) {
-            if let candidate = merchantAfterAmount(in: text, amountRange: amountRange) {
-                return candidate
+        for (needle, canonical) in knownMerchantPatterns {
+            if lowercased.contains(needle) {
+                return canonical
             }
-
-            if let candidate = merchantBeforeAmount(in: text, amountRange: amountRange) {
-                return candidate
-            }
-        }
-
-        if let candidate = merchantFromConnectorPhrase(in: text) {
-            return candidate
         }
 
         return ""
     }
 
-    private func merchantAfterAmount(in text: String, amountRange: Range<String.Index>) -> String? {
-        let trailingText = text[amountRange.upperBound...]
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .trimmingCharacters(in: CharacterSet(charactersIn: ":,.-/"))
+    private func merchantAfterKeyword(_ keyword: String, in text: String) -> String? {
+        let tokens = tokenize(text)
+        for index in tokens.indices {
+            if tokens[index].lowercased() != keyword {
+                continue
+            }
 
-        guard !trailingText.isEmpty else { return nil }
+            let nextIndex = tokens.index(after: index)
+            guard nextIndex < tokens.endIndex else { return nil }
 
-        let phrase = trailingText
-            .split(whereSeparator: { $0.isWhitespace || $0 == "," || $0 == "." || $0 == ":" || $0 == "/" })
-            .prefix(4)
-            .joined(separator: " ")
+            var merchantTokens: [String] = []
+            for token in tokens[nextIndex...] {
+                let cleaned = cleanMerchantToken(token)
+                if cleaned.isEmpty {
+                    continue
+                }
 
-        return cleanMerchantCandidate(phrase)
-    }
+                if isMerchantBoundary(cleaned) {
+                    break
+                }
 
-    private func merchantBeforeAmount(in text: String, amountRange: Range<String.Index>) -> String? {
-        let leadingText = text[..<amountRange.lowerBound]
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .trimmingCharacters(in: CharacterSet(charactersIn: ":,.-/"))
-
-        guard !leadingText.isEmpty else { return nil }
-
-        let normalizedLeading = normalize(String(leadingText))
-        if let merchantRule = Self.merchantRules.first(where: { rule in
-            rule.aliases.contains(where: { alias in
-                normalizedLeading.contains(normalize(alias))
-            })
-        }) {
-            return merchantRule.canonicalName
-        }
-
-        let phrase = leadingText
-            .split(whereSeparator: { $0.isWhitespace || $0 == "," || $0 == "." || $0 == ":" || $0 == "/" })
-            .suffix(4)
-            .joined(separator: " ")
-
-        return cleanMerchantCandidate(String(phrase))
-    }
-
-    private func merchantFromConnectorPhrase(in text: String) -> String? {
-        for prefix in Self.merchantPrefixes {
-            let pattern = #"(?i)\b\#(prefix)\b\s+([A-Za-zÀ-ÿ0-9&'().\- ]{2,60})"#
-            if let match = firstMatchString(in: text, pattern: pattern) {
-                let cleaned = cleanMerchantCandidate(match)
-                if !cleaned.isEmpty {
-                    return cleaned
+                merchantTokens.append(cleaned)
+                if merchantTokens.count == 3 {
+                    break
                 }
             }
+
+            let candidate = merchantTokens.joined(separator: " ")
+            return candidate.isEmpty ? nil : canonicalMerchantName(for: candidate)
         }
 
         return nil
     }
 
-    private func suggestCategory(from text: String, merchant: String, categories: [ExpenseCategory]) -> ExpenseCategory {
-        let normalizedMerchant = normalize(merchant)
-
-        if let directMerchantMatch = Self.merchantRules.first(where: { rule in
-            let canonical = normalize(rule.canonicalName)
-            return normalizedMerchant.contains(canonical) || rule.aliases.contains(where: { normalizedMerchant.contains(normalize($0)) })
-        }) {
-            return directMerchantMatch.category
+    private func canonicalMerchantName(for candidate: String) -> String {
+        let lowercased = candidate.lowercased()
+        for (needle, canonical) in knownMerchantPatterns {
+            if lowercased.contains(needle) {
+                return canonical
+            }
         }
+        return candidate
+    }
 
+    private func category(for text: String, merchant: String, categories: [ExpenseCategory]) -> ExpenseCategory {
         let combined = "\(text) \(merchant.lowercased())"
 
-        for category in categories {
-            if category == .other {
-                continue
-            }
-
-            if category.keywords.contains(where: { combined.contains($0.lowercased()) }) {
-                return category
-            }
+        if containsAny(combined, needles: ["oxxo", "7-eleven", "7 eleven", "seven eleven"]) {
+            return category(named: "Convenience", in: categories) ?? .other
         }
 
-        if let category = categories.first(where: { $0.displayName == "Other" }) {
-            return category
+        if containsAny(combined, needles: ["starbucks", "coffee", "cafe", "café"]) {
+            return category(named: "Coffee", in: categories) ?? .other
         }
 
-        return categories.first ?? .other
+        if containsAny(combined, needles: ["uber", "didi"]) {
+            return category(named: "Transport", in: categories) ?? .other
+        }
+
+        if containsAny(combined, needles: ["spotify", "netflix"]) {
+            return category(named: "Entertainment", in: categories) ?? .other
+        }
+
+        if combined.contains("amazon") || combined.contains("apple.com/bill") {
+            return category(named: "Shopping", in: categories) ?? .other
+        }
+
+        if containsAny(combined, needles: ["toks", "taco", "tacos", "restaurante", "restaurant"]) {
+            return category(named: "Food", in: categories) ?? .other
+        }
+
+        return category(named: "Other", in: categories) ?? categories.last ?? .other
     }
 
-    private func amountRange(in text: String) -> Range<String.Index>? {
-        for pattern in Self.amountPatterns {
-            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
-                continue
-            }
+    private func safeConfidence(amount: Double?, merchant: String, category: ExpenseCategory) -> Double {
+        var score: Double = 0.45
 
-            let range = NSRange(text.startIndex..., in: text)
-            guard let match = regex.firstMatch(in: text, options: [], range: range) else {
-                continue
-            }
-
-            if let swiftRange = Range(match.range, in: text) {
-                return swiftRange
-            }
+        if amount != nil {
+            score += 0.35
         }
 
-        return nil
+        if !merchant.isEmpty {
+            score += 0.12
+        }
+
+        if category != .other {
+            score += 0.08
+        }
+
+        if !score.isFinite {
+            return 0.5
+        }
+
+        return min(max(score, 0), 1)
     }
 
-    private func firstMatchAmount(in text: String, pattern: String) -> Double? {
-        guard let match = firstMatchString(in: text, pattern: pattern) else { return nil }
-        return normalizeAmountString(match).flatMap(Double.init)
+    private func makeSummary(amount: Double?, merchant: String, category: ExpenseCategory) -> String {
+        var parts: [String] = []
+        if let amount {
+            parts.append(String(format: "$%.2f", amount))
+        }
+        if !merchant.isEmpty {
+            parts.append(merchant)
+        }
+        parts.append(category.displayName)
+
+        if parts.isEmpty {
+            return "No clear amount or merchant was found."
+        }
+
+        return "Parsed from pasted text: " + parts.joined(separator: " • ")
     }
 
-    private func firstMatchString(in text: String, pattern: String) -> String? {
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
-            return nil
-        }
-
-        let range = NSRange(text.startIndex..., in: text)
-        guard let match = regex.firstMatch(in: text, options: [], range: range) else {
-            return nil
-        }
-
-        if match.numberOfRanges < 2 {
-            return nil
-        }
-
-        let captureRange = match.range(at: 1)
-        guard let swiftRange = Range(captureRange, in: text) else {
-            return nil
-        }
-
-        return String(text[swiftRange])
-    }
-
-    private func normalizeAmountString(_ value: String) -> String? {
+    private func parseAmount(_ value: String) -> Double? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
-        let noCurrency = trimmed
-            .replacingOccurrences(of: "MXN", with: "", options: [.caseInsensitive])
+        let cleaned = trimmed
+            .replacingOccurrences(of: "mxn", with: "", options: [.caseInsensitive])
             .replacingOccurrences(of: "$", with: "")
+            .replacingOccurrences(of: ",", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let normalized: String
-        if noCurrency.contains(",") && noCurrency.contains(".") {
-            normalized = noCurrency.replacingOccurrences(of: ",", with: "")
-        } else if noCurrency.contains(",") {
-            let components = noCurrency.split(separator: ",", omittingEmptySubsequences: true)
-            if components.count == 2, components.last?.count == 2 {
-                normalized = noCurrency.replacingOccurrences(of: ",", with: ".")
-            } else {
-                normalized = noCurrency.replacingOccurrences(of: ",", with: "")
+        guard cleaned.contains(where: { $0.isNumber }) else { return nil }
+        guard let amount = Double(cleaned), amount.isFinite, amount > 0 else { return nil }
+        return amount
+    }
+
+    private func leadingAmountCandidate(from text: String) -> String {
+        var candidate = ""
+        for character in text {
+            if character.isNumber || character == "." || character == "," {
+                candidate.append(character)
+                continue
             }
-        } else {
-            normalized = noCurrency
+            break
         }
-
-        return normalized
-    }
-
-    private func cleanMerchantCandidate(_ value: String) -> String {
-        let trimmed = value
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .trimmingCharacters(in: CharacterSet(charactersIn: ".,:;!-/"))
-
-        guard !trimmed.isEmpty else { return "" }
-
-        let normalized = normalize(trimmed)
-        if let merchantRule = Self.merchantRules.first(where: { rule in
-            rule.aliases.contains(where: { normalized.contains(normalize($0)) })
-        }) {
-            return merchantRule.canonicalName
-        }
-
-        let parts = trimmed.split(whereSeparator: { $0.isWhitespace })
-        let filtered = parts.filter { !Self.merchantStopWords.contains($0.lowercased()) }
-        let candidate = filtered.isEmpty ? trimmed : filtered.joined(separator: " ")
-
         return candidate
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .trimmingCharacters(in: CharacterSet(charactersIn: ".,:;!-/"))
     }
 
-    private func normalize(_ value: String) -> String {
-        value
-            .lowercased()
-            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-            .replacingOccurrences(of: "_", with: "-")
-            .replacingOccurrences(of: " ", with: "-")
+    private func tokenize(_ text: String) -> [String] {
+        text
+            .split(whereSeparator: { $0.isWhitespace || $0.isNewline })
+            .map(String.init)
+    }
+
+    private func cleanMerchantToken(_ token: String) -> String {
+        token
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: ":,./-!()[]{}"))
+    }
+
+    private func isMerchantBoundary(_ token: String) -> Bool {
+        let lower = token.lowercased()
+        return ["mxn", "card", "compra", "cargo", "pago", "payment", "charge", "approved", "aprobada", "aprobado", "$"].contains(lower)
+    }
+
+    private func containsAny(_ text: String, needles: [String]) -> Bool {
+        for needle in needles {
+            if text.contains(needle) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private func category(named name: String, in categories: [ExpenseCategory]) -> ExpenseCategory? {
+        categories.first(where: { $0.displayName.lowercased() == name.lowercased() })
+    }
+
+    private var knownMerchantPatterns: [(needle: String, canonical: String)] {
+        [
+            ("starbucks", "Starbucks"),
+            ("oxxo", "OXXO"),
+            ("7-eleven", "7-Eleven"),
+            ("7 eleven", "7-Eleven"),
+            ("seven eleven", "7-Eleven"),
+            ("uber", "Uber"),
+            ("didi", "DiDi"),
+            ("spotify", "Spotify"),
+            ("netflix", "Netflix"),
+            ("amazon", "Amazon"),
+            ("apple.com/bill", "Apple"),
+            ("toks", "Toks")
+        ]
     }
 }

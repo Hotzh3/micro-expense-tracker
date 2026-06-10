@@ -100,19 +100,31 @@ final class ExpenseViewModel: ObservableObject {
     @Published var parseFeedback: Feedback?
     @Published var weeklyGoal: SpendingGoal?
     @Published var monthlyGoal: SpendingGoal?
+    @Published var goalForecasts: [GoalForecast] = []
+    @Published var spendingComparisons: [SpendingComparison] = []
+    @Published var smartInsights: [SmartInsight] = []
+    @Published var smartAlerts: [SmartAlert] = []
+    @Published var weeklyDigest: WeeklyDigest
     @Published var isQuickAddInputFocused: Bool = false
+    @Published var isGoalsInputFocused: Bool = false
 
     let categories: [ExpenseCategory]
 
     private let store: ExpenseStore
     private let goalStore: GoalStore
     private let parser: ExpenseTextParser
+    private let goalIntelligenceService: GoalIntelligenceService
+    private let spendingComparisonService: SpendingComparisonService
+    private let smartInsightsService: SmartInsightsService
+    private let smartAlertService: SmartAlertService
+    private let weeklyDigestService: WeeklyDigestService
     private let widgetSummaryStore: WidgetSummaryStore
     private let calendar: Calendar
     private let defaultCategory: ExpenseCategory
     private var draftSource: ExpenseSource = .manual
     private var draftConfidence: Double = 1.0
     private var isResettingDraft = false
+    private var smartAlertsDefaultsObserver: NSObjectProtocol?
 
     init(
         store: ExpenseStore = ExpenseStore(),
@@ -122,6 +134,11 @@ final class ExpenseViewModel: ObservableObject {
         self.store = store
         self.goalStore = goalStore
         self.parser = parser
+        self.goalIntelligenceService = GoalIntelligenceService()
+        self.spendingComparisonService = SpendingComparisonService()
+        self.smartInsightsService = SmartInsightsService()
+        self.smartAlertService = SmartAlertService()
+        self.weeklyDigestService = WeeklyDigestService()
         self.widgetSummaryStore = WidgetSummaryStore()
         self.calendar = .current
         self.categories = ExpenseCategory.allDefaults
@@ -132,29 +149,64 @@ final class ExpenseViewModel: ObservableObject {
         self.weeklyGoal = goals.weekly
         self.monthlyGoal = goals.monthly
         self.selectedCategory = initialCategory
+        self.weeklyDigest = WeeklyDigest(
+            weekStart: .now,
+            weekEnd: .now,
+            totalSpend: 0,
+            expenseCount: 0,
+            topCategory: nil,
+            averageDailySpend: 0,
+            largestExpense: nil,
+            bestInsight: nil,
+            goalStatus: nil,
+            comparisonVsLastWeek: nil
+        )
+        refreshGoalForecasts()
+        refreshSpendingComparisons()
+        refreshSmartInsights()
+        refreshSmartAlerts()
+        refreshWeeklyDigest()
         syncWidgetSummary()
+
+        smartAlertsDefaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.refreshSmartAlerts()
+            }
+        }
+    }
+
+    deinit {
+        if let smartAlertsDefaultsObserver {
+            NotificationCenter.default.removeObserver(smartAlertsDefaultsObserver)
+        }
     }
 
     func saveDraftExpense() {
         let previousWeeklyStatus = goalStatus(for: .weekly)
         let previousMonthlyStatus = goalStatus(for: .monthly)
         let strings = AppStrings.current()
-        let sanitizedAmount = amountText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedAmount = sanitizedAmount.replacingOccurrences(of: ",", with: ".")
-        let parsedAmount = parsedExpense?.amount
-        guard let amount = Double(normalizedAmount) ?? parsedAmount, amount > 0 else {
+        let amount = parsedAmount(from: amountText)
+
+        guard let amount, amount.isFinite, amount > 0 else {
             showSaveFeedback(message: strings.saveMissingAmountError, isError: true)
             HapticsService.shared.error()
             return
         }
+
+        let savedSource: ExpenseSource = draftSource
+        let savedConfidence: Double = safeConfidence(draftConfidence)
 
         let expense = Expense(
             amount: amount,
             category: selectedCategory,
             merchant: merchantText.trimmingCharacters(in: .whitespacesAndNewlines),
             note: noteText.trimmingCharacters(in: .whitespacesAndNewlines),
-            source: draftSource,
-            confidence: draftSource == .parsedText ? draftConfidence : 1.0
+            source: savedSource,
+            confidence: savedConfidence
         )
 
         expenses.insert(expense, at: 0)
@@ -166,32 +218,58 @@ final class ExpenseViewModel: ObservableObject {
 
     func parseImportedText() {
         let strings = AppStrings.current()
-        let suggestion = parser.parse(importText, categories: categories)
-        guard let suggestion else {
+        let text = importText.trimmingCharacters(in: .whitespacesAndNewlines)
+        print("Parse Text started")
+        print("Parse Text input:", importText)
+        guard !text.isEmpty else {
             parsedExpense = nil
+            print("Parse Text failed safely")
             showParseFeedback(message: strings.parseNoResultMessage, isError: true)
             HapticsService.shared.error()
             return
         }
 
-        guard suggestion.amount != nil else {
+        let suggestion = parser.parse(text, categories: categories)
+        print("Parse Text result:", String(describing: suggestion))
+        guard let suggestion else {
             parsedExpense = nil
+            print("Parse Text failed safely")
+            showParseFeedback(message: strings.parseNoResultMessage, isError: true)
+            HapticsService.shared.error()
+            return
+        }
+
+        guard let amount = suggestion.amount, amount.isFinite, amount > 0 else {
+            parsedExpense = nil
+            print("Parse Text failed safely")
             showParseFeedback(message: strings.missingAmountParseError, isError: true)
             HapticsService.shared.error()
             return
         }
 
-        parsedExpense = suggestion
-        applyParsedSuggestion(suggestion)
-        draftConfidence = suggestion.confidence
-        showParseFeedback(message: suggestion.summary, isError: false)
-    }
+        guard suggestion.confidence.isFinite else {
+            parsedExpense = nil
+            print("Parse Text failed safely")
+            showParseFeedback(message: strings.parseNoResultMessage, isError: true)
+            HapticsService.shared.error()
+            return
+        }
 
-    func useParsedExpense() {
-        guard let parsedExpense else { return }
-        applyParsedSuggestion(parsedExpense)
-        self.parsedExpense = nil
-        clearParseFeedback()
+        let resolvedAmountText = amountText(for: amount)
+        let resolvedMerchantText = suggestion.merchant.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedCategory = resolvedCategory(from: suggestion.category)
+
+        amountText = resolvedAmountText
+        merchantText = resolvedMerchantText
+        selectedCategory = resolvedCategory
+        draftSource = .parsedText
+        draftConfidence = safeConfidence(suggestion.confidence)
+        parsedExpense = nil
+        let merchant = merchantText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parsedMessage = merchant.isEmpty
+            ? "Parsed \(resolvedAmountText) • \(selectedCategory.displayName)"
+            : "Parsed \(resolvedAmountText) • \(merchant) • \(selectedCategory.displayName)"
+        showParseFeedback(message: parsedMessage, isError: false)
     }
 
     func prefillDraft(amount: String? = nil, merchant: String? = nil, category: String? = nil, source: ExpenseSource = .imported) {
@@ -261,6 +339,8 @@ final class ExpenseViewModel: ObservableObject {
     func clearAllData() {
         clearAllExpenses()
         clearAllGoals()
+        smartAlertService.clearDismissedAlerts()
+        refreshSmartAlerts()
     }
 
     func clearAllGoals() {
@@ -269,8 +349,13 @@ final class ExpenseViewModel: ObservableObject {
         persistGoals()
     }
 
+    func dismissSmartAlert(id: String) {
+        smartAlertService.dismissAlert(id: id)
+        refreshSmartAlerts()
+    }
+
     func saveGoal(cadence: SpendingGoalCadence, limit: Double) {
-        guard limit > 0 else { return }
+        guard limit.isFinite, limit > 0 else { return }
         switch cadence {
         case .weekly:
             weeklyGoal = SpendingGoal(cadence: .weekly, limit: limit, createdAt: weeklyGoal?.createdAt ?? .now, updatedAt: .now)
@@ -321,7 +406,7 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var totalExpenseCount: Int {
-        expenses.count
+        safeExpenses.count
     }
 
     var expenseCountThisMonth: Int {
@@ -329,8 +414,8 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var averageExpenseAmount: Double {
-        guard !expenses.isEmpty else { return 0 }
-        return totalAmount / Double(expenses.count)
+        guard !safeExpenses.isEmpty else { return 0 }
+        return totalAmount / Double(safeExpenses.count)
     }
 
     var averageDailySpend: Double {
@@ -357,7 +442,7 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var highestExpense: Expense? {
-        expenses.max(by: { $0.amount < $1.amount })
+        safeExpenses.max(by: { $0.amount < $1.amount })
     }
 
     var largestExpenseThisMonth: Expense? {
@@ -408,7 +493,7 @@ final class ExpenseViewModel: ObservableObject {
         }
 
         let totalsByDay = Dictionary(
-            grouping: expenses,
+            grouping: safeExpenses,
             by: { calendar.startOfDay(for: $0.date) }
         ).mapValues { items in
             items.reduce(0) { $0 + $1.amount }
@@ -433,7 +518,7 @@ final class ExpenseViewModel: ObservableObject {
         }
 
         let totalsByWeek = Dictionary(
-            grouping: expenses,
+            grouping: safeExpenses,
             by: { expense in
                 calendar.dateInterval(of: .weekOfYear, for: expense.date)?.start ?? calendar.startOfDay(for: expense.date)
             }
@@ -455,18 +540,42 @@ final class ExpenseViewModel: ObservableObject {
 
     var hasWeeklyTrendData: Bool {
         Set(
-            expenses.compactMap { expense in
+            safeExpenses.compactMap { expense in
                 calendar.dateInterval(of: .weekOfYear, for: expense.date)?.start
             }
         ).count >= 2
     }
 
     var insightText: String {
+        if let primarySmartInsight {
+            return primarySmartInsight.message
+        }
+
         guard let topCategory else {
             return "Add your first micro-expense to see a spending pattern."
         }
 
         return "\(topCategory.displayName) is your top micro-expense category this month."
+    }
+
+    var primarySmartInsight: SmartInsight? {
+        smartInsights.first(where: { $0.type != .neutral })
+    }
+
+    var primarySmartAlert: SmartAlert? {
+        smartAlerts.first
+    }
+
+    var primarySpendingComparison: SpendingComparison? {
+        spendingComparisons.first(where: { $0.period == .weekVsLastWeek && $0.hasPreviousData })
+            ?? spendingComparisons.first(where: { $0.hasPreviousData })
+            ?? spendingComparisons.first
+    }
+
+    var primaryGoalForecast: GoalForecast? {
+        goalForecasts.first(where: { $0.goalType == .monthly && $0.status != .safe })
+            ?? goalForecasts.first(where: { $0.goalType == .weekly && $0.status != .safe })
+            ?? goalForecasts.sorted { forecastPriority(lhs: $0, rhs: $1) }.first(where: { $0.status != .safe })
     }
 
     var monthCategorySummaryText: String {
@@ -552,6 +661,33 @@ final class ExpenseViewModel: ObservableObject {
             "Top category: \(topCategoryText)",
             "Largest expense: \(largestExpenseText)"
         ].joined(separator: "\n")
+    }
+
+    func shareCardModel(for variant: ShareCardVariant, strings: AppStrings) -> ShareCardModel? {
+        switch variant {
+        case .weeklySummary:
+            return weeklyShareCardModel(strings: strings)
+        case .monthlySummary:
+            return monthlyShareCardModel(strings: strings)
+        case .goalProgress:
+            return goalShareCardModel(strings: strings)
+        case .topCategory:
+            return topCategoryShareCardModel(strings: strings)
+        }
+    }
+
+    var shareCardSnapshotSignature: String {
+        [
+            String(safeExpenses.count),
+            String(format: "%.2f", todayTotal),
+            String(format: "%.2f", weekTotal),
+            String(format: "%.2f", monthTotal),
+            weeklyGoal.map { "\($0.limit)-\($0.updatedAt.timeIntervalSince1970)" } ?? "no-weekly-goal",
+            monthlyGoal.map { "\($0.limit)-\($0.updatedAt.timeIntervalSince1970)" } ?? "no-monthly-goal",
+            topCategory?.id.uuidString ?? "no-top-category",
+            primaryGoalForecast?.id.rawValue ?? "no-goal-forecast"
+        ]
+        .joined(separator: "|")
     }
 
     func goal(for cadence: SpendingGoalCadence) -> SpendingGoal? {
@@ -705,6 +841,87 @@ final class ExpenseViewModel: ObservableObject {
         )
     }
 
+    func goalForecast(for cadence: SpendingGoalCadence) -> GoalForecast? {
+        goalForecasts.first(where: { $0.goalType == cadence })
+    }
+
+    func goalForecastStatusText(for cadence: SpendingGoalCadence) -> String {
+        guard let forecast = goalForecast(for: cadence) else {
+            return goalStatusText(for: cadence)
+        }
+
+        let strings = AppStrings.current()
+        switch forecast.status {
+        case .safe:
+            return strings.goalForecastStatusSafe
+        case .watch:
+            return strings.goalForecastStatusWatch
+        case .risk:
+            return strings.goalForecastStatusRisk
+        case .over:
+            return strings.goalForecastStatusOver
+        }
+    }
+
+    func goalForecastSummaryText(for cadence: SpendingGoalCadence) -> String? {
+        guard let forecast = goalForecast(for: cadence) else { return nil }
+        let strings = AppStrings.current()
+        let paceText = String(format: strings.goalsForecastAtThisPaceTemplate, currency(forecast.projectedSpend))
+        let dailyBudgetText = String(format: strings.goalsForecastDailyBudgetTemplate, currency(forecast.remainingDailyBudget))
+        let varianceText: String
+
+        if forecast.status == .over {
+            varianceText = String(
+                format: strings.goalsForecastOverSummary,
+                currency(forecast.projectedOverLimitAmount)
+            )
+        } else if forecast.projectedOverLimitAmount > 0 {
+            varianceText = String(
+                format: strings.goalsForecastGoOverTemplate,
+                currency(forecast.projectedOverLimitAmount)
+            )
+        } else {
+            varianceText = String(
+                format: strings.goalsForecastStayUnderTemplate,
+                currency(forecast.projectedUnderLimitAmount)
+            )
+        }
+
+        return [
+            paceText,
+            dailyBudgetText,
+            varianceText
+        ]
+        .joined(separator: " • ")
+    }
+
+    func goalForecastStatusColor(for cadence: SpendingGoalCadence) -> Color {
+        guard let forecast = goalForecast(for: cadence) else {
+            return Color(red: 0.19, green: 0.64, blue: 0.38)
+        }
+
+        return forecast.status.tintColor
+    }
+
+    func goalForecastHeadline(for cadence: SpendingGoalCadence) -> String? {
+        guard let forecast = goalForecast(for: cadence) else { return nil }
+        let strings = AppStrings.current()
+        let cadenceTitle = cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle
+        let label = String(format: strings.dashboardGoalAtRiskTitleTemplate, cadenceTitle)
+        switch forecast.status {
+        case .safe:
+            return nil
+        case .watch, .risk, .over:
+            return label
+        }
+    }
+
+    func goalForecastHelperText(for cadence: SpendingGoalCadence) -> String? {
+        guard let forecast = goalForecast(for: cadence) else { return nil }
+        let strings = AppStrings.current()
+        return String(format: strings.dashboardGoalAtRiskSubtitleTemplate, currency(forecast.remainingDailyBudget))
+    }
+
     func goalAccessibilityValue(for cadence: SpendingGoalCadence) -> String {
         guard let overview = goalOverview(for: cadence) else {
             return AppStrings.current().goalsNoGoalMessage
@@ -768,12 +985,16 @@ final class ExpenseViewModel: ObservableObject {
         ExpenseJSONExport(expenses: expenses)
     }
 
+    private var safeExpenses: [Expense] {
+        expenses.filter { $0.amount.isFinite }
+    }
+
     private var totalAmount: Double {
-        expenses.reduce(0) { $0 + $1.amount }
+        safeExpenses.reduce(0) { $0 + $1.amount }
     }
 
     private func filteredExpenses(category: ExpenseCategory?, timeFilter: HistoryTimeFilter) -> [Expense] {
-        expenses.filter { expense in
+        safeExpenses.filter { expense in
             let categoryMatches = category == nil || expense.category.id == category?.id
             let timeMatches: Bool
             switch timeFilter {
@@ -792,7 +1013,7 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     private func expenses(in range: TimeRange) -> [Expense] {
-        expenses.filter { expense in
+        safeExpenses.filter { expense in
             switch range {
             case .today:
                 return calendar.isDateInToday(expense.date)
@@ -818,7 +1039,11 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     private func categoryBreakdown(by sortMode: CategorySortMode) -> [CategoryBreakdown] {
-        let sourceExpenses = expenses(in: .month)
+        categoryBreakdown(in: .month, sortMode: sortMode)
+    }
+
+    private func categoryBreakdown(in range: TimeRange, sortMode: CategorySortMode) -> [CategoryBreakdown] {
+        let sourceExpenses = expenses(in: range)
         let grouped = Dictionary(grouping: sourceExpenses, by: { $0.category.id })
 
         let breakdown = grouped.compactMap { categoryID, items -> CategoryBreakdown? in
@@ -845,17 +1070,198 @@ final class ExpenseViewModel: ObservableObject {
         }
     }
 
+    private func categoryShares(in range: TimeRange) -> [CategoryShare] {
+        let breakdown = categoryBreakdown(in: range, sortMode: .amount)
+        let total = expenses(in: range).reduce(0) { $0 + $1.amount }
+        guard total > 0 else { return [] }
+
+        return breakdown.map { item in
+            CategoryShare(
+                category: item.category,
+                total: item.total,
+                count: item.count,
+                percentage: (item.total / total) * 100
+            )
+        }
+    }
+
+    private func topCategoryShare(in range: TimeRange) -> CategoryShare? {
+        categoryShares(in: range).first
+    }
+
+    private func shareCardMessage(for variant: ShareCardVariant, cadence: SpendingGoalCadence?, strings: AppStrings) -> String {
+        switch variant {
+        case .weeklySummary:
+            return strings.shareSummaryWeeklyMessage
+        case .monthlySummary:
+            return strings.shareSummaryMonthlyMessage
+        case .goalProgress:
+            guard let cadence else { return strings.shareSummaryGoalMessage }
+            guard let forecast = goalForecast(for: cadence) else { return strings.shareSummaryGoalMessage }
+
+            switch forecast.status {
+            case .safe:
+                return String(format: strings.goalsForecastDailyBudgetTemplate, currency(forecast.remainingDailyBudget))
+            case .watch:
+                return String(format: strings.goalsForecastAtThisPaceTemplate, currency(forecast.projectedSpend))
+            case .risk:
+                return String(format: strings.goalsForecastGoOverTemplate, currency(forecast.projectedOverLimitAmount))
+            case .over:
+                return String(format: strings.goalsForecastOverSummary, currency(forecast.projectedOverLimitAmount))
+            }
+        case .topCategory:
+            return strings.shareSummaryTopCategoryMessage
+        }
+    }
+
+    private func weeklyShareCardModel(strings: AppStrings) -> ShareCardModel? {
+        guard !expenses.isEmpty || hasWeeklyGoal else { return nil }
+        let topShare = topCategoryShare(in: .week)
+        let goalStatus = goalStatusText(for: .weekly)
+        var chips: [ShareCardChip] = []
+
+        if let topShare {
+            chips.append(ShareCardChip(title: "\(strings.shareSummaryTopCategoryChipPrefix) \(topShare.category.displayName)", tint: topShare.category.accentColor))
+        }
+
+        if hasWeeklyGoal {
+            chips.append(ShareCardChip(title: "\(strings.goalsWeeklyTitle): \(goalStatus)", tint: goalForecastStatusColor(for: .weekly)))
+        }
+
+        return ShareCardModel(
+            variant: .weeklySummary,
+            badgeLabel: strings.shareSummaryBadgeWeekly,
+            title: strings.shareSummaryWeeklyCardTitle,
+            periodLabel: strings.goalsPeriodThisWeek,
+            bigValueLabel: currency(weekTotal),
+            accentColor: topShare?.category.accentColor ?? Color(red: 0.18, green: 0.47, blue: 0.88),
+            symbolName: "calendar",
+            chips: chips,
+            message: shareCardMessage(for: .weeklySummary, cadence: .weekly, strings: strings)
+        )
+    }
+
+    private func monthlyShareCardModel(strings: AppStrings) -> ShareCardModel? {
+        guard !expenses.isEmpty || hasMonthlyGoal else { return nil }
+        let topShare = topCategoryShare(in: .month)
+        let goalStatus = goalStatusText(for: .monthly)
+        var chips: [ShareCardChip] = []
+
+        if let topShare {
+            chips.append(ShareCardChip(title: "\(strings.shareSummaryTopCategoryChipPrefix) \(topShare.category.displayName)", tint: topShare.category.accentColor))
+        }
+
+        if hasMonthlyGoal {
+            chips.append(ShareCardChip(title: "\(strings.goalsMonthlyTitle): \(goalStatus)", tint: goalForecastStatusColor(for: .monthly)))
+        }
+
+        return ShareCardModel(
+            variant: .monthlySummary,
+            badgeLabel: strings.shareSummaryBadgeMonthly,
+            title: strings.shareSummaryMonthlyCardTitle,
+            periodLabel: strings.goalsPeriodThisMonth,
+            bigValueLabel: currency(monthTotal),
+            accentColor: topShare?.category.accentColor ?? Color(red: 0.86, green: 0.35, blue: 0.65),
+            symbolName: "calendar.badge.clock",
+            chips: chips,
+            message: shareCardMessage(for: .monthlySummary, cadence: .monthly, strings: strings)
+        )
+    }
+
+    private func goalShareCardModel(strings: AppStrings) -> ShareCardModel? {
+        guard let cadence = goalCardCadence else { return nil }
+        guard goal(for: cadence) != nil else { return nil }
+        let spent = goalSpentAmount(for: cadence)
+        let remaining = goalRemainingAmount(for: cadence)
+        let statusColor = goalForecastStatusColor(for: cadence)
+        let statusText = goalStatusText(for: cadence)
+        let topShare = topCategoryShare(in: cadence == .weekly ? .week : .month)
+
+        var chips: [ShareCardChip] = [
+            ShareCardChip(title: "\(strings.goalsSpentLabel) \(currency(spent))", tint: AppTheme.primaryText),
+            ShareCardChip(title: "\(strings.goalsRemainingLabel) \(currency(remaining))", tint: AppTheme.tertiaryText),
+            ShareCardChip(title: statusText, tint: statusColor)
+        ]
+
+        if let topShare {
+            chips.append(ShareCardChip(title: "\(strings.shareSummaryTopCategoryChipPrefix) \(topShare.category.displayName)", tint: topShare.category.accentColor))
+        }
+
+        return ShareCardModel(
+            variant: .goalProgress,
+            badgeLabel: strings.shareSummaryBadgeGoal,
+            title: strings.shareSummaryGoalCardTitle,
+            periodLabel: cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle,
+            bigValueLabel: currency(spent),
+            accentColor: statusColor,
+            symbolName: "target",
+            chips: chips,
+            message: shareCardMessage(for: .goalProgress, cadence: cadence, strings: strings)
+        )
+    }
+
+    private func topCategoryShareCardModel(strings: AppStrings) -> ShareCardModel? {
+        guard let topShare = topCategoryShare(in: .month) else { return nil }
+        var chips: [ShareCardChip] = [
+            ShareCardChip(title: String(format: strings.shareSummaryTopCategoryShareTemplate, percentageString(topShare.percentage)), tint: topShare.category.accentColor),
+            ShareCardChip(title: String(format: strings.shareSummaryTopCategoryCountTemplate, topShare.count), tint: AppTheme.primaryText)
+        ]
+
+        if hasMonthlyGoal {
+            chips.append(ShareCardChip(title: "\(strings.goalsMonthlyTitle): \(goalStatusText(for: .monthly))", tint: goalForecastStatusColor(for: .monthly)))
+        }
+
+        return ShareCardModel(
+            variant: .topCategory,
+            badgeLabel: strings.shareSummaryBadgeTopCategory,
+            title: strings.shareSummaryTopCategoryCardTitle,
+            periodLabel: strings.goalsPeriodThisMonth,
+            bigValueLabel: currency(topShare.total),
+            accentColor: topShare.category.accentColor,
+            symbolName: topShare.category.symbolName,
+            chips: chips,
+            message: shareCardMessage(for: .topCategory, cadence: .monthly, strings: strings)
+        )
+    }
+
+    private var goalCardCadence: SpendingGoalCadence? {
+        if let forecastCadence = primaryGoalForecast?.goalType {
+            return forecastCadence
+        }
+        if monthlyGoal != nil {
+            return .monthly
+        }
+        if weeklyGoal != nil {
+            return .weekly
+        }
+        return nil
+    }
+
     private func persistExpenses() {
-        store.saveExpenses(expenses)
-        expenses = store.loadExpenses()
+        let sanitizedExpenses = safeExpenses
+        if sanitizedExpenses.count != expenses.count {
+            expenses = sanitizedExpenses
+        }
+        store.saveExpenses(sanitizedExpenses)
+        expenses = store.loadExpenses().filter { $0.amount.isFinite }
+        refreshGoalForecasts()
+        refreshSpendingComparisons()
+        refreshSmartInsights()
+        refreshSmartAlerts()
+        refreshWeeklyDigest()
         syncWidgetSummary()
     }
 
     private func persistGoals() {
-        goalStore.saveGoals(SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal))
-        let savedGoals = goalStore.loadGoals()
+        let sanitizedGoals = SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal).sanitized
+        goalStore.saveGoals(sanitizedGoals)
+        let savedGoals = goalStore.loadGoals().sanitized
         weeklyGoal = savedGoals.weekly
         monthlyGoal = savedGoals.monthly
+        refreshGoalForecasts()
+        refreshSmartInsights()
+        refreshSmartAlerts()
+        refreshWeeklyDigest()
         syncWidgetSummary()
     }
 
@@ -935,17 +1341,49 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     private func applyParsedSuggestion(_ suggestion: ExpenseParseResult) {
-        if let amount = suggestion.amount {
-            amountText = String(format: "%.2f", amount)
+        if let amount = suggestion.amount, amount.isFinite, amount > 0 {
+            amountText = amountText(for: amount)
         }
 
-        if !suggestion.merchant.isEmpty {
-            merchantText = suggestion.merchant
+        let resolvedMerchant = suggestion.merchant.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !resolvedMerchant.isEmpty {
+            merchantText = resolvedMerchant
         }
 
-        selectedCategory = suggestion.category
+        selectedCategory = resolvedCategory(from: suggestion.category)
         draftSource = suggestion.source
-        draftConfidence = suggestion.confidence
+        draftConfidence = safeConfidence(suggestion.confidence)
+    }
+
+    private func parsedAmount(from text: String) -> Double? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let normalized = trimmed.replacingOccurrences(of: ",", with: ".")
+        guard let amount = Double(normalized), amount.isFinite, amount > 0 else {
+            return nil
+        }
+
+        return amount
+    }
+
+    private func safeConfidence(_ value: Double) -> Double {
+        guard value.isFinite else { return 1.0 }
+        return min(max(value, 0), 1)
+    }
+
+    private func amountText(for amount: Double) -> String {
+        if amount.rounded(.towardZero) == amount {
+            return String(format: "%.0f", amount)
+        }
+
+        return String(format: "%.2f", amount)
+    }
+
+    private func resolvedCategory(from category: ExpenseCategory) -> ExpenseCategory {
+        categories.first(where: { $0.id == category.id })
+            ?? ExpenseCategory.category(matching: category.displayName, in: categories)
+            ?? category
     }
 
     private func daysLeft(in range: TimeRange) -> Int {
@@ -985,6 +1423,8 @@ final class ExpenseViewModel: ObservableObject {
             topCategory: topCategory?.displayName ?? "No spending yet",
             weeklyGoalStatus: widgetGoalStatus(for: .weekly),
             monthlyGoalStatus: widgetGoalStatus(for: .monthly),
+            weeklyGoalForecastText: widgetGoalForecastText(for: .weekly),
+            monthlyGoalForecastText: widgetGoalForecastText(for: .monthly),
             categoryTop3: categoryBreakdown.prefix(3).map { WidgetCategorySummary(name: $0.category.displayName, amount: $0.total) }
         )
 
@@ -993,6 +1433,58 @@ final class ExpenseViewModel: ObservableObject {
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif
+    }
+
+    private func refreshSmartInsights() {
+        smartInsights = smartInsightsService.generateInsights(
+            expenses: safeExpenses,
+            goals: SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal),
+            calendar: calendar,
+            strings: AppStrings.current()
+        )
+    }
+
+    private func refreshSmartAlerts() {
+        smartAlerts = smartAlertService.generateAlerts(
+            expenses: safeExpenses,
+            goalForecasts: goalForecasts,
+            comparisons: spendingComparisons,
+            strings: AppStrings.current(),
+            calendar: calendar
+        )
+    }
+
+    private func refreshSpendingComparisons() {
+        spendingComparisons = spendingComparisonService.generateComparisons(
+            expenses: safeExpenses,
+            calendar: calendar,
+            strings: AppStrings.current()
+        )
+    }
+
+    private func refreshWeeklyDigest() {
+        weeklyDigest = weeklyDigestService.generateDigest(
+            expenses: safeExpenses,
+            goals: SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal),
+            smartInsights: smartInsights,
+            comparisons: spendingComparisons,
+            calendar: calendar
+        )
+    }
+
+    private func refreshGoalForecasts() {
+        goalForecasts = goalIntelligenceService.generateForecasts(
+            expenses: safeExpenses,
+            goals: SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal),
+            calendar: calendar
+        )
+    }
+
+    private func forecastPriority(lhs: GoalForecast, rhs: GoalForecast) -> Bool {
+        if lhs.status.priority == rhs.status.priority {
+            return lhs.goalType == .monthly && rhs.goalType == .weekly
+        }
+        return lhs.status.priority > rhs.status.priority
     }
 
     private func widgetGoalStatus(for cadence: SpendingGoalCadence) -> WidgetGoalStatus {
@@ -1005,6 +1497,22 @@ final class ExpenseViewModel: ObservableObject {
             return .closeToLimit
         case .limitReached:
             return .limitReached
+        }
+    }
+
+    private func widgetGoalForecastText(for cadence: SpendingGoalCadence) -> String? {
+        guard let forecast = goalForecast(for: cadence) else { return nil }
+        let strings = AppStrings.current()
+
+        switch forecast.status {
+        case .safe:
+            return String(format: strings.goalsForecastDailyBudgetTemplate, currency(forecast.remainingDailyBudget))
+        case .watch:
+            return String(format: strings.goalsForecastAtThisPaceTemplate, currency(forecast.projectedSpend))
+        case .risk:
+            return String(format: strings.goalsForecastGoOverTemplate, currency(forecast.projectedOverLimitAmount))
+        case .over:
+            return String(format: strings.goalsForecastOverSummary, currency(forecast.projectedOverLimitAmount))
         }
     }
 

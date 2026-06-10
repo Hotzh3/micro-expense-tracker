@@ -27,7 +27,7 @@ final class ExpenseStore {
             }
 
             let data = try Data(contentsOf: fileURL)
-            return try decoder.decode([Expense].self, from: data)
+            return try decoder.decode([Expense].self, from: data).filter { $0.amount.isFinite }
         } catch {
             print("Failed to load expenses: \(error)")
             return []
@@ -36,7 +36,8 @@ final class ExpenseStore {
 
     func saveExpenses(_ expenses: [Expense]) {
         do {
-            let data = try encoder.encode(expenses)
+            let safeExpenses = expenses.filter { $0.amount.isFinite }
+            let data = try encoder.encode(safeExpenses)
             try ensureStoreDirectoryExists()
             try data.write(to: fileURL, options: [.atomic])
         } catch {
@@ -64,7 +65,8 @@ final class ExpenseStore {
 
     private static func makeFileURL(fileManager: FileManager) -> URL {
         let baseDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+            ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
         return baseDirectory
             .appendingPathComponent("JTap", isDirectory: true)
             .appendingPathComponent("expenses.json")

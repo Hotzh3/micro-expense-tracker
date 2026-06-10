@@ -4,30 +4,88 @@ import SwiftUI
 struct InsightsView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
-    @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var didAnimateIn = false
+    @State private var weeklyDigestShareURL: URL?
+    private let shareCardRenderer = ShareCardRenderer()
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 ScreenHeaderView(
                     title: strings.insightsHeader,
-                    subtitle: "See patterns without charts while keeping the UI calm and lightweight.",
+                    subtitle: strings.smartInsightsSubtitle,
                     showsSettingsButton: true
                 )
 
                 VStack(spacing: 12) {
-                    if viewModel.expenses.isEmpty {
-                        EmptyStateView(
-                            title: strings.insightsEmptyStateTitle,
-                            message: strings.insightsEmptyStateMessage,
-                            actionTitle: strings.insightsEmptyStateAction,
-                            action: {
-                                guard let url = URL(string: "pocketleak://quick-add") else { return }
-                                openURL(url)
+                    if !viewModel.smartAlerts.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(strings.smartAlertsTitle)
+                                .font(.headline)
+                                .foregroundStyle(AppTheme.primaryText)
+                            Text(strings.smartAlertsSubtitle)
+                                .font(.subheadline)
+                                .foregroundStyle(AppTheme.secondaryText)
+
+                            VStack(spacing: 12) {
+                                ForEach(viewModel.smartAlerts) { alert in
+                                    SmartAlertCardView(
+                                        alert: alert,
+                                        strings: strings,
+                                        dismissAction: {
+                                            viewModel.dismissSmartAlert(id: alert.id)
+                                        }
+                                    )
+                                }
                             }
-                        )
+                        }
+                        .opacity(didAnimateIn ? 1 : 0)
+                        .offset(y: didAnimateIn ? 0 : 8)
+                    }
+
+                    WeeklyDigestView(
+                        digest: viewModel.weeklyDigest,
+                        strings: strings,
+                        shareURL: weeklyDigestShareURL
+                    )
+
+                    if !viewModel.expenses.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(strings.smartInsightsTitle)
+                                .font(.headline)
+                                .foregroundStyle(AppTheme.primaryText)
+
+                            VStack(spacing: 12) {
+                                ForEach(Array(viewModel.smartInsights.prefix(4))) { insight in
+                                    SmartInsightCardView(insight: insight)
+                                }
+                            }
+                        }
+                        .opacity(didAnimateIn ? 1 : 0)
+                        .offset(y: didAnimateIn ? 0 : 8)
+                    }
+
+                    if !viewModel.spendingComparisons.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(strings.trendsTitle)
+                                .font(.headline)
+                                .foregroundStyle(AppTheme.primaryText)
+                            Text(strings.trendsSubtitle)
+                                .font(.subheadline)
+                                .foregroundStyle(AppTheme.secondaryText)
+
+                            VStack(spacing: 12) {
+                                ForEach(viewModel.spendingComparisons) { comparison in
+                                    SpendingComparisonCardView(
+                                        comparison: comparison,
+                                        strings: strings
+                                    )
+                                }
+                            }
+                        }
+                        .opacity(didAnimateIn ? 1 : 0)
+                        .offset(y: didAnimateIn ? 0 : 8)
                     }
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -37,20 +95,6 @@ struct InsightsView: View {
                         MetricCardView(title: "Highest Expense", value: highestExpenseValue, subtitle: highestExpenseSubtitle)
                         MetricCardView(title: "Logged Expenses", value: "\(viewModel.totalExpenseCount)", subtitle: "All local entries")
                         MetricCardView(title: "Average Expense", value: currency(viewModel.averageExpenseAmount), subtitle: "Across all entries")
-                    }
-                    .opacity(didAnimateIn ? 1 : 0)
-                    .offset(y: didAnimateIn ? 0 : 8)
-
-                    GlassCardView {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Micro-Expense Insight")
-                                .font(.headline)
-                                .foregroundStyle(AppTheme.primaryText)
-                            Text(viewModel.insightText)
-                                .font(.subheadline)
-                                .foregroundStyle(AppTheme.secondaryText)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .opacity(didAnimateIn ? 1 : 0)
                     .offset(y: didAnimateIn ? 0 : 8)
@@ -155,6 +199,18 @@ struct InsightsView: View {
             }
         }
         .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard), value: didAnimateIn)
+        .task(id: viewModel.shareCardSnapshotSignature) {
+            await refreshWeeklyDigestShareURL()
+        }
+    }
+
+    @MainActor
+    private func refreshWeeklyDigestShareURL() async {
+        weeklyDigestShareURL = shareCardRenderer.shareURL(
+            for: .weeklySummary,
+            viewModel: viewModel,
+            strings: strings
+        )
     }
 
     private var highestExpenseValue: String {

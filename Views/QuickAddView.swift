@@ -215,31 +215,6 @@ struct QuickAddView: View {
                                     if let parseFeedback = viewModel.parseFeedback {
                                         feedbackBanner(for: parseFeedback)
                                     }
-
-                                    if let parsedExpense = viewModel.parsedExpense {
-                                        parsedPreviewCard(for: parsedExpense)
-
-                                        Button {
-                                            viewModel.useParsedExpense()
-                                        } label: {
-                                            HStack {
-                                                Image(systemName: "checkmark.circle.fill")
-                                                Text(strings.useParsedExpenseButton)
-                                            }
-                                            .font(.system(size: 15 * scale, weight: .semibold))
-                                            .foregroundStyle(AppTheme.background)
-                                            .frame(maxWidth: .infinity)
-                                            .frame(minHeight: 44)
-                                            .padding(.vertical, 14)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                    .fill(AppTheme.primaryText)
-                                            )
-                                        }
-                                        .buttonStyle(.plain)
-                                        .accessibilityLabel(strings.useParsedExpenseButton)
-                                        .accessibilityHint(strings.parsedPreviewSubtitle)
-                                    }
                                 }
                             }
 
@@ -278,12 +253,21 @@ struct QuickAddView: View {
                 .onChange(of: viewModel.noteText) { _, _ in viewModel.clearSaveFeedback() }
                 .onChange(of: viewModel.selectedCategory) { _, _ in viewModel.clearSaveFeedback() }
                 .onChange(of: viewModel.importText) { _, _ in viewModel.clearParseFeedback() }
+                .onChange(of: viewModel.parseFeedback) { _, newValue in
+                    guard let newValue, !newValue.isError else { return }
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        focusedField = .amount
+                        scrollProxy.scrollTo(Field.amount, anchor: .top)
+                    }
+                }
             }
 
             if viewModel.saveFeedback != nil {
                 HStack {
                     Spacer(minLength: 0)
-                    saveToast(for: viewModel.saveFeedback!)
+                    if let saveFeedback = viewModel.saveFeedback {
+                        saveToast(for: saveFeedback)
+                    }
                     Spacer(minLength: 0)
                 }
                 .padding(.top, 10)
@@ -393,9 +377,6 @@ struct QuickAddView: View {
                 )
         )
         .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 8)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(feedback.isError ? strings.needsAttention : strings.ready)
-        .accessibilityValue(feedback.message)
     }
 
     private func saveToast(for feedback: ExpenseViewModel.Feedback) -> some View {
@@ -425,69 +406,4 @@ struct QuickAddView: View {
         .accessibilityValue(feedback.message)
     }
 
-    private func parsedPreviewCard(for parsedExpense: ExpenseParseResult) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(strings.parsedPreviewTitle)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(AppTheme.primaryText)
-                    Text(strings.parsedPreviewSubtitle)
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.secondaryText)
-                }
-
-                Spacer()
-
-                Text(String(format: "%.0f%%", parsedExpense.confidence * 100))
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(AppTheme.primaryText)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(AppTheme.chipFill)
-                    )
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                if let amount = parsedExpense.amount {
-                    previewRow(label: strings.amountTitle, value: String(format: "$%.2f", amount))
-                }
-                if !parsedExpense.merchant.isEmpty {
-                    previewRow(label: strings.merchantLabel, value: parsedExpense.merchant)
-                }
-                previewRow(label: strings.categoryTitle, value: parsedExpense.category.displayName)
-                previewRow(label: strings.confidenceLabel, value: String(format: "%.0f%%", parsedExpense.confidence * 100))
-                previewRow(label: strings.sourceLabel, value: strings.parsedTextSource)
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(AppTheme.cardFill)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(AppTheme.cardBorder, lineWidth: 1)
-                )
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(strings.parsedPreviewTitle)
-        .accessibilityValue(parsedExpense.summary)
-    }
-
-    private func previewRow(label: String, value: String) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 13 * appTextSize.scale))
-                .foregroundStyle(AppTheme.tertiaryText)
-            Spacer()
-            Text(value)
-                .font(.system(size: 15 * appTextSize.scale, weight: .medium))
-                .foregroundStyle(AppTheme.primaryText)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label): \(value)")
-    }
 }

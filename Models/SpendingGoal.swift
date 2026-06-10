@@ -22,6 +22,10 @@ struct SpendingGoal: Identifiable, Codable, Equatable {
     var limit: Double
     var createdAt: Date = .now
     var updatedAt: Date = .now
+
+    var isValid: Bool {
+        limit.isFinite && limit > 0
+    }
 }
 
 struct SpendingGoals: Codable, Equatable {
@@ -36,6 +40,13 @@ struct SpendingGoals: Codable, Equatable {
 }
 
 extension SpendingGoals {
+    var sanitized: SpendingGoals {
+        SpendingGoals(
+            weekly: weekly?.isValid == true ? weekly : nil,
+            monthly: monthly?.isValid == true ? monthly : nil
+        )
+    }
+
     func goal(for cadence: SpendingGoalCadence) -> SpendingGoal? {
         switch cadence {
         case .weekly:

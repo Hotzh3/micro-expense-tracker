@@ -46,6 +46,8 @@ struct WidgetSummary: Codable, Equatable {
     let topCategory: String
     let weeklyGoalStatus: WidgetGoalStatus
     let monthlyGoalStatus: WidgetGoalStatus
+    let weeklyGoalForecastText: String?
+    let monthlyGoalForecastText: String?
     let categoryTop3: [WidgetCategorySummary]
 
     static func demo() -> WidgetSummary {
@@ -57,6 +59,8 @@ struct WidgetSummary: Codable, Equatable {
             topCategory: "Food",
             weeklyGoalStatus: .onTrack,
             monthlyGoalStatus: .closeToLimit,
+            weeklyGoalForecastText: "At this pace: $112.00",
+            monthlyGoalForecastText: "At this pace: $240.00",
             categoryTop3: [
                 WidgetCategorySummary(name: "Food", amount: 84.10),
                 WidgetCategorySummary(name: "Coffee", amount: 42.20),
@@ -74,6 +78,8 @@ struct WidgetSummary: Codable, Equatable {
             topCategory: "No shared data yet",
             weeklyGoalStatus: .none,
             monthlyGoalStatus: .none,
+            weeklyGoalForecastText: nil,
+            monthlyGoalForecastText: nil,
             categoryTop3: []
         )
     }

@@ -31,7 +31,7 @@ struct RootView: View {
         let textSize = AppTextSize(rawValue: textSizeRaw) ?? .medium
         let language = AppLanguage(rawValue: languageRaw) ?? .english
         let strings = AppStrings.current()
-        let isInputActive = viewModel.isQuickAddInputFocused
+        let isInputActive = viewModel.isQuickAddInputFocused || viewModel.isGoalsInputFocused
         let shouldShowOnboarding = showOnboarding
         let bottomContentInset: CGFloat = isInputActive ? 24 : 132
         let tabBarBottomPadding: CGFloat = 2
@@ -259,6 +259,8 @@ struct RootView: View {
         if playHaptic {
             HapticsService.shared.selection()
         }
+        viewModel.isQuickAddInputFocused = false
+        viewModel.isGoalsInputFocused = false
         withAnimation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard)) {
             selectedTab = tab
         }

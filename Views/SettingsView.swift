@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
     @AppStorage(AppPreferenceKeys.hapticsEnabled) private var hapticsEnabled = true
+    @AppStorage(AppPreferenceKeys.smartAlertsEnabled) private var smartAlertsEnabled = true
 
     @Binding var appearanceSelection: AppAppearance
     @Binding var textSizeSelection: AppTextSize
@@ -37,6 +38,7 @@ struct SettingsView: View {
                     languageCard
                     onboardingCard
                     hapticsCard
+                    smartAlertsCard
                     privacyCard
                     exportCard
                     backTapCard
@@ -204,6 +206,30 @@ struct SettingsView: View {
                 .accessibilityHint(strings.hapticsDescription)
 
                 Text(strings.hapticsDescription)
+                    .font(.system(size: 13 * scale))
+                    .foregroundStyle(AppTheme.secondaryText)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var smartAlertsCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(strings.smartAlertsTitle)
+                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AppTheme.primaryText)
+
+                Toggle(isOn: $smartAlertsEnabled) {
+                    Text(strings.enableSmartAlerts)
+                        .font(.system(size: 15 * scale, weight: .semibold))
+                        .foregroundStyle(AppTheme.primaryText)
+                }
+                .tint(AppTheme.primaryText)
+                .accessibilityLabel(strings.enableSmartAlerts)
+                .accessibilityHint(strings.smartAlertsDescription)
+
+                Text(strings.smartAlertsDescription)
                     .font(.system(size: 13 * scale))
                     .foregroundStyle(AppTheme.secondaryText)
             }
