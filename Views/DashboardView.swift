@@ -4,7 +4,10 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
+    @Environment(\.presentSettings) private var presentSettings
     @Environment(\.openURL) private var openURL
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var didAnimateIn = false
 
     var body: some View {
         ScrollView {
@@ -17,10 +20,39 @@ struct DashboardView: View {
 
                 VStack(spacing: 12) {
                     if viewModel.expenses.isEmpty {
-                        EmptyStateView(
-                            title: strings.emptyNoExpenses,
-                            message: strings.emptyNoExpenses
-                        )
+                        VStack(spacing: 12) {
+                            EmptyStateView(
+                                title: strings.dashboardEmptyStateTitle,
+                                message: strings.dashboardEmptyStateMessage,
+                                actionTitle: strings.dashboardEmptyStateAction,
+                                action: {
+                                    guard let url = URL(string: "pocketleak://quick-add") else { return }
+                                    openURL(url)
+                                }
+                            )
+
+                            Button {
+                                presentSettings()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "gearshape")
+                                    Text(strings.openSettings)
+                                }
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(AppTheme.primaryText)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(AppTheme.cardFill)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                .stroke(AppTheme.cardBorder, lineWidth: 1)
+                                        )
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -31,10 +63,18 @@ struct DashboardView: View {
                         MetricCardView(title: "Largest Expense", value: viewModel.largestExpenseThisMonthText, subtitle: viewModel.largestExpenseThisMonthSubtitle)
                         MetricCardView(title: "Average Expense", value: amount(viewModel.averageExpenseAmount), subtitle: "Across all saved expenses")
                     }
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
 
                     goalsSummaryCard
+                        .opacity(didAnimateIn ? 1 : 0)
+                        .offset(y: didAnimateIn ? 0 : 8)
                     categoryDistributionCard
+                        .opacity(didAnimateIn ? 1 : 0)
+                        .offset(y: didAnimateIn ? 0 : 8)
                     recentTrendCard
+                        .opacity(didAnimateIn ? 1 : 0)
+                        .offset(y: didAnimateIn ? 0 : 8)
 
                     GlassCardView {
                         VStack(alignment: .leading, spacing: 10) {
@@ -54,6 +94,17 @@ struct DashboardView: View {
             .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            guard !didAnimateIn else { return }
+            if reduceMotion {
+                didAnimateIn = true
+            } else {
+                withAnimation(AppMotion.standard) {
+                    didAnimateIn = true
+                }
+            }
+        }
+        .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard), value: didAnimateIn)
     }
 
     private func amount(_ value: Double) -> String {
@@ -61,7 +112,7 @@ struct DashboardView: View {
     }
 
     private var categoryDistributionCard: some View {
-        let topShares = viewModel.topCategorySharesThisMonth
+        let categoryShares = viewModel.categorySharesThisMonth
 
         return GlassCardView {
             VStack(alignment: .leading, spacing: 12) {
@@ -69,14 +120,14 @@ struct DashboardView: View {
                     .font(.headline)
                     .foregroundStyle(AppTheme.primaryText)
 
-                if topShares.isEmpty {
+                if categoryShares.isEmpty {
                     Text(strings.dashboardNoCategoryDistribution)
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.secondaryText)
                 } else {
                     VStack(spacing: 16) {
                         ZStack {
-                            Chart(topShares) { share in
+                            Chart(categoryShares) { share in
                                 SectorMark(
                                     angle: .value("Spend", share.total),
                                     innerRadius: .ratio(0.66),
@@ -85,6 +136,7 @@ struct DashboardView: View {
                                 .foregroundStyle(share.category.accentColor)
                             }
                             .chartLegend(.hidden)
+                            .accessibilityHidden(true)
 
                             VStack(spacing: 2) {
                                 Text(amount(viewModel.monthTotal))
@@ -96,9 +148,12 @@ struct DashboardView: View {
                             }
                         }
                         .frame(height: 180)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(strings.dashboardCategoryDistributionTitle)
+                        .accessibilityValue(viewModel.categoryDistributionAccessibilitySummary)
 
                         VStack(alignment: .leading, spacing: 10) {
-                            ForEach(topShares) { share in
+                            ForEach(categoryShares) { share in
                                 VStack(alignment: .leading, spacing: 6) {
                                     HStack {
                                         HStack(spacing: 8) {
@@ -200,6 +255,9 @@ struct DashboardView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(strings.dashboardRecentTrendTitle)
+            .accessibilityValue(viewModel.recentTrendAccessibilitySummary)
         }
     }
 
@@ -244,6 +302,8 @@ struct DashboardView: View {
                             )
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(strings.dashboardGoalsCtaButton)
+                        .accessibilityHint(strings.dashboardGoalsCtaSubtitle)
                     }
                 } else {
                     VStack(spacing: 12) {
@@ -287,6 +347,9 @@ struct DashboardView: View {
                                 }
                             }
                             .padding(.vertical, 2)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(summary.cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle)
+                            .accessibilityValue(viewModel.goalAccessibilityValue(for: summary.cadence))
                         }
                     }
                 }
@@ -298,13 +361,13 @@ struct DashboardView: View {
     private func progressColor(for status: ExpenseViewModel.GoalStatus) -> Color {
         switch status {
         case .onTrack:
-            return .white
+            return AppTheme.primaryText
         case .closeToLimit:
             return .yellow
         case .limitReached:
             return .red
         case .none:
-            return .white
+            return AppTheme.primaryText
         }
     }
 }

@@ -1,6 +1,5 @@
 import SwiftUI
 import UIKit
-import Combine
 
 struct RootView: View {
     enum AppTab: Hashable, CaseIterable {
@@ -12,9 +11,11 @@ struct RootView: View {
     }
 
     @EnvironmentObject private var viewModel: ExpenseViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage(AppPreferenceKeys.appearance) private var appearanceRaw = AppAppearance.dark.rawValue
     @AppStorage(AppPreferenceKeys.textSize) private var textSizeRaw = AppTextSize.medium.rawValue
     @AppStorage(AppPreferenceKeys.language) private var languageRaw = AppLanguage.english.rawValue
+    @AppStorage(AppPreferenceKeys.hasSeenOnboarding) private var hasSeenOnboarding = false
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
     @Environment(\.openURL) private var openURL
 
@@ -22,15 +23,17 @@ struct RootView: View {
     @State private var showLaunchSplash = true
     @State private var didRunSplashTimer = false
     @State private var showSettings = false
+    @State private var showOnboarding = false
     @State private var splashPhrase = LaunchSplashView.randomPhrase()
-    @State private var isKeyboardVisible = false
 
     var body: some View {
         let appearance = AppAppearance(rawValue: appearanceRaw) ?? .dark
         let textSize = AppTextSize(rawValue: textSizeRaw) ?? .medium
         let language = AppLanguage(rawValue: languageRaw) ?? .english
         let strings = AppStrings.current()
-        let bottomContentInset: CGFloat = isKeyboardVisible ? 24 : 132
+        let isInputActive = viewModel.isQuickAddInputFocused
+        let shouldShowOnboarding = showOnboarding
+        let bottomContentInset: CGFloat = isInputActive ? 24 : 132
         let tabBarBottomPadding: CGFloat = 2
         let tabBarContainerHeight: CGFloat = 104
 
@@ -40,7 +43,10 @@ struct RootView: View {
 
                 tabContent()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .environment(\.presentSettings, { showSettings = true })
+                    .environment(\.presentSettings, {
+                        HapticsService.shared.softImpact()
+                        showSettings = true
+                    })
                     .environment(\.appAppearance, appearance)
                     .environment(\.appTextSize, textSize)
                     .environment(\.appLanguage, language)
@@ -54,7 +60,16 @@ struct RootView: View {
                         .ignoresSafeArea()
                         .transition(.opacity)
                         .zIndex(20)
-                } else if !isKeyboardVisible {
+                } else if shouldShowOnboarding {
+                    onboardingView(
+                        appearance: appearance,
+                        textSize: textSize,
+                        language: language,
+                        strings: strings
+                    )
+                    .transition(AppMotion.transition(reduceMotion: reduceMotion))
+                    .zIndex(15)
+                } else if !isInputActive {
                     VStack(spacing: 0) {
                         Spacer(minLength: 0)
 
@@ -73,18 +88,17 @@ struct RootView: View {
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-            isKeyboardVisible = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            isKeyboardVisible = false
-        }
         .task {
             guard !didRunSplashTimer else { return }
             didRunSplashTimer = true
             try? await Task.sleep(nanoseconds: 2_700_000_000)
-            withAnimation(.easeInOut(duration: 0.45)) {
+            withAnimation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.emphasis)) {
                 showLaunchSplash = false
+            }
+            if !hasSeenOnboarding {
+                withAnimation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard)) {
+                    showOnboarding = true
+                }
             }
         }
         .sheet(isPresented: $showSettings) {
@@ -103,13 +117,13 @@ struct RootView: View {
                 ),
                 versionText: "v0.1",
                 onOpenHistory: {
-                    selectedTab = .history
+                    setSelectedTab(.history)
                 },
                 onOpenGoals: {
-                    selectedTab = .goals
+                    setSelectedTab(.goals)
                 },
                 onOpenQuickAdd: {
-                    selectedTab = .quickAdd
+                    setSelectedTab(.quickAdd)
                 },
                 onCopyQuickAddURL: {
                     UIPasteboard.general.string = "pocketleak://quick-add"
@@ -121,6 +135,11 @@ struct RootView: View {
                     guard let url = URL(string: "pocketleak://quick-add") else { return }
                     openURL(url)
                 },
+                onShowOnboardingAgain: {
+                    withAnimation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard)) {
+                        showOnboarding = true
+                    }
+                },
                 onResetLocalData: {
                     viewModel.clearAllData()
                 }
@@ -131,15 +150,15 @@ struct RootView: View {
 
             switch route {
             case .dashboard:
-                selectedTab = .dashboard
+                setSelectedTab(.dashboard, playHaptic: false)
             case .history:
-                selectedTab = .history
+                setSelectedTab(.history, playHaptic: false)
             case .insights:
-                selectedTab = .insights
+                setSelectedTab(.insights, playHaptic: false)
             case .goals:
-                selectedTab = .goals
+                setSelectedTab(.goals, playHaptic: false)
             case .quickAdd(let draft):
-                selectedTab = .quickAdd
+                setSelectedTab(.quickAdd, playHaptic: false)
                 viewModel.resetDraftForExternalEntry()
                 viewModel.prefillDraft(
                     amount: draft.amount,
@@ -149,7 +168,7 @@ struct RootView: View {
                 )
                 viewModel.clearParseFeedback()
             case .parseText(let text):
-                selectedTab = .quickAdd
+                setSelectedTab(.quickAdd, playHaptic: false)
                 viewModel.loadImportedTextAndParse(text)
             }
         }
@@ -178,11 +197,11 @@ struct RootView: View {
                 .overlay(AppTheme.cardBorder)
 
             HStack(spacing: 2) {
-                tabButton(title: strings.quickAddTab, systemImage: "plus.circle.fill", tab: .quickAdd)
-                tabButton(title: strings.dashboardTab, systemImage: "square.grid.2x2.fill", tab: .dashboard)
-                tabButton(title: strings.goalsTab, systemImage: "target", tab: .goals)
-                tabButton(title: strings.historyTab, systemImage: "clock.arrow.circlepath", tab: .history)
-                tabButton(title: strings.insightsTab, systemImage: "chart.line.uptrend.xyaxis", tab: .insights)
+                tabButton(title: strings.quickAddTab, systemImage: "plus.circle.fill", tab: .quickAdd, strings: strings)
+                tabButton(title: strings.dashboardTab, systemImage: "square.grid.2x2.fill", tab: .dashboard, strings: strings)
+                tabButton(title: strings.goalsTab, systemImage: "target", tab: .goals, strings: strings)
+                tabButton(title: strings.historyTab, systemImage: "clock.arrow.circlepath", tab: .history, strings: strings)
+                tabButton(title: strings.insightsTab, systemImage: "chart.line.uptrend.xyaxis", tab: .insights, strings: strings)
             }
             .padding(.horizontal, 18)
             .padding(.top, 10)
@@ -201,10 +220,10 @@ struct RootView: View {
         .shadow(color: .black.opacity(0.28), radius: 20, x: 0, y: 12)
     }
 
-    private func tabButton(title: String, systemImage: String, tab: AppTab) -> some View {
+    private func tabButton(title: String, systemImage: String, tab: AppTab, strings: AppStrings) -> some View {
         let scale = appTextSize.scale
         return Button {
-            selectedTab = tab
+            setSelectedTab(tab)
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: systemImage)
@@ -229,7 +248,46 @@ struct RootView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
+        .accessibilityValue(selectedTab == tab ? strings.accessibilitySelected : strings.accessibilityNotSelected)
+        .accessibilityHint(strings.switchTabHint)
         .frame(minHeight: 68 * scale)
+        .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.quick), value: selectedTab == tab)
+    }
+
+    private func setSelectedTab(_ tab: AppTab, playHaptic: Bool = true) {
+        guard selectedTab != tab else { return }
+        if playHaptic {
+            HapticsService.shared.selection()
+        }
+        withAnimation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard)) {
+            selectedTab = tab
+        }
+    }
+
+    @ViewBuilder
+    private func onboardingView(
+        appearance: AppAppearance,
+        textSize: AppTextSize,
+        language: AppLanguage,
+        strings: AppStrings
+    ) -> some View {
+        OnboardingView(
+            onGetStarted: completeOnboarding,
+            onSkip: completeOnboarding
+        )
+        .environment(\.appAppearance, appearance)
+        .environment(\.appTextSize, textSize)
+        .environment(\.appLanguage, language)
+        .environment(\.pocketLeakStrings, strings)
+        .environment(\.locale, language.locale)
+        .preferredColorScheme(appearance.colorScheme)
+    }
+
+    private func completeOnboarding() {
+        hasSeenOnboarding = true
+        withAnimation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.emphasis)) {
+            showOnboarding = false
+        }
     }
 }
 

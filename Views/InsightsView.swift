@@ -4,6 +4,9 @@ import SwiftUI
 struct InsightsView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
+    @Environment(\.openURL) private var openURL
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var didAnimateIn = false
 
     var body: some View {
         ScrollView {
@@ -17,8 +20,13 @@ struct InsightsView: View {
                 VStack(spacing: 12) {
                     if viewModel.expenses.isEmpty {
                         EmptyStateView(
-                            title: strings.emptyNoInsights,
-                            message: "Add a few expenses and the app will surface spending patterns here."
+                            title: strings.insightsEmptyStateTitle,
+                            message: strings.insightsEmptyStateMessage,
+                            actionTitle: strings.insightsEmptyStateAction,
+                            action: {
+                                guard let url = URL(string: "pocketleak://quick-add") else { return }
+                                openURL(url)
+                            }
                         )
                     }
 
@@ -30,6 +38,8 @@ struct InsightsView: View {
                         MetricCardView(title: "Logged Expenses", value: "\(viewModel.totalExpenseCount)", subtitle: "All local entries")
                         MetricCardView(title: "Average Expense", value: currency(viewModel.averageExpenseAmount), subtitle: "Across all entries")
                     }
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
 
                     GlassCardView {
                         VStack(alignment: .leading, spacing: 10) {
@@ -42,6 +52,8 @@ struct InsightsView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
 
                     GlassCardView {
                         VStack(alignment: .leading, spacing: 12) {
@@ -58,6 +70,7 @@ struct InsightsView: View {
                                     .foregroundStyle(AppTheme.primaryText)
                                 }
                                 .chartLegend(.hidden)
+                                .accessibilityHidden(true)
                                 .chartXAxis {
                                     AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                                         AxisGridLine()
@@ -73,6 +86,9 @@ struct InsightsView: View {
                                     }
                                 }
                                 .frame(height: 180)
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel(strings.insightsWeeklyTotalsTitle)
+                                .accessibilityValue(viewModel.weeklyTrendAccessibilitySummary)
                             } else {
                                 Text("Add a little more history before weekly totals are shown.")
                                     .font(.subheadline)
@@ -81,6 +97,8 @@ struct InsightsView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
 
                     GlassCardView {
                         VStack(alignment: .leading, spacing: 12) {
@@ -89,7 +107,7 @@ struct InsightsView: View {
                                 .foregroundStyle(AppTheme.primaryText)
 
                             if viewModel.categoryBreakdown.isEmpty {
-                                Text("No category breakdown yet.")
+                                Text(strings.insightsNoCategoryBreakdown)
                                     .font(.subheadline)
                                     .foregroundStyle(AppTheme.secondaryText)
                             } else {
@@ -115,7 +133,10 @@ struct InsightsView: View {
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityElement(children: .contain)
                     }
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
                 }
             }
             .padding(.horizontal, 16)
@@ -123,6 +144,17 @@ struct InsightsView: View {
             .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            guard !didAnimateIn else { return }
+            if reduceMotion {
+                didAnimateIn = true
+            } else {
+                withAnimation(AppMotion.standard) {
+                    didAnimateIn = true
+                }
+            }
+        }
+        .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard), value: didAnimateIn)
     }
 
     private var highestExpenseValue: String {

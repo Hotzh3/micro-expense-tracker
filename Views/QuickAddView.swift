@@ -5,6 +5,7 @@ struct QuickAddView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @FocusState private var focusedField: Field?
 
@@ -55,6 +56,8 @@ struct QuickAddView: View {
                                         ForEach(viewModel.categories) { category in
                                             CategoryPillView(category: category, isSelected: viewModel.selectedCategory == category)
                                                 .onTapGesture {
+                                                    guard viewModel.selectedCategory != category else { return }
+                                                    HapticsService.shared.lightTap()
                                                     viewModel.selectedCategory = category
                                                 }
                                         }
@@ -84,6 +87,7 @@ struct QuickAddView: View {
                                         .font(.system(size: 15 * scale))
                                         .padding(.vertical, 14)
                                         .padding(.horizontal, 14)
+                                        .accessibilityLabel(strings.merchantPlaceholder)
                                         .background(
                                             RoundedRectangle(cornerRadius: 16, style: .continuous)
                                                 .fill(AppTheme.inputFill)
@@ -109,6 +113,7 @@ struct QuickAddView: View {
                                         .font(.system(size: 15 * scale))
                                         .padding(.vertical, 14)
                                         .padding(.horizontal, 14)
+                                        .accessibilityLabel(strings.notePlaceholder)
                                         .background(
                                             RoundedRectangle(cornerRadius: 16, style: .continuous)
                                                 .fill(AppTheme.inputFill)
@@ -138,6 +143,8 @@ struct QuickAddView: View {
                                         .foregroundColor(AppTheme.primaryText)
                                         .tint(AppTheme.primaryText)
                                         .accentColor(AppTheme.primaryText)
+                                        .accessibilityLabel(strings.pasteTitle)
+                                        .accessibilityHint(strings.pasteDescription)
                                         .frame(minHeight: 120)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 12)
@@ -170,6 +177,7 @@ struct QuickAddView: View {
                                         .font(.system(size: 15 * scale, weight: .semibold))
                                         .foregroundStyle(AppTheme.primaryText)
                                         .frame(maxWidth: .infinity)
+                                        .frame(minHeight: 44)
                                         .padding(.vertical, 14)
                                         .background(
                                             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -181,6 +189,8 @@ struct QuickAddView: View {
                                         )
                                     }
                                     .buttonStyle(.plain)
+                                    .accessibilityLabel(strings.pasteFromClipboard)
+                                    .accessibilityHint(strings.pasteDescription)
 
                                     Button {
                                         viewModel.parseImportedText()
@@ -199,6 +209,8 @@ struct QuickAddView: View {
                                         )
                                     }
                                     .buttonStyle(.plain)
+                                    .accessibilityLabel(strings.parseTextButton)
+                                    .accessibilityHint(strings.parseNoResultMessage)
 
                                     if let parseFeedback = viewModel.parseFeedback {
                                         feedbackBanner(for: parseFeedback)
@@ -217,6 +229,7 @@ struct QuickAddView: View {
                                             .font(.system(size: 15 * scale, weight: .semibold))
                                             .foregroundStyle(AppTheme.background)
                                             .frame(maxWidth: .infinity)
+                                            .frame(minHeight: 44)
                                             .padding(.vertical, 14)
                                             .background(
                                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -224,6 +237,8 @@ struct QuickAddView: View {
                                             )
                                         }
                                         .buttonStyle(.plain)
+                                        .accessibilityLabel(strings.useParsedExpenseButton)
+                                        .accessibilityHint(strings.parsedPreviewSubtitle)
                                     }
                                 }
                             }
@@ -231,6 +246,8 @@ struct QuickAddView: View {
                             PrimaryButton(title: strings.saveExpenseButton) {
                                 viewModel.saveDraftExpense()
                             }
+                            .accessibilityLabel(strings.saveExpenseButton)
+                            .accessibilityHint(strings.saveMissingAmountError)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -241,13 +258,20 @@ struct QuickAddView: View {
                 .foregroundColor(AppTheme.primaryText)
                 .tint(AppTheme.primaryText)
                 .accentColor(AppTheme.primaryText)
-                .animation(.easeOut(duration: 0.2), value: viewModel.saveFeedback)
-                .animation(.easeOut(duration: 0.2), value: viewModel.parseFeedback)
+                .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.quick), value: viewModel.saveFeedback)
+                .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.quick), value: viewModel.parseFeedback)
                 .onChange(of: focusedField) { _, newValue in
+                    viewModel.isQuickAddInputFocused = newValue != nil
                     guard let newValue else { return }
                     withAnimation(.easeOut(duration: 0.25)) {
                         scrollProxy.scrollTo(newValue, anchor: .center)
                     }
+                }
+                .onAppear {
+                    viewModel.isQuickAddInputFocused = focusedField != nil
+                }
+                .onDisappear {
+                    viewModel.isQuickAddInputFocused = false
                 }
                 .onChange(of: viewModel.amountText) { _, _ in viewModel.clearSaveFeedback() }
                 .onChange(of: viewModel.merchantText) { _, _ in viewModel.clearSaveFeedback() }
@@ -259,12 +283,12 @@ struct QuickAddView: View {
             if viewModel.saveFeedback != nil {
                 HStack {
                     Spacer(minLength: 0)
-                    saveToast()
+                    saveToast(for: viewModel.saveFeedback!)
                     Spacer(minLength: 0)
                 }
                 .padding(.top, 10)
                 .padding(.horizontal, 16)
-                .transition(.move(edge: .top).combined(with: .opacity))
+                .transition(AppMotion.transition(reduceMotion: reduceMotion))
                 .allowsHitTesting(false)
             }
         }
@@ -325,6 +349,8 @@ struct QuickAddView: View {
                 .foregroundColor(AppTheme.primaryText)
                 .tint(AppTheme.primaryText)
                 .accentColor(AppTheme.primaryText)
+                .accessibilityLabel(strings.amountTitle)
+                .accessibilityHint(strings.saveMissingAmountError)
                 .padding(.vertical, 12)
                 .padding(.horizontal, 16)
                 .background(
@@ -367,13 +393,16 @@ struct QuickAddView: View {
                 )
         )
         .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 8)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(feedback.isError ? strings.needsAttention : strings.ready)
+        .accessibilityValue(feedback.message)
     }
 
-    private func saveToast() -> some View {
+    private func saveToast(for feedback: ExpenseViewModel.Feedback) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(Color.green)
-            Text(strings.expenseSaved)
+            Image(systemName: feedback.isError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                .foregroundStyle(feedback.isError ? Color.red : Color.green)
+            Text(feedback.message)
                 .font(.system(size: 15 * scale, weight: .semibold))
                 .foregroundStyle(AppTheme.primaryText)
             Spacer(minLength: 0)
@@ -383,14 +412,17 @@ struct QuickAddView: View {
         .frame(maxWidth: 320)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.green.opacity(0.18))
+                .fill(feedback.isError ? Color.red.opacity(0.14) : Color.green.opacity(0.18))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.green.opacity(0.48), lineWidth: 1)
+                        .stroke(feedback.isError ? Color.red.opacity(0.42) : Color.green.opacity(0.48), lineWidth: 1)
                 )
         )
         .shadow(color: .black.opacity(0.22), radius: 14, x: 0, y: 10)
         .frame(maxWidth: .infinity, alignment: .top)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(feedback.isError ? strings.needsAttention : strings.ready)
+        .accessibilityValue(feedback.message)
     }
 
     private func parsedPreviewCard(for parsedExpense: ExpenseParseResult) -> some View {
@@ -440,6 +472,9 @@ struct QuickAddView: View {
                         .stroke(AppTheme.cardBorder, lineWidth: 1)
                 )
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(strings.parsedPreviewTitle)
+        .accessibilityValue(parsedExpense.summary)
     }
 
     private func previewRow(label: String, value: String) -> some View {
@@ -452,5 +487,7 @@ struct QuickAddView: View {
                 .font(.system(size: 15 * appTextSize.scale, weight: .medium))
                 .foregroundStyle(AppTheme.primaryText)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
     }
 }
