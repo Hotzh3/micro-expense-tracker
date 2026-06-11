@@ -3,7 +3,6 @@ import UIKit
 
 struct QuickAddView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
-    @Environment(\.pocketLeakStrings) private var strings: AppStrings
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -12,6 +11,10 @@ struct QuickAddView: View {
     private var scale: CGFloat {
         let value = appTextSize.scale
         return value.isFinite && value > 0 ? value : 1
+    }
+
+    private var strings: AppStrings {
+        AppStrings.current()
     }
 
     enum Field {
