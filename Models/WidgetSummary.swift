@@ -49,6 +49,7 @@ struct WidgetSummary: Codable, Equatable {
     let weeklyGoalForecastText: String?
     let monthlyGoalForecastText: String?
     let categoryTop3: [WidgetCategorySummary]
+    let hideAmounts: Bool?
 
     static func demo() -> WidgetSummary {
         WidgetSummary(
@@ -65,7 +66,8 @@ struct WidgetSummary: Codable, Equatable {
                 WidgetCategorySummary(name: "Food", amount: 84.10),
                 WidgetCategorySummary(name: "Coffee", amount: 42.20),
                 WidgetCategorySummary(name: "Transport", amount: 31.60)
-            ]
+            ],
+            hideAmounts: false
         )
     }
 
@@ -80,7 +82,8 @@ struct WidgetSummary: Codable, Equatable {
             monthlyGoalStatus: .none,
             weeklyGoalForecastText: nil,
             monthlyGoalForecastText: nil,
-            categoryTop3: []
+            categoryTop3: [],
+            hideAmounts: false
         )
     }
 }

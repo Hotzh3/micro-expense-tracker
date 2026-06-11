@@ -34,6 +34,27 @@
 - [ ] Weekly Digest Reminder schedules and cancels correctly.
 - [ ] Settings opens and dismisses cleanly.
 
+## Bug Bash Stability
+
+- [ ] Goals opens after a weekly goal is saved.
+- [ ] Goals opens after a monthly goal is saved.
+- [ ] Goals opens after editing and removing goals.
+- [ ] Goals survives relaunch after a prior goal save crash.
+- [ ] Goals opens with no goal, one goal, or both goals present.
+- [ ] Goals ignores corrupt or invalid stored goal payloads.
+- [ ] Parse Text handles manual text, multi-line text, and no-amount text without crashing.
+- [ ] Parse Text fills the real form fields and does not depend on the preview card.
+- [ ] PDF export generates a local file for weekly, monthly, and all-data reports.
+- [ ] PDF export still works when there are no expenses.
+- [ ] Share Extension accepts plain text from Notes and hands it off safely.
+- [ ] Share Extension does not auto-save any expense.
+- [ ] Local Notifications are only scheduled after permission is granted.
+- [ ] Local Notifications still behave when permission is denied and later re-enabled.
+- [ ] Widgets load without crashing when App Group data is unavailable.
+- [ ] Privacy Mode hides amounts across Dashboard, Goals, History, Insights, and Widgets.
+- [ ] App Lock unlocks on launch and returns cleanly from background.
+- [ ] Backup export/import handles merge, replace, and invalid JSON safely.
+
 ## Appearance And Locale
 
 - [ ] Light mode renders correctly.
@@ -46,6 +67,7 @@
 ## Device Integration
 
 - [ ] Back Tap shortcut opens Quick Add.
+- [ ] Settings shows Back Tap guide and `Test Quick Add Link`.
 - [ ] URL scheme `pocketleak://quick-add` opens Quick Add.
 - [ ] URL scheme prefill flow behaves correctly.
 

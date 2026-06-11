@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		005DBC257DF746CC8E760187 /* SmartInsightCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D74627E2BC53685EDB2B328 /* SmartInsightCardView.swift */; };
 		01AF00AA1BFD1C97C1D15566 /* AppMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AF9EA08CC92328F87218E7 /* AppMotion.swift */; };
+		05B719A4A0EB1355FD17550A /* CategoryBudget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF434D93215DCA8BDB53BA11 /* CategoryBudget.swift */; };
+		064F9546BA08E6A6FBCC06A4 /* DashboardStabilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55BA6DBC7CF24722319410F /* DashboardStabilityTests.swift */; };
 		0BDCD10B88237D0CEDDDA48C /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0F11CF5730320D4AAC50BC8 /* QuickAddView.swift */; };
 		0E36CA1CCA9A9C0CA7FE6AE9 /* WeeklyDigestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB55C1245F585B698B4592D /* WeeklyDigestView.swift */; };
 		0FF29AA9814CCEBDF1EBC5B6 /* WeeklyDigestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4FAFA12B4A5B51B056024E3 /* WeeklyDigestService.swift */; };
@@ -17,8 +19,13 @@
 		1ED52494759FE144AC3C0927 /* ScreenHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEC44A49ECF410342E39AEA1 /* ScreenHeaderView.swift */; };
 		2363F2DAF8B05A7FC1080671 /* GoalIntelligenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BC1652BABC901622DA6A40F /* GoalIntelligenceService.swift */; };
 		2623D6569CAB84CE8FCB94DF /* WidgetSummaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC04FA705318868C3B6619FA /* WidgetSummaryStore.swift */; };
+		29CED36296BF3FDB5F03E03D /* RecurringExpenseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC5EDEC49ED018A506E5807 /* RecurringExpenseTests.swift */; };
+		2D8017F842A052E7563EFC46 /* RecurringExpensesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4996FF3874C50A584138CB /* RecurringExpensesView.swift */; };
 		32F0830027148034CFA631B6 /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = C879640230F5C9FE3109AB05 /* Expense.swift */; };
+		3BE8677E8B2D70EA9A521B0B /* ExpenseFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFD4461A479D9ECE1239017 /* ExpenseFilter.swift */; };
+		3FAB4E9726BAAFDE5E40E729 /* CategoryBudgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588545A5544F7FC650EF2E62 /* CategoryBudgetTests.swift */; };
 		40539938AA0B3D0152BF8602 /* ExpenseTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */; };
+		41177480E1ADB691A282AFF1 /* ShortcutsGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85951DA7A0F1341C1353E60E /* ShortcutsGuideView.swift */; };
 		434A38320768F280F11D5E1D /* ShareExtensionStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E790A7B440F17CDCD3B329ED /* ShareExtensionStrings.swift */; };
 		46182385A73F2299773D3606 /* SharedTextStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBF2B191054766C9F432F9F6 /* SharedTextStore.swift */; };
 		49020D8B8C0D090493E25289 /* SmartAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43757A35CE1048C7E2690FE1 /* SmartAlert.swift */; };
@@ -28,6 +35,7 @@
 		4EBDAD42CD0203F01E7CC561 /* ExpensePDFExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7DAE35B60F307F34C08E2B /* ExpensePDFExport.swift */; };
 		501C69AA43F733748C2D4B51 /* QuickAddImportCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93307D68627E911C30F59847 /* QuickAddImportCardView.swift */; };
 		5693FEFE719BEEB2C97DA03D /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */; };
+		571716022647A0FD9EEC4068 /* RecurringExpenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6827160C1037CB0CB4E668 /* RecurringExpenseStore.swift */; };
 		59FD3CBDBB0077EAE8124098 /* MerchantNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A74CF091CB8A93F84893F4A2 /* MerchantNormalizer.swift */; };
 		5A15308E9B2C48E45F436523 /* ExpenseTextParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9F6E3EDECA62759847B25D /* ExpenseTextParserTests.swift */; };
 		617CCC6B891E98B40CBD8FE0 /* ShareCardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17D6DA79AF62D5D00DD994B /* ShareCardRenderer.swift */; };
@@ -42,9 +50,13 @@
 		9319939C894C2063EF69BCCD /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0708AE58614758F77DC4A5 /* PrimaryButton.swift */; };
 		9424373275814817C9C5D0B5 /* SharedTextStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBF2B191054766C9F432F9F6 /* SharedTextStore.swift */; };
 		94AEA55BB9EC810C9E8EAEFA /* SmartAlertServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 129E77F98A1B39358CA3978A /* SmartAlertServiceTests.swift */; };
+		981A71069362074B9185A8C0 /* DataBackupServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA6F864A030F7074BFD3EA9 /* DataBackupServiceTests.swift */; };
 		985623E98908A5C518D6724F /* SmartAlertCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00525A2761D9F005F6A034E3 /* SmartAlertCardView.swift */; };
+		9BD40139CA6FD0FBE7CC121B /* CategoryBudgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B78F92CBAB0C8D6631892F /* CategoryBudgetStore.swift */; };
+		9D34AAF151875CF443799DFC /* DataBackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 345C13449DE35BEE800F7AB0 /* DataBackupService.swift */; };
 		9EACBDD6BF8D6FDF477F4A9B /* SpendingGoal.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEC18AF50EA83BA39FC2A50 /* SpendingGoal.swift */; };
 		A1B07216CAF4DDDFA962B909 /* WidgetSummaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC04FA705318868C3B6619FA /* WidgetSummaryStore.swift */; };
+		B1F1206AE3237C89516C561B /* CategoryBudgetEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F24C2AA74F8094CEAB59AB2 /* CategoryBudgetEditorView.swift */; };
 		B3B5DFC6979C639EBE29F03F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F1861775BC0F4EB582B26B /* Assets.xcassets */; };
 		B85A4CFE82C62DFE72779400 /* JTapApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB8E6910BD6B24989A22861D /* JTapApp.swift */; };
 		B9693C7F6B2DA40FA24A6D78 /* HapticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AC19EB6ECA6DBAC6126C8D2 /* HapticsService.swift */; };
@@ -55,6 +67,7 @@
 		C99CBF3A1ABA6F128DF49CC6 /* LocalNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A9441768B54CB2D2F943A7 /* LocalNotificationService.swift */; };
 		CDEEB59D76C791E58D1821D8 /* SettingsAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 476EA1D36938A3260F78056A /* SettingsAction.swift */; };
 		CEDD8779E682D4D9948B6DCD /* CategoryPillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E89F1506DA204E117366DB /* CategoryPillView.swift */; };
+		CF050902832BB5BB94E7F2F4 /* AppLockService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF513937D0D5DE56BEE8EF9 /* AppLockService.swift */; };
 		D2CAC0396C85E83039C51928 /* ExpenseJSONExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68AEAC3B57EA1315B4B34AD7 /* ExpenseJSONExport.swift */; };
 		D39727FE2E95FC486569F420 /* GoalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D833AAC8B8EC5FD77B1FDD1C /* GoalStore.swift */; };
 		D6B5C3519B80E085005D8141 /* ExpenseCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EE9E8808FBF2D8C177AAE4 /* ExpenseCategory.swift */; };
@@ -64,12 +77,14 @@
 		DB7D1632CE10C2BF4999E4F2 /* SpendingComparisonCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE221EDF72EB9849AB59C26 /* SpendingComparisonCardView.swift */; };
 		DE33318207E74B105E08AEEA /* MetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697605CC219504DC542E8B53 /* MetricCardView.swift */; };
 		E1AF0783155A395CA8466B9C /* CrashSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2A7372203D42DB9E772D11 /* CrashSafetyTests.swift */; };
+		E1B30539550C9C4FE56364CD /* RecurringExpense.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A4A76FBCF56497C3C9CB45 /* RecurringExpense.swift */; };
 		E309E47015503A79EAB0643A /* GlassCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 550BC99EC03E3743F041AFBC /* GlassCardView.swift */; };
 		E88A891495F138873D673CCD /* WeeklyDigest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4419579B64FA80F9A2AC38B4 /* WeeklyDigest.swift */; };
 		ECAAC336CE4692AB49CEECAE /* ExpenseCSVExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D25343254B4EAFCA5A4E523 /* ExpenseCSVExport.swift */; };
 		F1645F14BF4DF909B0B99FD0 /* PocketLeakWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23440D26C2CD475D6FD16A68 /* PocketLeakWidget.swift */; };
 		F291A81BB844A560B36C2E6E /* SpendingComparisonService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B465C2136AF2CCDDBC1593F /* SpendingComparisonService.swift */; };
 		F2C77039FE0EAB0975A1A1D9 /* SmartInsight.swift in Sources */ = {isa = PBXBuildFile; fileRef = D593A9E6E910973A72C2E5EF /* SmartInsight.swift */; };
+		F411F0320C2A5061C6F1964F /* AppLockScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D66E4AF3739D7DF9754F215 /* AppLockScreenView.swift */; };
 		F6E022E322F611796C2DA115 /* GoalForecast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF3C01F93BB956D3E49FD03 /* GoalForecast.swift */; };
 		F7E66CEDBF0D9621612AF46E /* SpendingComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F84A76C8664B6A028CA9945 /* SpendingComparison.swift */; };
 		FBF6EFAE68754841E50AEFDB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57F9119760DF1AB8519002B8 /* SettingsView.swift */; };
@@ -119,6 +134,7 @@
 		06BDBBDE64C4BABFBF2F5326 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		09ABF81BE8B2231F82E79045 /* GoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsView.swift; sourceTree = "<group>"; };
 		0D74627E2BC53685EDB2B328 /* SmartInsightCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartInsightCardView.swift; sourceTree = "<group>"; };
+		0F24C2AA74F8094CEAB59AB2 /* CategoryBudgetEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBudgetEditorView.swift; sourceTree = "<group>"; };
 		0F84A76C8664B6A028CA9945 /* SpendingComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingComparison.swift; sourceTree = "<group>"; };
 		129E77F98A1B39358CA3978A /* SmartAlertServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartAlertServiceTests.swift; sourceTree = "<group>"; };
 		173A00ECC7362DA4043E6F35 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
@@ -130,7 +146,10 @@
 		2400B34CA586FB694B7FBC85 /* JTap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JTap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		2AC19EB6ECA6DBAC6126C8D2 /* HapticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsService.swift; sourceTree = "<group>"; };
+		2C4996FF3874C50A584138CB /* RecurringExpensesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringExpensesView.swift; sourceTree = "<group>"; };
 		3381D146B3956102E5D5925D /* WidgetSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSummary.swift; sourceTree = "<group>"; };
+		345C13449DE35BEE800F7AB0 /* DataBackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataBackupService.swift; sourceTree = "<group>"; };
+		3AF513937D0D5DE56BEE8EF9 /* AppLockService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockService.swift; sourceTree = "<group>"; };
 		3D99359ED59F8CD20BCCAF4A /* PocketLeakWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PocketLeakWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		43757A35CE1048C7E2690FE1 /* SmartAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartAlert.swift; sourceTree = "<group>"; };
 		44048E144E9D5752313C299C /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -141,6 +160,7 @@
 		550BC99EC03E3743F041AFBC /* GlassCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCardView.swift; sourceTree = "<group>"; };
 		55F1861775BC0F4EB582B26B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		57F9119760DF1AB8519002B8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		588545A5544F7FC650EF2E62 /* CategoryBudgetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBudgetTests.swift; sourceTree = "<group>"; };
 		5EE90286C46A8135EF7E7751 /* SmartInsightsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartInsightsService.swift; sourceTree = "<group>"; };
 		68AEAC3B57EA1315B4B34AD7 /* ExpenseJSONExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseJSONExport.swift; sourceTree = "<group>"; };
 		697605CC219504DC542E8B53 /* MetricCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCardView.swift; sourceTree = "<group>"; };
@@ -149,11 +169,17 @@
 		6BC1652BABC901622DA6A40F /* GoalIntelligenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalIntelligenceService.swift; sourceTree = "<group>"; };
 		7BF3C01F93BB956D3E49FD03 /* GoalForecast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalForecast.swift; sourceTree = "<group>"; };
 		7D6453A2C1907CD7FF57BA2B /* SmartAlertService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartAlertService.swift; sourceTree = "<group>"; };
+		7E6827160C1037CB0CB4E668 /* RecurringExpenseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringExpenseStore.swift; sourceTree = "<group>"; };
+		85951DA7A0F1341C1353E60E /* ShortcutsGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsGuideView.swift; sourceTree = "<group>"; };
+		8D66E4AF3739D7DF9754F215 /* AppLockScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockScreenView.swift; sourceTree = "<group>"; };
 		93307D68627E911C30F59847 /* QuickAddImportCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddImportCardView.swift; sourceTree = "<group>"; };
 		9934F8C17BF826DD6A372998 /* ExpenseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseViewModel.swift; sourceTree = "<group>"; };
+		99A4A76FBCF56497C3C9CB45 /* RecurringExpense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringExpense.swift; sourceTree = "<group>"; };
 		9B465C2136AF2CCDDBC1593F /* SpendingComparisonService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingComparisonService.swift; sourceTree = "<group>"; };
+		9EA6F864A030F7074BFD3EA9 /* DataBackupServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataBackupServiceTests.swift; sourceTree = "<group>"; };
 		A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseTextParser.swift; sourceTree = "<group>"; };
 		A442EA48F29B0B0E0C9744A6 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		A55BA6DBC7CF24722319410F /* DashboardStabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardStabilityTests.swift; sourceTree = "<group>"; };
 		A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseStore.swift; sourceTree = "<group>"; };
 		A74CF091CB8A93F84893F4A2 /* MerchantNormalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MerchantNormalizer.swift; sourceTree = "<group>"; };
 		ABF8C91F013BFC9F006FF742 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
@@ -165,9 +191,12 @@
 		B4E89F1506DA204E117366DB /* CategoryPillView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPillView.swift; sourceTree = "<group>"; };
 		B4FAFA12B4A5B51B056024E3 /* WeeklyDigestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyDigestService.swift; sourceTree = "<group>"; };
 		C879640230F5C9FE3109AB05 /* Expense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expense.swift; sourceTree = "<group>"; };
+		CAC5EDEC49ED018A506E5807 /* RecurringExpenseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringExpenseTests.swift; sourceTree = "<group>"; };
 		CCBBFBD042AFC5046770596E /* ShareCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardView.swift; sourceTree = "<group>"; };
+		CF434D93215DCA8BDB53BA11 /* CategoryBudget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBudget.swift; sourceTree = "<group>"; };
 		D0F11CF5730320D4AAC50BC8 /* QuickAddView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddView.swift; sourceTree = "<group>"; };
 		D1D5BA4A6FA36227D8E9DD05 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		D4B78F92CBAB0C8D6631892F /* CategoryBudgetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBudgetStore.swift; sourceTree = "<group>"; };
 		D4FDE24A0CC7C4AB709DA7C0 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		D593A9E6E910973A72C2E5EF /* SmartInsight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartInsight.swift; sourceTree = "<group>"; };
 		D833AAC8B8EC5FD77B1FDD1C /* GoalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalStore.swift; sourceTree = "<group>"; };
@@ -182,6 +211,7 @@
 		FAE221EDF72EB9849AB59C26 /* SpendingComparisonCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingComparisonCardView.swift; sourceTree = "<group>"; };
 		FE2A7372203D42DB9E772D11 /* CrashSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashSafetyTests.swift; sourceTree = "<group>"; };
 		FEC44A49ECF410342E39AEA1 /* ScreenHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenHeaderView.swift; sourceTree = "<group>"; };
+		FFFD4461A479D9ECE1239017 /* ExpenseFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseFilter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -215,6 +245,8 @@
 		2B7696E02031B3648B3BA892 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				8D66E4AF3739D7DF9754F215 /* AppLockScreenView.swift */,
+				0F24C2AA74F8094CEAB59AB2 /* CategoryBudgetEditorView.swift */,
 				D4FDE24A0CC7C4AB709DA7C0 /* DashboardView.swift */,
 				09ABF81BE8B2231F82E79045 /* GoalsView.swift */,
 				A442EA48F29B0B0E0C9744A6 /* HistoryView.swift */,
@@ -223,9 +255,11 @@
 				44048E144E9D5752313C299C /* OnboardingView.swift */,
 				93307D68627E911C30F59847 /* QuickAddImportCardView.swift */,
 				D0F11CF5730320D4AAC50BC8 /* QuickAddView.swift */,
+				2C4996FF3874C50A584138CB /* RecurringExpensesView.swift */,
 				F25A7D50F01059CAEA99CE4C /* RootView.swift */,
 				57F9119760DF1AB8519002B8 /* SettingsView.swift */,
 				CCBBFBD042AFC5046770596E /* ShareCardView.swift */,
+				85951DA7A0F1341C1353E60E /* ShortcutsGuideView.swift */,
 				1DB55C1245F585B698B4592D /* WeeklyDigestView.swift */,
 			);
 			path = Views;
@@ -242,9 +276,13 @@
 		40D7E4F010179CB545A928F1 /* JTapTests */ = {
 			isa = PBXGroup;
 			children = (
+				588545A5544F7FC650EF2E62 /* CategoryBudgetTests.swift */,
 				FE2A7372203D42DB9E772D11 /* CrashSafetyTests.swift */,
+				A55BA6DBC7CF24722319410F /* DashboardStabilityTests.swift */,
+				9EA6F864A030F7074BFD3EA9 /* DataBackupServiceTests.swift */,
 				6A9F6E3EDECA62759847B25D /* ExpenseTextParserTests.swift */,
 				E2A128B801B304B2EED5283E /* PlaceholderTests.swift */,
+				CAC5EDEC49ED018A506E5807 /* RecurringExpenseTests.swift */,
 				129E77F98A1B39358CA3978A /* SmartAlertServiceTests.swift */,
 			);
 			path = JTapTests;
@@ -261,6 +299,9 @@
 		A03A0F803EF7F6F62E9DD0C3 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				3AF513937D0D5DE56BEE8EF9 /* AppLockService.swift */,
+				D4B78F92CBAB0C8D6631892F /* CategoryBudgetStore.swift */,
+				345C13449DE35BEE800F7AB0 /* DataBackupService.swift */,
 				1D25343254B4EAFCA5A4E523 /* ExpenseCSVExport.swift */,
 				68AEAC3B57EA1315B4B34AD7 /* ExpenseJSONExport.swift */,
 				DD7DAE35B60F307F34C08E2B /* ExpensePDFExport.swift */,
@@ -271,6 +312,7 @@
 				2AC19EB6ECA6DBAC6126C8D2 /* HapticsService.swift */,
 				F0A9441768B54CB2D2F943A7 /* LocalNotificationService.swift */,
 				A74CF091CB8A93F84893F4A2 /* MerchantNormalizer.swift */,
+				7E6827160C1037CB0CB4E668 /* RecurringExpenseStore.swift */,
 				B17D6DA79AF62D5D00DD994B /* ShareCardRenderer.swift */,
 				EBF2B191054766C9F432F9F6 /* SharedTextStore.swift */,
 				7D6453A2C1907CD7FF57BA2B /* SmartAlertService.swift */,
@@ -322,9 +364,12 @@
 		D9DABE4ADCB0454E641AF714 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				CF434D93215DCA8BDB53BA11 /* CategoryBudget.swift */,
 				C879640230F5C9FE3109AB05 /* Expense.swift */,
 				F2EE9E8808FBF2D8C177AAE4 /* ExpenseCategory.swift */,
+				FFFD4461A479D9ECE1239017 /* ExpenseFilter.swift */,
 				7BF3C01F93BB956D3E49FD03 /* GoalForecast.swift */,
+				99A4A76FBCF56497C3C9CB45 /* RecurringExpense.swift */,
 				43757A35CE1048C7E2690FE1 /* SmartAlert.swift */,
 				D593A9E6E910973A72C2E5EF /* SmartInsight.swift */,
 				0F84A76C8664B6A028CA9945 /* SpendingComparison.swift */,
@@ -491,15 +536,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F411F0320C2A5061C6F1964F /* AppLockScreenView.swift in Sources */,
+				CF050902832BB5BB94E7F2F4 /* AppLockService.swift in Sources */,
 				01AF00AA1BFD1C97C1D15566 /* AppMotion.swift in Sources */,
 				C501E9BE2AE79EB93925E16E /* AppSettings.swift in Sources */,
 				6DB02DD256C195E94E19C1A9 /* AppTheme.swift in Sources */,
+				05B719A4A0EB1355FD17550A /* CategoryBudget.swift in Sources */,
+				B1F1206AE3237C89516C561B /* CategoryBudgetEditorView.swift in Sources */,
+				9BD40139CA6FD0FBE7CC121B /* CategoryBudgetStore.swift in Sources */,
 				CEDD8779E682D4D9948B6DCD /* CategoryPillView.swift in Sources */,
 				4B4C472BC7AF1E95C6C9F187 /* DashboardView.swift in Sources */,
+				9D34AAF151875CF443799DFC /* DataBackupService.swift in Sources */,
 				DA2DFE02B300E42A7A212CDD /* EmptyStateView.swift in Sources */,
 				32F0830027148034CFA631B6 /* Expense.swift in Sources */,
 				ECAAC336CE4692AB49CEECAE /* ExpenseCSVExport.swift in Sources */,
 				D6B5C3519B80E085005D8141 /* ExpenseCategory.swift in Sources */,
+				3BE8677E8B2D70EA9A521B0B /* ExpenseFilter.swift in Sources */,
 				D2CAC0396C85E83039C51928 /* ExpenseJSONExport.swift in Sources */,
 				4EBDAD42CD0203F01E7CC561 /* ExpensePDFExport.swift in Sources */,
 				4CF52795AFA522FCF0F823DE /* ExpenseStore.swift in Sources */,
@@ -522,6 +574,9 @@
 				9319939C894C2063EF69BCCD /* PrimaryButton.swift in Sources */,
 				501C69AA43F733748C2D4B51 /* QuickAddImportCardView.swift in Sources */,
 				0BDCD10B88237D0CEDDDA48C /* QuickAddView.swift in Sources */,
+				E1B30539550C9C4FE56364CD /* RecurringExpense.swift in Sources */,
+				571716022647A0FD9EEC4068 /* RecurringExpenseStore.swift in Sources */,
+				2D8017F842A052E7563EFC46 /* RecurringExpensesView.swift in Sources */,
 				BDDD29FC1D96F39B2BC86141 /* RootView.swift in Sources */,
 				1ED52494759FE144AC3C0927 /* ScreenHeaderView.swift in Sources */,
 				CDEEB59D76C791E58D1821D8 /* SettingsAction.swift in Sources */,
@@ -529,6 +584,7 @@
 				617CCC6B891E98B40CBD8FE0 /* ShareCardRenderer.swift in Sources */,
 				6A1A58C166E1D61011B0A275 /* ShareCardView.swift in Sources */,
 				46182385A73F2299773D3606 /* SharedTextStore.swift in Sources */,
+				41177480E1ADB691A282AFF1 /* ShortcutsGuideView.swift in Sources */,
 				49020D8B8C0D090493E25289 /* SmartAlert.swift in Sources */,
 				985623E98908A5C518D6724F /* SmartAlertCardView.swift in Sources */,
 				C271C7FB9FA7CA5068AEDE72 /* SmartAlertService.swift in Sources */,
@@ -551,9 +607,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3FAB4E9726BAAFDE5E40E729 /* CategoryBudgetTests.swift in Sources */,
 				E1AF0783155A395CA8466B9C /* CrashSafetyTests.swift in Sources */,
+				064F9546BA08E6A6FBCC06A4 /* DashboardStabilityTests.swift in Sources */,
+				981A71069362074B9185A8C0 /* DataBackupServiceTests.swift in Sources */,
 				5A15308E9B2C48E45F436523 /* ExpenseTextParserTests.swift in Sources */,
 				19AF1E27D0FF515B90007647 /* PlaceholderTests.swift in Sources */,
+				29CED36296BF3FDB5F03E03D /* RecurringExpenseTests.swift in Sources */,
 				94AEA55BB9EC810C9E8EAEFA /* SmartAlertServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

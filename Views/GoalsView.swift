@@ -9,15 +9,26 @@ struct GoalsView: View {
     @State private var selectedCadence: SpendingGoalCadence = .weekly
     @State private var limitText: String = ""
     @State private var pendingRemovalCadence: SpendingGoalCadence?
+    @State private var pendingRemovalBudget: CategoryBudget?
+    @State private var budgetEditorContext: BudgetEditorContext?
     @State private var didAnimateIn = false
     @FocusState private var focusedField: Field?
 
-    private var scale: CGFloat {
-        appTextSize.scale
+    private var safeScale: CGFloat {
+        let raw = appTextSize.scale
+        return raw.isFinite && raw > 0 ? raw : 1
     }
 
     private enum Field {
         case limit
+    }
+
+    private struct BudgetEditorContext: Identifiable {
+        let id = UUID()
+        let budgetID: UUID?
+        let category: ExpenseCategory
+        let cadence: SpendingGoalCadence
+        let limitText: String
     }
 
     var body: some View {
@@ -39,6 +50,10 @@ struct GoalsView: View {
 
                     editorCard
                         .id("goal-editor")
+                        .opacity(didAnimateIn ? 1 : 0)
+                        .offset(y: didAnimateIn ? 0 : 8)
+
+                    categoryBudgetsSection
                         .opacity(didAnimateIn ? 1 : 0)
                         .offset(y: didAnimateIn ? 0 : 8)
                 }
@@ -115,6 +130,45 @@ struct GoalsView: View {
         } message: {
             Text(strings.goalsRemoveConfirmationMessage)
         }
+        .confirmationDialog(
+            strings.categoryBudgetsRemoveConfirmationTitle,
+            isPresented: Binding(
+                get: { pendingRemovalBudget != nil },
+                set: { if !$0 { pendingRemovalBudget = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(strings.goalsRemove, role: .destructive) {
+                if let pendingRemovalBudget {
+                    viewModel.removeCategoryBudget(id: pendingRemovalBudget.id)
+                }
+                pendingRemovalBudget = nil
+            }
+            Button(strings.cancel, role: .cancel) {}
+        } message: {
+            Text(strings.categoryBudgetsRemoveConfirmationMessage)
+        }
+        .sheet(item: $budgetEditorContext) { context in
+            CategoryBudgetEditorView(
+                budgetID: context.budgetID,
+                initialCategory: context.category,
+                initialCadence: context.cadence,
+                initialLimitText: context.limitText,
+                categories: viewModel.categories,
+                onSave: { budgetID, category, cadence, limit in
+                    viewModel.saveCategoryBudget(
+                        budgetID: budgetID,
+                        category: category,
+                        cadence: cadence,
+                        limit: limit
+                    )
+                    budgetEditorContext = nil
+                },
+                onCancel: {
+                    budgetEditorContext = nil
+                }
+            )
+        }
     }
 
     private func goalSection(for cadence: SpendingGoalCadence) -> some View {
@@ -125,14 +179,14 @@ struct GoalsView: View {
         let goal = viewModel.goal(for: cadence)
         let summary = viewModel.goalOverview(for: cadence)
         let hasGoal = goal != nil
-        let safeLimitText = summary?.limitText ?? "$0.00"
-        let safeSpentText = summary?.spentText ?? "$0.00"
-        let safeRemainingText = summary?.remainingText ?? "$0.00"
+        let safeLimitText = viewModel.displayCurrency(summary?.goal.limit ?? 0)
+        let safeSpentText = viewModel.displayCurrency(summary?.spent ?? 0)
+        let safeRemainingText = viewModel.displayCurrency(summary?.remaining ?? 0)
         let safePercentText = viewModel.goalPercentUsedText(for: cadence)
         let safeStatusText = viewModel.goalStatusText(for: cadence)
         let goalStatus = viewModel.goalStatus(for: cadence)
         let progressFillColor = progressFill(for: goalStatus)
-        let progress = viewModel.goalProgressFraction(for: cadence)
+        let safeProgress = viewModel.goalProgressFraction(for: cadence)
 
         return ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -146,10 +200,10 @@ struct GoalsView: View {
                 HStack(alignment: .top, spacing: 10) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(sectionTitle)
-                            .font(.system(size: 20 * scale, weight: .semibold, design: .rounded))
+                            .font(.system(size: 20 * safeScale, weight: .semibold, design: .rounded))
                             .foregroundStyle(AppTheme.primaryText)
                         Text(periodLabel)
-                            .font(.system(size: 14 * scale))
+                            .font(.system(size: 14 * safeScale))
                             .foregroundStyle(AppTheme.secondaryText)
                     }
 
@@ -160,13 +214,17 @@ struct GoalsView: View {
 
                 if hasGoal {
                     VStack(alignment: .leading, spacing: 12) {
-                        progressBar(progress: progress, fill: progressFillColor, statusText: safeStatusText, hasGoal: hasGoal)
+                        progressBar(progress: safeProgress, fill: progressFillColor, statusText: safeStatusText, hasGoal: hasGoal)
 
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                            goalMetric(label: strings.goalsLimitLabel, value: safeLimitText)
-                            goalMetric(label: strings.goalsSpentLabel, value: safeSpentText)
-                            goalMetric(label: strings.goalsRemainingLabel, value: safeRemainingText)
-                            goalMetric(label: strings.goalsPercentUsedLabel, value: safePercentText)
+                        VStack(spacing: 10) {
+                            HStack(spacing: 10) {
+                                goalMetric(label: strings.goalsLimitLabel, value: safeLimitText)
+                                goalMetric(label: strings.goalsSpentLabel, value: safeSpentText)
+                            }
+                            HStack(spacing: 10) {
+                                goalMetric(label: strings.goalsRemainingLabel, value: safeRemainingText)
+                                goalMetric(label: strings.goalsPercentUsedLabel, value: safePercentText)
+                            }
                         }
 
                         HStack(spacing: 10) {
@@ -208,8 +266,131 @@ struct GoalsView: View {
         }
     }
 
+    private var categoryBudgetsSection: some View {
+        let overviews = viewModel.categoryBudgetOverviews
+
+        return GlassCardView {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(strings.categoryBudgetsTitle)
+                        .font(.system(size: 20 * safeScale, weight: .semibold, design: .rounded))
+                        .foregroundStyle(AppTheme.primaryText)
+                    Text(strings.categoryBudgetsSubtitle)
+                        .font(.system(size: 14 * safeScale))
+                        .foregroundStyle(AppTheme.secondaryText)
+                }
+
+                if overviews.isEmpty {
+                    EmptyStateView(
+                        title: strings.categoryBudgetsEmptyTitle,
+                        message: strings.categoryBudgetsEmptyMessage
+                    )
+
+                    goalActionButton(
+                        title: strings.categoryBudgetsCreateButton,
+                        systemImage: "plus.circle.fill",
+                        primary: true
+                    ) {
+                        presentCategoryBudgetEditor(for: nil)
+                    }
+                } else {
+                    VStack(spacing: 12) {
+                        ForEach(overviews) { overview in
+                            categoryBudgetCard(for: overview)
+                        }
+                    }
+
+                    goalActionButton(
+                        title: strings.categoryBudgetsCreateButton,
+                        systemImage: "plus.circle.fill",
+                        primary: true
+                    ) {
+                        presentCategoryBudgetEditor(for: nil)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func categoryBudgetCard(for overview: ExpenseViewModel.CategoryBudgetOverview) -> some View {
+        let budget = overview.budget
+        let cadenceLabel = budget.cadence == .weekly ? strings.goalsPeriodThisWeek : strings.goalsPeriodThisMonth
+        let statusText = viewModel.categoryBudgetStatusText(for: overview.status)
+        let statusFill = overview.status.tintColor.opacity(0.18)
+
+        return ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(AppTheme.cardFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(AppTheme.cardBorder, lineWidth: 1)
+                )
+
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(budget.category.accentColor)
+                                .frame(width: 10, height: 10)
+                            Text(budget.category.displayName)
+                                .font(.system(size: 20 * safeScale, weight: .semibold, design: .rounded))
+                                .foregroundStyle(AppTheme.primaryText)
+                        }
+                        Text(cadenceLabel)
+                            .font(.system(size: 14 * safeScale))
+                            .foregroundStyle(AppTheme.secondaryText)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    statusChip(statusText: statusText, fill: statusFill)
+                }
+
+                progressBar(
+                    progress: overview.progressFraction,
+                    fill: overview.status.tintColor,
+                    statusText: statusText,
+                    hasGoal: true
+                )
+
+                VStack(spacing: 10) {
+                    HStack(spacing: 10) {
+                        goalMetric(label: strings.categoryBudgetsLimitLabel, value: viewModel.displayCurrency(overview.budget.limit))
+                        goalMetric(label: strings.categoryBudgetsSpentLabel, value: viewModel.displayCurrency(overview.spent))
+                    }
+                    HStack(spacing: 10) {
+                        goalMetric(label: strings.categoryBudgetsRemainingLabel, value: viewModel.displayCurrency(overview.remaining))
+                        goalMetric(label: strings.categoryBudgetsPercentLabel, value: overview.percentUsedText)
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    goalActionButton(
+                        title: strings.categoryBudgetsEditButton,
+                        systemImage: "pencil",
+                        primary: false
+                    ) {
+                        presentCategoryBudgetEditor(for: budget)
+                    }
+
+                    goalActionButton(
+                        title: strings.categoryBudgetsRemoveButton,
+                        systemImage: "trash",
+                        primary: true
+                    ) {
+                        pendingRemovalBudget = budget
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+        }
+    }
+
     private var editorCard: some View {
-        let scale = appTextSize.scale
+        let scale = safeScale
         let goal = viewModel.goal(for: selectedCadence)
         let actionTitle = goal == nil
             ? (selectedCadence == .weekly ? strings.goalsCreateWeekly : strings.goalsCreateMonthly)
@@ -275,7 +456,7 @@ struct GoalsView: View {
 
     private func statusChip(statusText: String, fill: Color) -> some View {
         Text(statusText)
-            .font(.system(size: 13 * appTextSize.scale, weight: .semibold))
+            .font(.system(size: 13 * safeScale, weight: .semibold))
             .foregroundStyle(AppTheme.primaryText)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
@@ -303,14 +484,18 @@ struct GoalsView: View {
     }
 
     private func progressBar(progress: Double, fill: Color, statusText: String, hasGoal: Bool) -> some View {
-        GeometryReader { geometry in
+        let safeProgress = progress.isFinite ? min(max(progress, 0), 1) : 0
+        return GeometryReader { geometry in
+            let safeWidth = max(geometry.size.width, 0)
+            let fillWidth = max(0, min(safeWidth * safeProgress, safeWidth))
+
             ZStack(alignment: .leading) {
                 Capsule(style: .continuous)
                     .fill(AppTheme.cardFill)
                 Capsule(style: .continuous)
                     .fill(fill)
-                    .frame(width: max(12, geometry.size.width * progress))
-                    .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.emphasis), value: progress)
+                    .frame(width: fillWidth)
+                    .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.emphasis), value: safeProgress)
             }
         }
         .frame(height: 14)
@@ -330,7 +515,7 @@ struct GoalsView: View {
                 Image(systemName: systemImage)
                 Text(title)
             }
-            .font(.system(size: 15 * scale, weight: .semibold))
+            .font(.system(size: 15 * safeScale, weight: .semibold))
             .foregroundStyle(primary ? AppTheme.background : AppTheme.primaryText)
             .frame(maxWidth: .infinity)
             .frame(minHeight: 44)
@@ -361,12 +546,15 @@ struct GoalsView: View {
     }
 
     private func goalMetric(label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.system(size: 12 * appTextSize.scale))
+        let safeLabel = label.isEmpty ? "—" : label
+        let safeValue = value.isEmpty ? "—" : value
+
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(safeLabel)
+                .font(.system(size: 12 * safeScale))
                 .foregroundStyle(AppTheme.tertiaryText)
-            Text(value)
-                .font(.system(size: 16 * appTextSize.scale, weight: .semibold))
+            Text(safeValue)
+                .font(.system(size: 16 * safeScale, weight: .semibold))
                 .foregroundStyle(AppTheme.primaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -377,15 +565,32 @@ struct GoalsView: View {
                 .fill(AppTheme.cardFill)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label): \(value)")
+        .accessibilityLabel("\(safeLabel): \(safeValue)")
     }
 
     private func syncEditorFromSelectedGoal() {
         guard let goal = viewModel.goal(for: selectedCadence) else {
-            limitText = ""
+            if !limitText.isEmpty {
+                limitText = ""
+            }
             return
         }
 
-        limitText = String(format: "%.2f", goal.limit)
+        let resolvedLimitText = goal.limit.isFinite ? String(format: "%.2f", goal.limit) : ""
+        if limitText != resolvedLimitText {
+            limitText = resolvedLimitText
+        }
+    }
+
+    private func presentCategoryBudgetEditor(for budget: CategoryBudget?) {
+        let category = budget?.category ?? viewModel.categories.first ?? .other
+        let cadence = budget?.cadence ?? .monthly
+        let limitText = budget.map { String(format: "%.2f", $0.limit) } ?? ""
+        budgetEditorContext = BudgetEditorContext(
+            budgetID: budget?.id,
+            category: category,
+            cadence: cadence,
+            limitText: limitText
+        )
     }
 }

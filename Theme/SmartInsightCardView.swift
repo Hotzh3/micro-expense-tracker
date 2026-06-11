@@ -4,6 +4,7 @@ struct SmartInsightCardView: View {
     let insight: SmartInsight
     var compact: Bool = false
 
+    @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
 
     var body: some View {
@@ -27,7 +28,7 @@ struct SmartInsightCardView: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.85)
 
-                        Text(insight.message)
+                        Text(viewModel.privacyAwareText(insight.message))
                             .font(.system(size: compact ? 13 * scale : 14 * scale))
                             .foregroundStyle(AppTheme.secondaryText)
                             .lineLimit(compact ? 3 : 4)
@@ -44,7 +45,7 @@ struct SmartInsightCardView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(insight.title)
-        .accessibilityValue(insight.message)
+        .accessibilityValue(viewModel.privacyAwareText(insight.message))
     }
 
     @ViewBuilder
@@ -89,7 +90,7 @@ struct SmartInsightCardView: View {
         if let amount = insight.amount {
             items.append(
                 MetadataItem(
-                    label: currency(amount),
+                    label: viewModel.displayCurrency(amount),
                     symbolName: "banknote.fill",
                     tint: insight.type.accentColor
                 )
@@ -107,10 +108,6 @@ struct SmartInsightCardView: View {
         }
 
         return items
-    }
-
-    private func currency(_ amount: Double) -> String {
-        String(format: "$%.2f", amount)
     }
 
     private struct MetadataItem {

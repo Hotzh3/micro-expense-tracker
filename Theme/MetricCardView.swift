@@ -7,7 +7,7 @@ struct MetricCardView: View {
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
 
     var body: some View {
-        let scale = appTextSize.scale
+        let scale = appTextSize.scale.isFinite && appTextSize.scale > 0 ? appTextSize.scale : 1
         GlassCardView {
             VStack(alignment: .leading, spacing: 10) {
                 Text(title)

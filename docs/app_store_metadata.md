@@ -22,6 +22,20 @@ Capture small spending leaks quickly with Quick Add, manual parsing for pasted o
 
 Pocket Leak keeps data on device and does not read notifications from other apps.
 
+## TestFlight Notes For Reviewers
+
+Please test the following flows in the beta build:
+
+- Quick Add manual entry
+- Parse Text from pasted or shared text
+- Weekly and monthly Goals
+- Widgets and privacy mode
+- Share Extension handoff
+- PDF export
+- Local notifications
+- Back Tap shortcut into Quick Add
+- History filters and export actions
+
 ## Keywords
 
 micro-expense, budget, spending, tracker, receipts, quick add, goals, widgets, local, privacy
@@ -48,6 +62,23 @@ micro-expense, budget, spending, tracker, receipts, quick add, goals, widgets, l
 - Share Extension para texto compartido por el usuario
 - Exportación PDF, CSV y JSON
 
+## Beta Notes For TestFlight
+
+Texto sugerido para testers:
+
+Please focus on:
+
+- Quick Add
+- Parse Text
+- Goals
+- Widgets
+- Share Extension
+- PDF export
+- Local notifications
+- Back Tap shortcut
+
+If you find a crash, note the exact screen and the last action before the app closed.
+
 ## Support URL Placeholder
 
 - `https://example.com/pocket-leak-support`
@@ -68,6 +99,15 @@ micro-expense, budget, spending, tracker, receipts, quick add, goals, widgets, l
 - No push notifications are used.
 - Local notifications are generated only by Pocket Leak.
 - The share extension only accepts user-shared text.
+
+## App Review Notes Placeholder
+
+If App Review asks for extra context, mention that the app:
+
+- stores data locally
+- does not read other apps' notifications
+- uses only user-triggered sharing/pasting for text parsing
+- supports widgets, local notifications, and export without a backend
 
 ## Screenshots Needed
 

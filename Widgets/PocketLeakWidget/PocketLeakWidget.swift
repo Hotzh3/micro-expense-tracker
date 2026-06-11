@@ -106,7 +106,7 @@ struct PocketLeakWidgetView: View {
                     .font(.caption)
                     .foregroundStyle(Color.white.opacity(0.72))
 
-                Text(compactCurrency(entry.summary.todayTotal))
+                Text(visibleCurrency(entry.summary.todayTotal, compact: true))
                     .font(.system(size: 34, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
                     .lineLimit(1)
@@ -130,7 +130,7 @@ struct PocketLeakWidgetView: View {
         .padding(16)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Pocket Leak")
-        .accessibilityValue("Today \(compactCurrency(entry.summary.todayTotal)). \(smallSignalText ?? entry.displayState.helperText)")
+        .accessibilityValue("Today \(visibleCurrency(entry.summary.todayTotal, compact: true)). \(smallSignalText ?? entry.displayState.helperText)")
     }
 
     private var mediumView: some View {
@@ -141,7 +141,7 @@ struct PocketLeakWidgetView: View {
 
             HStack(alignment: .bottom, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(currency(entry.summary.todayTotal))
+                    Text(visibleCurrency(entry.summary.todayTotal))
                         .font(.system(size: 30, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
                     Text("Today")
@@ -164,7 +164,7 @@ struct PocketLeakWidgetView: View {
             }
 
             if let forecastText = entry.summary.monthlyGoalForecastText ?? entry.summary.weeklyGoalForecastText {
-                Text(forecastText)
+                Text(visibleText(forecastText) ?? "")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(Color.white.opacity(0.72))
                     .lineLimit(2)
@@ -178,9 +178,9 @@ struct PocketLeakWidgetView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Pocket Leak")
         .accessibilityValue([
-            "Today \(currency(entry.summary.todayTotal))",
+            "Today \(visibleCurrency(entry.summary.todayTotal))",
             entry.summary.topCategory,
-            entry.summary.monthlyGoalForecastText ?? entry.summary.weeklyGoalForecastText ?? entry.displayState.helperText
+            visibleText(entry.summary.monthlyGoalForecastText ?? entry.summary.weeklyGoalForecastText) ?? entry.displayState.helperText
         ].joined(separator: ". "))
     }
 
@@ -189,9 +189,9 @@ struct PocketLeakWidgetView: View {
             header
 
             HStack(alignment: .top, spacing: 12) {
-                metric(title: "Today", value: currency(entry.summary.todayTotal))
-                metric(title: "This Week", value: currency(entry.summary.weekTotal))
-                metric(title: "This Month", value: currency(entry.summary.monthTotal))
+                metric(title: "Today", value: visibleCurrency(entry.summary.todayTotal))
+                metric(title: "This Week", value: visibleCurrency(entry.summary.weekTotal))
+                metric(title: "This Month", value: visibleCurrency(entry.summary.monthTotal))
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -211,7 +211,7 @@ struct PocketLeakWidgetView: View {
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(.white)
                                 Spacer()
-                                Text(item.amountText)
+                                Text(visibleCurrency(item.amount))
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(.white)
                             }
@@ -256,7 +256,7 @@ struct PocketLeakWidgetView: View {
                 .font(.caption)
                 .foregroundStyle(Color.white.opacity(0.68))
             if let forecastText = entry.summary.monthlyGoalForecastText ?? entry.summary.weeklyGoalForecastText {
-                Text(forecastText)
+                Text(visibleText(forecastText) ?? "")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(Color.white.opacity(0.68))
                     .lineLimit(2)
@@ -283,8 +283,17 @@ struct PocketLeakWidgetView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func currency(_ value: Double) -> String {
-        String(format: "$%.2f", value)
+    private func visibleCurrency(_ value: Double, compact: Bool = false) -> String {
+        guard entry.summary.hideAmounts != true else { return "••••" }
+        if compact {
+            return compactCurrency(value)
+        }
+        return String(format: "$%.2f", value)
+    }
+
+    private func visibleText(_ text: String?) -> String? {
+        guard entry.summary.hideAmounts != true else { return "••••" }
+        return text
     }
 
     private var smallSignalText: String? {

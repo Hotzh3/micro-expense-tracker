@@ -12,7 +12,7 @@ struct LaunchSplashView: View {
     ]
 
     static func randomPhrase() -> String {
-        phrases.randomElement() ?? phrases[0]
+        phrases.randomElement() ?? phrases.first ?? "Pocket Leak"
     }
 
     var body: some View {

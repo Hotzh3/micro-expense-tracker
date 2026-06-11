@@ -8,8 +8,12 @@ final class SharedTextStore {
     private let pendingTextKey = "com.josema.pocketleak.pendingSharedText"
     private let pendingDateKey = "com.josema.pocketleak.pendingSharedTextDate"
 
-    private init(defaults: UserDefaults? = UserDefaults(suiteName: SharedTextStore.appGroupIdentifier)) {
-        self.defaults = defaults
+    private init(fileManager: FileManager = .default) {
+        if fileManager.containerURL(forSecurityApplicationGroupIdentifier: Self.appGroupIdentifier) != nil {
+            self.defaults = UserDefaults(suiteName: Self.appGroupIdentifier)
+        } else {
+            self.defaults = nil
+        }
     }
 
     func savePendingText(_ text: String) {

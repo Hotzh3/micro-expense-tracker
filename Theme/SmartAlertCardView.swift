@@ -5,6 +5,7 @@ struct SmartAlertCardView: View {
     let strings: AppStrings
     var dismissAction: (() -> Void)? = nil
 
+    @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
 
     var body: some View {
@@ -29,7 +30,7 @@ struct SmartAlertCardView: View {
                             .lineLimit(2)
                             .minimumScaleFactor(0.85)
 
-                        Text(alert.message)
+                        Text(viewModel.privacyAwareText(alert.message))
                             .font(.system(size: 14 * scale))
                             .foregroundStyle(AppTheme.secondaryText)
                             .lineLimit(4)
@@ -53,6 +54,6 @@ struct SmartAlertCardView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(alert.title)
-        .accessibilityValue(alert.message)
+        .accessibilityValue(viewModel.privacyAwareText(alert.message))
     }
 }

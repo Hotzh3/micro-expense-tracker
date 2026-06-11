@@ -37,6 +37,8 @@ See [docs/privacy_summary.md](docs/privacy_summary.md) and [docs/technical_const
 ## App Store And Portfolio Material
 
 - [App Store metadata draft](docs/app_store_metadata.md)
+- [Friends TestFlight plan](docs/friends_testflight_plan.md)
+- [App Store submission checklist](docs/app_store_submission_checklist.md)
 - [Screenshot plan](docs/screenshot_plan.md)
 - [Demo data plan](docs/demo_data_plan.md)
 - [Release checklist](docs/release_checklist.md)

@@ -6,6 +6,10 @@ enum AppPreferenceKeys {
     static let language = "app.language"
     static let hapticsEnabled = "app.hapticsEnabled"
     static let smartAlertsEnabled = "app.smartAlertsEnabled"
+    static let appLockEnabled = "app.appLockEnabled"
+    static let requireFaceIDOnLaunch = "app.requireFaceIDOnLaunch"
+    static let privacyModeHideAmounts = "app.privacyModeHideAmounts"
+    static let hideAmountsInWidgets = "app.hideAmountsInWidgets"
     static let localNotificationsEnabled = "app.localNotificationsEnabled"
     static let dailyCheckInEnabled = "app.dailyCheckInEnabled"
     static let goalWarningsEnabled = "app.goalWarningsEnabled"
@@ -90,6 +94,7 @@ struct AppStrings {
     let dashboardHeader: String
     let dashboardHeaderSubtitle: String
     let historyHeader: String
+    let historyHeaderSubtitle: String
     let insightsHeader: String
     let goalsHeader: String
     let goalsHeaderSubtitle: String
@@ -125,6 +130,19 @@ struct AppStrings {
     let hapticsTitle: String
     let hapticsDescription: String
     let enableHaptics: String
+    let appLockTitle: String
+    let appLockDescription: String
+    let enableAppLock: String
+    let requireFaceIDOnLaunch: String
+    let appLockBiometryHint: String
+    let appLockLockedTitle: String
+    let appLockLockedMessage: String
+    let appLockUnlock: String
+    let appLockUnlockFailed: String
+    let privacyModeHideAmountsTitle: String
+    let privacyModeHideAmountsDescription: String
+    let hideAmountsInWidgetsTitle: String
+    let hideAmountsInWidgetsDescription: String
     let notificationsTitle: String
     let notificationsDescription: String
     let enableLocalNotifications: String
@@ -146,6 +164,20 @@ struct AppStrings {
     let privacyTitle: String
     let privacyNote: String
     let dataTitle: String
+    let backupTitle: String
+    let backupDescription: String
+    let backupLocalOnlyNote: String
+    let exportBackup: String
+    let importBackup: String
+    let backupImportSummaryTemplate: String
+    let backupImportConfirmationMessage: String
+    let backupImportMerge: String
+    let backupImportReplace: String
+    let backupImportSuccess: String
+    let backupImportFailed: String
+    let backupGenerateDemoData: String
+    let backupGenerateDemoDataDescription: String
+    let backupDemoDataSuccess: String
     let exportData: String
     let exportDescription: String
     let exportPDF: String
@@ -165,6 +197,8 @@ struct AppStrings {
     let backTapDescription: String
     let copyQuickAddURL: String
     let copyPrefillURLExample: String
+    let openShortcutsGuide: String
+    let testQuickAddLink: String
     let openQuickAddRoute: String
     let openQuickAdd: String
     let openHistoryExports: String
@@ -183,6 +217,8 @@ struct AppStrings {
     let language: String
     let resetLocalData: String
     let backTapQuickAdd: String
+    let shortcutsGuideTitle: String
+    let shortcutsGuideSubtitle: String
     let backTapStepOpenShortcuts: String
     let backTapStepCreateShortcut: String
     let backTapStepAddOpenURLs: String
@@ -204,6 +240,35 @@ struct AppStrings {
     let historyNoResultsTitle: String
     let historyNoResultsMessage: String
     let historyNoResultsAction: String
+    let historySearchPlaceholder: String
+    let historyFiltersButton: String
+    let historyClearFilters: String
+    let historyFilteredTotalTitle: String
+    let historyFilteredCountTitle: String
+    let historyFilteredResultsSubtitle: String
+    let historyAllExpensesSubtitle: String
+    let historySortTitle: String
+    let historySortNewest: String
+    let historySortHighest: String
+    let historySortLowest: String
+    let historySortCategory: String
+    let historyFilterSheetTitle: String
+    let historyFilterSheetSubtitle: String
+    let historyFilterDateTitle: String
+    let historyFilterCategoriesTitle: String
+    let historyFilterMerchantTitle: String
+    let historyFilterSourceTitle: String
+    let historyFilterAmountRangeTitle: String
+    let historyFilterMinAmountPlaceholder: String
+    let historyFilterMaxAmountPlaceholder: String
+    let historyFilterApplyButton: String
+    let historyFilterResetButton: String
+    let historyFilterAllCategories: String
+    let historyFilterAllSources: String
+    let historyFilterAllDates: String
+    let historyFilterToday: String
+    let historyFilterWeek: String
+    let historyFilterMonth: String
     let done: String
     let amountTitle: String
     let amountPlaceholder: String
@@ -235,11 +300,23 @@ struct AppStrings {
     let ready: String
     let needsAttention: String
     let missingAmountParseError: String
+    let dashboardOverviewSection: String
+    let dashboardBreakdownSection: String
+    let dashboardBreakdownSubtitle: String
+    let dashboardTrendsSection: String
+    let dashboardTrendsSubtitle: String
+    let dashboardSignalsSection: String
+    let dashboardRecentActivitySection: String
     let dashboardQuickSnapshotTitle: String
     let dashboardCategoryDistributionTitle: String
     let dashboardRecentTrendTitle: String
     let dashboardSignalTitle: String
     let dashboardSignalSubtitle: String
+    let dashboardRecurringSignalTitle: String
+    let dashboardSmartInsightTitle: String
+    let dashboardExportReportTitle: String
+    let dashboardQuickCaptureShortcutTitle: String
+    let dashboardQuickCaptureShortcutMessage: String
     let dashboardGoalsTitle: String
     let dashboardGoalsSubtitle: String
     let dashboardGoalsCtaTitle: String
@@ -247,6 +324,9 @@ struct AppStrings {
     let dashboardGoalsCtaButton: String
     let dashboardNoCategoryDistribution: String
     let dashboardNoRecentTrend: String
+    let noCategoryBudgetsMessage: String
+    let noRecurringExpensesMessage: String
+    let noSmartInsightMessage: String
     let historyExportsTitle: String
     let historyFilterTitle: String
     let historyCategoryTitle: String
@@ -406,6 +486,69 @@ struct AppStrings {
     let dashboardGoalAtRiskSubtitleTemplate: String
     let goalsRemoveConfirmationTitle: String
     let goalsRemoveConfirmationMessage: String
+    let categoryBudgetsTitle: String
+    let categoryBudgetsSubtitle: String
+    let categoryBudgetsEmptyTitle: String
+    let categoryBudgetsEmptyMessage: String
+    let categoryBudgetsCreateButton: String
+    let categoryBudgetsSaveButton: String
+    let categoryBudgetsEditorTitle: String
+    let categoryBudgetsCategoryLabel: String
+    let categoryBudgetsCadenceLabel: String
+    let categoryBudgetsWeeklyLabel: String
+    let categoryBudgetsMonthlyLabel: String
+    let categoryBudgetsLimitLabel: String
+    let categoryBudgetsSpentLabel: String
+    let categoryBudgetsRemainingLabel: String
+    let categoryBudgetsPercentLabel: String
+    let categoryBudgetsEditButton: String
+    let categoryBudgetsRemoveButton: String
+    let categoryBudgetsStatusSafe: String
+    let categoryBudgetsStatusWatch: String
+    let categoryBudgetsStatusOver: String
+    let categoryBudgetsInvalidLimitError: String
+    let categoryBudgetsRemoveConfirmationTitle: String
+    let categoryBudgetsRemoveConfirmationMessage: String
+    let insightsCategoryBudgetTitle: String
+    let insightsCategoryBudgetSubtitle: String
+    let categoryBudgetInsightTemplate: String
+    let recurringExpensesTitle: String
+    let recurringExpensesSubtitle: String
+    let recurringExpensesEmptyTitle: String
+    let recurringExpensesEmptyMessage: String
+    let recurringExpensesCreateButton: String
+    let recurringExpensesEditButton: String
+    let recurringExpensesSaveButton: String
+    let recurringExpensesDeleteButton: String
+    let recurringExpensesMarkPaidButton: String
+    let recurringExpensesMerchantLabel: String
+    let recurringExpensesAmountLabel: String
+    let recurringExpensesCategoryLabel: String
+    let recurringExpensesCadenceLabel: String
+    let recurringExpensesNextDueLabel: String
+    let recurringExpensesNextDueTemplate: String
+    let recurringExpensesUpcomingTitle: String
+    let recurringExpensesUpcomingSubtitle: String
+    let recurringExpensesNoUpcomingMessage: String
+    let recurringExpensesUpcomingSummaryTemplate: String
+    let recurringExpensesEditorTitle: String
+    let recurringExpensesActiveLabel: String
+    let recurringExpensesInactiveLabel: String
+    let recurringExpensesInvalidAmountError: String
+    let recurringExpensesRemoveConfirmationTitle: String
+    let recurringExpensesRemoveConfirmationMessage: String
+    let recurringCadenceDaily: String
+    let recurringCadenceWeekly: String
+    let recurringCadenceMonthly: String
+    let recurringCadenceYearly: String
+    let dashboardRecurringLeakTitle: String
+    let dashboardRecurringLeakSubtitle: String
+    let insightsRecurringLeaksTitle: String
+    let insightsRecurringLeaksSubtitle: String
+    let expenseSourceManual: String
+    let expenseSourceParsedText: String
+    let expenseSourceImported: String
+    let expenseSourceDemo: String
 
     static func current() -> AppStrings {
         let language = AppLanguage.current
@@ -422,6 +565,7 @@ struct AppStrings {
                 dashboardHeader: "Dashboard",
                 dashboardHeaderSubtitle: "Track daily spend, month totals, and the categories leaking the most.",
                 historyHeader: "History",
+                historyHeaderSubtitle: "Review saved leaks by time range and category.",
                 insightsHeader: "Insights",
                 goalsHeader: "Goals",
                 goalsHeaderSubtitle: "Track weekly and monthly limits side by side so the pace stays visible.",
@@ -457,6 +601,19 @@ struct AppStrings {
                 hapticsTitle: "Haptics",
                 hapticsDescription: "Subtle feedback for taps, saves, parser errors, and tab changes.",
                 enableHaptics: "Enable Haptics",
+                appLockTitle: "App Lock",
+                appLockDescription: "Require Face ID, Touch ID, or device passcode before showing Pocket Leak.",
+                enableAppLock: "Enable App Lock",
+                requireFaceIDOnLaunch: "Require Face ID on launch",
+                appLockBiometryHint: "Uses device biometrics when available. Falls back to passcode on supported devices.",
+                appLockLockedTitle: "Pocket Leak Locked",
+                appLockLockedMessage: "Unlock to view your expenses.",
+                appLockUnlock: "Unlock",
+                appLockUnlockFailed: "Could not unlock. Try again.",
+                privacyModeHideAmountsTitle: "Privacy Mode: Hide Amounts",
+                privacyModeHideAmountsDescription: "Replace amounts with placeholders across the app interface.",
+                hideAmountsInWidgetsTitle: "Hide amounts in widgets",
+                hideAmountsInWidgetsDescription: "Keep Home Screen widgets from showing numeric spend values.",
                 notificationsTitle: "Notifications",
                 notificationsDescription: "Local reminders from Pocket Leak only. The app never reads notifications from other apps.",
                 enableLocalNotifications: "Enable Local Notifications",
@@ -478,6 +635,20 @@ struct AppStrings {
                 privacyTitle: "Privacy",
                 privacyNote: "Pocket Leak stores expenses locally and only parses text you paste manually.",
                 dataTitle: "Data",
+                backupTitle: "Data Backup",
+                backupDescription: "Export a local JSON backup or restore one from a file you choose.",
+                backupLocalOnlyNote: "Backups stay local unless you share the file yourself.",
+                exportBackup: "Export Backup",
+                importBackup: "Import Backup",
+                backupImportSummaryTemplate: "This backup contains %d expenses, %d goals, %d category budgets, and %d recurring expenses.",
+                backupImportConfirmationMessage: "Choose Merge to keep existing data or Replace to overwrite this device. Settings will also be restored.",
+                backupImportMerge: "Merge",
+                backupImportReplace: "Replace",
+                backupImportSuccess: "Backup imported successfully.",
+                backupImportFailed: "Could not import the selected backup.",
+                backupGenerateDemoData: "Generate Demo Data",
+                backupGenerateDemoDataDescription: "DEBUG only. Fills Pocket Leak with sample data for screenshots and demos.",
+                backupDemoDataSuccess: "Demo data generated.",
                 exportData: "Export Data",
                 exportDescription: "Open History to share CSV, JSON, monthly summary, or PDF reports.",
                 exportPDF: "Export PDF",
@@ -497,6 +668,8 @@ struct AppStrings {
                 backTapDescription: "iOS cannot let Pocket Leak detect Back Tap directly. Build a Shortcut with Open URLs, point it at pocketleak://quick-add, then assign that Shortcut to Back Tap.",
                 copyQuickAddURL: "Copy pocketleak://quick-add",
                 copyPrefillURLExample: "Copy Prefill URL Example",
+                openShortcutsGuide: "Open Shortcuts Guide",
+                testQuickAddLink: "Test Quick Add Link",
                 openQuickAddRoute: "Open Quick Add Route",
                 openQuickAdd: "Open Quick Add",
                 openHistoryExports: "Open History Exports",
@@ -515,6 +688,8 @@ struct AppStrings {
                 language: "Language",
                 resetLocalData: "Reset Local Data",
                 backTapQuickAdd: "Back Tap Quick Add",
+                shortcutsGuideTitle: "Shortcuts Guide",
+                shortcutsGuideSubtitle: "Use a manual Shortcut and Back Tap to launch Quick Add fast.",
                 backTapStepOpenShortcuts: "1. Open the Shortcuts app.",
                 backTapStepCreateShortcut: "2. Create a new shortcut.",
                 backTapStepAddOpenURLs: "3. Add the Open URLs action.",
@@ -536,6 +711,35 @@ struct AppStrings {
                 historyNoResultsTitle: "No matches",
                 historyNoResultsMessage: "Try another filter or reset it.",
                 historyNoResultsAction: "Reset Filters",
+                historySearchPlaceholder: "Search merchant, note, category, or source",
+                historyFiltersButton: "Filters",
+                historyClearFilters: "Clear filters",
+                historyFilteredTotalTitle: "Filtered total",
+                historyFilteredCountTitle: "Filtered count",
+                historyFilteredResultsSubtitle: "Filtered results",
+                historyAllExpensesSubtitle: "All saved expenses",
+                historySortTitle: "Sort by",
+                historySortNewest: "Newest",
+                historySortHighest: "Highest amount",
+                historySortLowest: "Lowest amount",
+                historySortCategory: "Category",
+                historyFilterSheetTitle: "History Filters",
+                historyFilterSheetSubtitle: "Narrow History with search, amounts, categories, and date ranges.",
+                historyFilterDateTitle: "Date range",
+                historyFilterCategoriesTitle: "Categories",
+                historyFilterMerchantTitle: "Merchant",
+                historyFilterSourceTitle: "Source",
+                historyFilterAmountRangeTitle: "Amount range",
+                historyFilterMinAmountPlaceholder: "Min",
+                historyFilterMaxAmountPlaceholder: "Max",
+                historyFilterApplyButton: "Apply Filters",
+                historyFilterResetButton: "Reset",
+                historyFilterAllCategories: "All Categories",
+                historyFilterAllSources: "All Sources",
+                historyFilterAllDates: "All Dates",
+                historyFilterToday: "Today",
+                historyFilterWeek: "Week",
+                historyFilterMonth: "Month",
                 done: "Done",
                 amountTitle: "Amount",
                 amountPlaceholder: "0.00",
@@ -567,11 +771,23 @@ struct AppStrings {
                 ready: "Ready",
                 needsAttention: "Needs attention",
                 missingAmountParseError: "No amount found. Paste the charge total and try again.",
+                dashboardOverviewSection: "Overview",
+                dashboardBreakdownSection: "Spending Breakdown",
+                dashboardBreakdownSubtitle: "See where this month is going at a glance.",
+                dashboardTrendsSection: "Trends",
+                dashboardTrendsSubtitle: "A quick look at the last 14 days.",
+                dashboardSignalsSection: "Signals",
+                dashboardRecentActivitySection: "Recent Activity",
                 dashboardQuickSnapshotTitle: "Quick Snapshot",
                 dashboardCategoryDistributionTitle: "Category Distribution",
                 dashboardRecentTrendTitle: "Recent Spending Trend",
                 dashboardSignalTitle: "Today’s signal",
                 dashboardSignalSubtitle: "A short, local read on your spending pattern.",
+                dashboardRecurringSignalTitle: "Upcoming Recurring",
+                dashboardSmartInsightTitle: "Smart Insight",
+                dashboardExportReportTitle: "Export Report",
+                dashboardQuickCaptureShortcutTitle: "Quick Capture Shortcut",
+                dashboardQuickCaptureShortcutMessage: "Use Back Tap to open Quick Add faster.",
                 dashboardGoalsTitle: "Goals snapshot",
                 dashboardGoalsSubtitle: "Keep both budget cadences visible without leaving the dashboard.",
                 dashboardGoalsCtaTitle: "Add a goal",
@@ -579,6 +795,9 @@ struct AppStrings {
                 dashboardGoalsCtaButton: "Go to Goals",
                 dashboardNoCategoryDistribution: "Add a few expenses to see category share.",
                 dashboardNoRecentTrend: "Add expenses to see the last 14 days.",
+                noCategoryBudgetsMessage: "No category budgets yet.",
+                noRecurringExpensesMessage: "No upcoming recurring expenses yet.",
+                noSmartInsightMessage: "Add a few leaks to unlock insights.",
                 historyExportsTitle: "Exports",
                 historyFilterTitle: "History",
                 historyCategoryTitle: "Category",
@@ -737,7 +956,70 @@ struct AppStrings {
                 dashboardGoalAtRiskTitleTemplate: "%@ at risk",
                 dashboardGoalAtRiskSubtitleTemplate: "You have %@/day left.",
                 goalsRemoveConfirmationTitle: "Remove spending goal?",
-                goalsRemoveConfirmationMessage: "This removes the local goal from this device."
+                goalsRemoveConfirmationMessage: "This removes the local goal from this device.",
+                categoryBudgetsTitle: "Category Budgets",
+                categoryBudgetsSubtitle: "Set a weekly or monthly cap for Coffee, Food, Transport, and the rest.",
+                categoryBudgetsEmptyTitle: "No category budgets yet",
+                categoryBudgetsEmptyMessage: "Add a category budget to keep one spending bucket visible.",
+                categoryBudgetsCreateButton: "Create Budget",
+                categoryBudgetsSaveButton: "Save Budget",
+                categoryBudgetsEditorTitle: "Category Budget Editor",
+                categoryBudgetsCategoryLabel: "Category",
+                categoryBudgetsCadenceLabel: "Cadence",
+                categoryBudgetsWeeklyLabel: "weekly",
+                categoryBudgetsMonthlyLabel: "monthly",
+                categoryBudgetsLimitLabel: "Limit",
+                categoryBudgetsSpentLabel: "Spent",
+                categoryBudgetsRemainingLabel: "Remaining",
+                categoryBudgetsPercentLabel: "% Used",
+                categoryBudgetsEditButton: "Edit",
+                categoryBudgetsRemoveButton: "Remove",
+                categoryBudgetsStatusSafe: "Safe",
+                categoryBudgetsStatusWatch: "Watch",
+                categoryBudgetsStatusOver: "Over",
+                categoryBudgetsInvalidLimitError: "Enter a valid budget limit.",
+                categoryBudgetsRemoveConfirmationTitle: "Remove category budget?",
+                categoryBudgetsRemoveConfirmationMessage: "This removes the local category budget from this device.",
+                insightsCategoryBudgetTitle: "Category budget insight",
+                insightsCategoryBudgetSubtitle: "A local signal from the category budget that needs attention.",
+                categoryBudgetInsightTemplate: "%@ is at %@ of your %@ budget.",
+                recurringExpensesTitle: "Recurring Expenses",
+                recurringExpensesSubtitle: "Track fixed leaks like Netflix, Spotify, rent, and transport.",
+                recurringExpensesEmptyTitle: "No recurring expenses yet",
+                recurringExpensesEmptyMessage: "Add a recurring expense to see upcoming leaks before they happen.",
+                recurringExpensesCreateButton: "Add Recurring Expense",
+                recurringExpensesEditButton: "Edit",
+                recurringExpensesSaveButton: "Save",
+                recurringExpensesDeleteButton: "Delete",
+                recurringExpensesMarkPaidButton: "Mark as Paid",
+                recurringExpensesMerchantLabel: "Merchant",
+                recurringExpensesAmountLabel: "Amount",
+                recurringExpensesCategoryLabel: "Category",
+                recurringExpensesCadenceLabel: "Cadence",
+                recurringExpensesNextDueLabel: "Next due",
+                recurringExpensesNextDueTemplate: "Next due %@",
+                recurringExpensesUpcomingTitle: "Upcoming recurring leaks",
+                recurringExpensesUpcomingSubtitle: "The next fixed charges scheduled locally.",
+                recurringExpensesNoUpcomingMessage: "No upcoming recurring leaks.",
+                recurringExpensesUpcomingSummaryTemplate: "%@ • %@ • due %@",
+                recurringExpensesEditorTitle: "Recurring Expense Editor",
+                recurringExpensesActiveLabel: "Active",
+                recurringExpensesInactiveLabel: "Inactive",
+                recurringExpensesInvalidAmountError: "Enter a valid recurring amount.",
+                recurringExpensesRemoveConfirmationTitle: "Remove recurring expense?",
+                recurringExpensesRemoveConfirmationMessage: "This removes the local recurring expense from this device.",
+                recurringCadenceDaily: "Daily",
+                recurringCadenceWeekly: "Weekly",
+                recurringCadenceMonthly: "Monthly",
+                recurringCadenceYearly: "Yearly",
+                dashboardRecurringLeakTitle: "Recurring leak",
+                dashboardRecurringLeakSubtitle: "The next fixed charge that is due soon.",
+                insightsRecurringLeaksTitle: "Upcoming recurring leaks",
+                insightsRecurringLeaksSubtitle: "Fixed charges scheduled locally before they hit the dashboard.",
+                expenseSourceManual: "Manual",
+                expenseSourceParsedText: "Parsed text",
+                expenseSourceImported: "Imported",
+                expenseSourceDemo: "Demo"
             )
         case .spanish:
             return AppStrings(
@@ -751,6 +1033,7 @@ struct AppStrings {
                 dashboardHeader: "Panel",
                 dashboardHeaderSubtitle: "Sigue el gasto diario, totales mensuales y las categorías que más fugan.",
                 historyHeader: "Historial",
+                historyHeaderSubtitle: "Revisa las fugas guardadas por rango de tiempo y categoría.",
                 insightsHeader: "Análisis",
                 goalsHeader: "Metas",
                 goalsHeaderSubtitle: "Sigue límites semanales y mensuales al mismo tiempo para ver el ritmo.",
@@ -786,6 +1069,19 @@ struct AppStrings {
                 hapticsTitle: "Hápticos",
                 hapticsDescription: "Retroalimentación sutil para toques, guardado, errores del parser y cambios de tab.",
                 enableHaptics: "Activar hápticos",
+                appLockTitle: "Bloqueo de la app",
+                appLockDescription: "Pide Face ID, Touch ID o el código del dispositivo antes de mostrar Pocket Leak.",
+                enableAppLock: "Activar bloqueo de la app",
+                requireFaceIDOnLaunch: "Pedir Face ID al abrir",
+                appLockBiometryHint: "Usa biometría del dispositivo cuando exista. En dispositivos compatibles usa el código como respaldo.",
+                appLockLockedTitle: "Pocket Leak bloqueado",
+                appLockLockedMessage: "Desbloquea para ver tus gastos.",
+                appLockUnlock: "Desbloquear",
+                appLockUnlockFailed: "No se pudo desbloquear. Inténtalo de nuevo.",
+                privacyModeHideAmountsTitle: "Modo privacidad: ocultar montos",
+                privacyModeHideAmountsDescription: "Reemplaza montos con marcadores en la interfaz de la app.",
+                hideAmountsInWidgetsTitle: "Ocultar montos en widgets",
+                hideAmountsInWidgetsDescription: "Evita que los widgets de la pantalla de inicio muestren montos numéricos.",
                 notificationsTitle: "Notificaciones",
                 notificationsDescription: "Recordatorios locales solo de Pocket Leak. La app nunca lee notificaciones de otras apps.",
                 enableLocalNotifications: "Activar notificaciones locales",
@@ -807,6 +1103,20 @@ struct AppStrings {
                 privacyTitle: "Privacidad",
                 privacyNote: "Pocket Leak guarda los gastos localmente y solo analiza texto que tú pegas manualmente.",
                 dataTitle: "Datos",
+                backupTitle: "Respaldo de datos",
+                backupDescription: "Exporta un respaldo JSON local o restaura uno desde el archivo que elijas.",
+                backupLocalOnlyNote: "Los respaldos se quedan locales a menos que tú compartas el archivo.",
+                exportBackup: "Exportar respaldo",
+                importBackup: "Importar respaldo",
+                backupImportSummaryTemplate: "Este respaldo contiene %d gastos, %d metas, %d presupuestos por categoría y %d gastos recurrentes.",
+                backupImportConfirmationMessage: "Elige Fusionar para conservar los datos existentes o Reemplazar para sobrescribir este dispositivo. También se restaurarán los ajustes.",
+                backupImportMerge: "Fusionar",
+                backupImportReplace: "Reemplazar",
+                backupImportSuccess: "Respaldo importado correctamente.",
+                backupImportFailed: "No se pudo importar el respaldo seleccionado.",
+                backupGenerateDemoData: "Generar datos demo",
+                backupGenerateDemoDataDescription: "Solo DEBUG. Llena Pocket Leak con datos de ejemplo para capturas y demos.",
+                backupDemoDataSuccess: "Datos demo generados.",
                 exportData: "Exportar datos",
                 exportDescription: "Abre Historial para compartir CSV, JSON, el resumen mensual o reportes PDF.",
                 exportPDF: "Exportar PDF",
@@ -826,6 +1136,8 @@ struct AppStrings {
                 backTapDescription: "iOS no permite que Pocket Leak detecte Back Tap directamente. Crea un Shortcut con Abrir URLs, apunta a pocketleak://quick-add y asígnalo a Back Tap.",
                 copyQuickAddURL: "Copiar pocketleak://quick-add",
                 copyPrefillURLExample: "Copiar ejemplo de URL prellenada",
+                openShortcutsGuide: "Abrir guía de Shortcuts",
+                testQuickAddLink: "Probar enlace de Quick Add",
                 openQuickAddRoute: "Abrir ruta de Captura",
                 openQuickAdd: "Abrir Captura",
                 openHistoryExports: "Abrir exportaciones",
@@ -844,6 +1156,8 @@ struct AppStrings {
                 language: "Idioma",
                 resetLocalData: "Borrar datos locales",
                 backTapQuickAdd: "Quick Add con Back Tap",
+                shortcutsGuideTitle: "Guía de Shortcuts",
+                shortcutsGuideSubtitle: "Usa un Shortcut manual y Back Tap para abrir Quick Add rápido.",
                 backTapStepOpenShortcuts: "1. Abre la app Atajos.",
                 backTapStepCreateShortcut: "2. Crea un nuevo atajo.",
                 backTapStepAddOpenURLs: "3. Agrega la acción Abrir URLs.",
@@ -865,6 +1179,35 @@ struct AppStrings {
                 historyNoResultsTitle: "Sin resultados",
                 historyNoResultsMessage: "Prueba otro filtro o restablécelo.",
                 historyNoResultsAction: "Restablecer filtros",
+                historySearchPlaceholder: "Buscar comercio, nota, categoría o fuente",
+                historyFiltersButton: "Filtros",
+                historyClearFilters: "Borrar filtros",
+                historyFilteredTotalTitle: "Total filtrado",
+                historyFilteredCountTitle: "Cantidad filtrada",
+                historyFilteredResultsSubtitle: "Resultados filtrados",
+                historyAllExpensesSubtitle: "Todos los gastos guardados",
+                historySortTitle: "Ordenar por",
+                historySortNewest: "Más recientes",
+                historySortHighest: "Monto más alto",
+                historySortLowest: "Monto más bajo",
+                historySortCategory: "Categoría",
+                historyFilterSheetTitle: "Filtros del historial",
+                historyFilterSheetSubtitle: "Reduce el historial con búsqueda, montos, categorías y rangos de fecha.",
+                historyFilterDateTitle: "Rango de fechas",
+                historyFilterCategoriesTitle: "Categorías",
+                historyFilterMerchantTitle: "Comerciante",
+                historyFilterSourceTitle: "Fuente",
+                historyFilterAmountRangeTitle: "Rango de monto",
+                historyFilterMinAmountPlaceholder: "Mín",
+                historyFilterMaxAmountPlaceholder: "Máx",
+                historyFilterApplyButton: "Aplicar filtros",
+                historyFilterResetButton: "Restablecer",
+                historyFilterAllCategories: "Todas las categorías",
+                historyFilterAllSources: "Todas las fuentes",
+                historyFilterAllDates: "Todas las fechas",
+                historyFilterToday: "Hoy",
+                historyFilterWeek: "Semana",
+                historyFilterMonth: "Mes",
                 done: "Listo",
                 amountTitle: "Monto",
                 amountPlaceholder: "0.00",
@@ -896,11 +1239,23 @@ struct AppStrings {
                 ready: "Listo",
                 needsAttention: "Requiere atención",
                 missingAmountParseError: "No encontré un monto. Pega el total del cargo e inténtalo de nuevo.",
+                dashboardOverviewSection: "Resumen",
+                dashboardBreakdownSection: "Desglose de gasto",
+                dashboardBreakdownSubtitle: "Ve a dónde va el mes de un vistazo.",
+                dashboardTrendsSection: "Tendencias",
+                dashboardTrendsSubtitle: "Una vista rápida de los últimos 14 días.",
+                dashboardSignalsSection: "Señales",
+                dashboardRecentActivitySection: "Actividad reciente",
                 dashboardQuickSnapshotTitle: "Resumen rápido",
                 dashboardCategoryDistributionTitle: "Distribución por categoría",
                 dashboardRecentTrendTitle: "Tendencia reciente",
                 dashboardSignalTitle: "Señal de hoy",
                 dashboardSignalSubtitle: "Una lectura breve y local de tu patrón de gasto.",
+                dashboardRecurringSignalTitle: "Próximos recurrentes",
+                dashboardSmartInsightTitle: "Insight inteligente",
+                dashboardExportReportTitle: "Exportar reporte",
+                dashboardQuickCaptureShortcutTitle: "Atajo de captura rápida",
+                dashboardQuickCaptureShortcutMessage: "Usa Back Tap para abrir Quick Add más rápido.",
                 dashboardGoalsTitle: "Resumen de metas",
                 dashboardGoalsSubtitle: "Mantén visibles ambos ritmos de presupuesto sin salir del panel.",
                 dashboardGoalsCtaTitle: "Agregar una meta",
@@ -908,6 +1263,9 @@ struct AppStrings {
                 dashboardGoalsCtaButton: "Ir a Metas",
                 dashboardNoCategoryDistribution: "Agrega algunos gastos para ver la categoría principal.",
                 dashboardNoRecentTrend: "Agrega gastos para ver los últimos 14 días.",
+                noCategoryBudgetsMessage: "Aún no hay presupuestos por categoría.",
+                noRecurringExpensesMessage: "Aún no hay gastos recurrentes próximos.",
+                noSmartInsightMessage: "Agrega algunas fugas para desbloquear insights.",
                 historyExportsTitle: "Exportaciones",
                 historyFilterTitle: "Historial",
                 historyCategoryTitle: "Categoría",
@@ -1066,7 +1424,70 @@ struct AppStrings {
                 dashboardGoalAtRiskTitleTemplate: "%@ en riesgo",
                 dashboardGoalAtRiskSubtitleTemplate: "Te quedan %@/día.",
                 goalsRemoveConfirmationTitle: "¿Eliminar meta de gasto?",
-                goalsRemoveConfirmationMessage: "Esto elimina la meta local de este dispositivo."
+                goalsRemoveConfirmationMessage: "Esto elimina la meta local de este dispositivo.",
+                categoryBudgetsTitle: "Presupuestos por categoría",
+                categoryBudgetsSubtitle: "Define un tope semanal o mensual para Coffee, Food, Transport y más.",
+                categoryBudgetsEmptyTitle: "Aún no hay presupuestos por categoría",
+                categoryBudgetsEmptyMessage: "Agrega un presupuesto por categoría para mantener visible un bucket de gasto.",
+                categoryBudgetsCreateButton: "Crear presupuesto",
+                categoryBudgetsSaveButton: "Guardar presupuesto",
+                categoryBudgetsEditorTitle: "Editor de presupuesto",
+                categoryBudgetsCategoryLabel: "Categoría",
+                categoryBudgetsCadenceLabel: "Ritmo",
+                categoryBudgetsWeeklyLabel: "semanal",
+                categoryBudgetsMonthlyLabel: "mensual",
+                categoryBudgetsLimitLabel: "Límite",
+                categoryBudgetsSpentLabel: "Gastado",
+                categoryBudgetsRemainingLabel: "Restante",
+                categoryBudgetsPercentLabel: "% usado",
+                categoryBudgetsEditButton: "Editar",
+                categoryBudgetsRemoveButton: "Eliminar",
+                categoryBudgetsStatusSafe: "Seguro",
+                categoryBudgetsStatusWatch: "Vigilar",
+                categoryBudgetsStatusOver: "Excedido",
+                categoryBudgetsInvalidLimitError: "Ingresa un límite de presupuesto válido.",
+                categoryBudgetsRemoveConfirmationTitle: "¿Eliminar presupuesto por categoría?",
+                categoryBudgetsRemoveConfirmationMessage: "Esto elimina el presupuesto local de esta categoría en este dispositivo.",
+                insightsCategoryBudgetTitle: "Insight de presupuesto",
+                insightsCategoryBudgetSubtitle: "Una señal local del presupuesto de categoría que necesita atención.",
+                categoryBudgetInsightTemplate: "%@ está al %@ de su presupuesto de %@.",
+                recurringExpensesTitle: "Gastos recurrentes",
+                recurringExpensesSubtitle: "Sigue fugas fijas como Netflix, Spotify, renta y transporte.",
+                recurringExpensesEmptyTitle: "Aún no hay gastos recurrentes",
+                recurringExpensesEmptyMessage: "Agrega un gasto recurrente para ver las fugas antes de que ocurran.",
+                recurringExpensesCreateButton: "Agregar gasto recurrente",
+                recurringExpensesEditButton: "Editar",
+                recurringExpensesSaveButton: "Guardar",
+                recurringExpensesDeleteButton: "Eliminar",
+                recurringExpensesMarkPaidButton: "Marcar como pagado",
+                recurringExpensesMerchantLabel: "Comercio",
+                recurringExpensesAmountLabel: "Monto",
+                recurringExpensesCategoryLabel: "Categoría",
+                recurringExpensesCadenceLabel: "Ritmo",
+                recurringExpensesNextDueLabel: "Siguiente cobro",
+                recurringExpensesNextDueTemplate: "Siguiente cobro %@",
+                recurringExpensesUpcomingTitle: "Próximas fugas recurrentes",
+                recurringExpensesUpcomingSubtitle: "Los cobros fijos programados localmente.",
+                recurringExpensesNoUpcomingMessage: "No hay fugas recurrentes próximas.",
+                recurringExpensesUpcomingSummaryTemplate: "%@ • %@ • vence %@",
+                recurringExpensesEditorTitle: "Editor de gasto recurrente",
+                recurringExpensesActiveLabel: "Activo",
+                recurringExpensesInactiveLabel: "Inactivo",
+                recurringExpensesInvalidAmountError: "Ingresa un monto recurrente válido.",
+                recurringExpensesRemoveConfirmationTitle: "¿Eliminar gasto recurrente?",
+                recurringExpensesRemoveConfirmationMessage: "Esto elimina el gasto recurrente local de este dispositivo.",
+                recurringCadenceDaily: "Diario",
+                recurringCadenceWeekly: "Semanal",
+                recurringCadenceMonthly: "Mensual",
+                recurringCadenceYearly: "Anual",
+                dashboardRecurringLeakTitle: "Fuga recurrente",
+                dashboardRecurringLeakSubtitle: "El próximo cobro fijo que vence pronto.",
+                insightsRecurringLeaksTitle: "Próximas fugas recurrentes",
+                insightsRecurringLeaksSubtitle: "Cobros fijos programados localmente antes de que lleguen al panel.",
+                expenseSourceManual: "Manual",
+                expenseSourceParsedText: "Texto analizado",
+                expenseSourceImported: "Importado",
+                expenseSourceDemo: "Demo"
             )
         }
     }
