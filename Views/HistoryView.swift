@@ -5,9 +5,13 @@ struct HistoryView: View {
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
     @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var timeFilter: HistoryTimeFilter = .all
-    @State private var selectedCategoryID: UUID? = nil
+
+    @State private var historyFilter = ExpenseFilter()
+    @State private var draftFilter = ExpenseFilter()
+    @State private var showFilterSheet = false
     @State private var didAnimateIn = false
+    @State private var csvExport: ExpenseCSVExport?
+    @State private var jsonExport: ExpenseJSONExport?
     @State private var pdfExports: [ExpensePDFReportType: ExpensePDFExport] = [:]
     @State private var pdfExportErrorMessage: String?
     private let pdfExportService = ExpensePDFExportService()
@@ -17,45 +21,53 @@ struct HistoryView: View {
             VStack(alignment: .leading, spacing: 12) {
                 ScreenHeaderView(
                     title: strings.historyHeader,
-                    subtitle: "Review saved leaks by time range and category.",
+                    subtitle: strings.historyHeaderSubtitle,
                     showsSettingsButton: true
                 )
+
+                searchAndFilterCard
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
+
+                filteredSummaryCard
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
 
                 exportCard
                     .opacity(didAnimateIn ? 1 : 0)
                     .offset(y: didAnimateIn ? 0 : 8)
 
-                VStack(spacing: 12) {
-                    filterCard
-                        .opacity(didAnimateIn ? 1 : 0)
-                        .offset(y: didAnimateIn ? 0 : 8)
-
-                    if viewModel.expenses.isEmpty {
-                        EmptyStateView(
-                            title: strings.historyEmptyStateTitle,
-                            message: strings.historyEmptyStateMessage,
-                            actionTitle: strings.historyEmptyStateAction,
-                            action: {
-                                guard let url = URL(string: "pocketleak://quick-add") else { return }
-                                openURL(url)
-                            }
-                        )
-                    } else if filteredExpenses.isEmpty {
-                        EmptyStateView(
-                            title: strings.historyNoResultsTitle,
-                            message: strings.historyNoResultsMessage,
-                            actionTitle: strings.historyNoResultsAction,
-                            action: {
-                                resetFilters()
-                            }
-                        )
-                    } else {
-                        LazyVStack(spacing: 12) {
-                            ForEach(filteredExpenses) { expense in
-                                HistoryRow(expense: expense)
-                            }
+                if viewModel.expenses.isEmpty {
+                    EmptyStateView(
+                        title: strings.historyEmptyStateTitle,
+                        message: strings.historyEmptyStateMessage,
+                        actionTitle: strings.historyEmptyStateAction,
+                        action: {
+                            guard let url = URL(string: "pocketleak://quick-add") else { return }
+                            openURL(url)
+                        }
+                    )
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
+                } else if filteredExpenses.isEmpty {
+                    EmptyStateView(
+                        title: strings.historyNoResultsTitle,
+                        message: strings.historyNoResultsMessage,
+                        actionTitle: strings.historyNoResultsAction,
+                        action: {
+                            resetFilters()
+                        }
+                    )
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
+                } else {
+                    LazyVStack(spacing: 12) {
+                        ForEach(filteredExpenses) { expense in
+                            HistoryRow(expense: expense)
                         }
                     }
+                    .opacity(didAnimateIn ? 1 : 0)
+                    .offset(y: didAnimateIn ? 0 : 8)
                 }
             }
             .padding(.horizontal, 16)
@@ -63,6 +75,26 @@ struct HistoryView: View {
             .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .sheet(isPresented: $showFilterSheet) {
+            HistoryFilterSheetView(
+                filter: $draftFilter,
+                availableMerchants: viewModel.availableMerchants,
+                categories: viewModel.categories,
+                onApply: {
+                    historyFilter = draftFilter
+                    showFilterSheet = false
+                },
+                onReset: {
+                    draftFilter = ExpenseFilter()
+                    historyFilter = draftFilter
+                    showFilterSheet = false
+                },
+                onCancel: {
+                    showFilterSheet = false
+                }
+            )
+            .presentationDetents([.medium, .large])
+        }
         .onAppear {
             guard !didAnimateIn else { return }
             if reduceMotion {
@@ -74,97 +106,168 @@ struct HistoryView: View {
             }
         }
         .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard), value: didAnimateIn)
-        .task(id: viewModel.pdfExportSnapshotSignature) {
-            await preparePDFExports()
+        .task(id: exportSignature) {
+            await prepareExports()
         }
     }
 
     private var filteredExpenses: [Expense] {
-        let category = selectedCategoryID.flatMap { id in
-            viewModel.categories.first(where: { $0.id == id })
-        }
-        return viewModel.expenses(matching: category, timeFilter: timeFilter)
+        viewModel.filteredExpenses(using: historyFilter)
     }
 
-    private var selectedCategoryLabel: String {
-        guard let selectedCategoryID,
-              let category = viewModel.categories.first(where: { $0.id == selectedCategoryID }) else {
-            return "All Categories"
-        }
-        return category.displayName
+    private var filteredTotal: Double {
+        viewModel.filteredExpenseTotal(using: historyFilter)
     }
 
-    private var filterCard: some View {
+    private var filteredCount: Int {
+        viewModel.filteredExpenseCount(using: historyFilter)
+    }
+
+    private var exportExpenses: [Expense] {
+        historyFilter.isActive ? filteredExpenses : viewModel.expenses
+    }
+
+    private var exportSignature: String {
+        let expenseSignature = exportExpenses
+            .map { "\($0.id.uuidString):\($0.amount):\($0.date.timeIntervalSince1970):\($0.category.id.uuidString):\($0.merchant):\($0.note):\($0.source.rawValue)" }
+            .joined(separator: ",")
+
+        return [historyFilter.signature, String(exportExpenses.count), expenseSignature].joined(separator: "|")
+    }
+
+    private var searchAndFilterCard: some View {
         GlassCardView {
-            VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(alignment: .firstTextBaseline) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("History")
-                                .font(.headline)
-                                .foregroundStyle(AppTheme.primaryText)
-                            Text("Filter saved expenses by time range and category.")
-                                .font(.subheadline)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(AppTheme.secondaryText)
+
+                    TextField(
+                        strings.historySearchPlaceholder,
+                        text: $historyFilter.searchText
+                    )
+                    .textFieldStyle(.plain)
+                    .foregroundColor(AppTheme.primaryText)
+                    .tint(AppTheme.primaryText)
+                    .accentColor(AppTheme.primaryText)
+
+                    if !historyFilter.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Button {
+                            historyFilter.searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
                                 .foregroundStyle(AppTheme.secondaryText)
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(strings.historyClearFilters)
                     }
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(AppTheme.inputFill)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(AppTheme.inputBorder, lineWidth: 1)
+                        )
+                )
 
-                Picker("Time range", selection: $timeFilter) {
-                    ForEach(HistoryTimeFilter.allCases) { filter in
-                        Text(filter.title).tag(filter)
-                    }
-                }
-                .pickerStyle(.segmented)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        filterChip(title: dateRangeLabel(for: historyFilter.dateRange), systemImage: "calendar")
 
-                Menu {
-                    Button("All Categories") {
-                        selectedCategoryID = nil
-                    }
-
-                    Divider()
-
-                    ForEach(viewModel.categories) { category in
-                        Button(category.displayName) {
-                            selectedCategoryID = category.id
-                        }
-                    }
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Category")
-                                .font(.caption)
-                                .foregroundStyle(AppTheme.tertiaryText)
-                            Text(selectedCategoryLabel)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(AppTheme.primaryText)
+                        if !historyFilter.categories.isEmpty {
+                            filterChip(title: "\(historyFilter.categories.count) \(strings.historyFilterCategoriesTitle)", systemImage: "tag")
                         }
 
-                        Spacer()
+                        if !historyFilter.merchant.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            filterChip(title: historyFilter.merchant, systemImage: "building.2")
+                        }
 
-                        Image(systemName: "chevron.down")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(AppTheme.secondaryText)
+                        if let source = historyFilter.source {
+                            filterChip(title: source.displayName, systemImage: "line.3.horizontal.decrease.circle")
+                        }
+
+                        if let minAmount = historyFilter.minAmount {
+                            filterChip(title: "Min \(viewModel.displayCurrency(minAmount))", systemImage: "arrow.up.right")
+                        }
+
+                        if let maxAmount = historyFilter.maxAmount {
+                            filterChip(title: "Max \(viewModel.displayCurrency(maxAmount))", systemImage: "arrow.down.left")
+                        }
+
+                        if historyFilter.sortOrder != .newest {
+                            filterChip(title: historyFilter.sortOrder.title, systemImage: "arrow.up.arrow.down")
+                        }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(AppTheme.cardFill)
-                    )
                 }
-                .buttonStyle(.plain)
 
-                HStack {
-                    Text("\(filteredExpenses.count) expense\(filteredExpenses.count == 1 ? "" : "s")")
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.secondaryText)
-                    Spacer()
-                    Button("Reset") {
+                HStack(spacing: 10) {
+                    Button {
+                        draftFilter = historyFilter
+                        showFilterSheet = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "slider.horizontal.3")
+                            Text(strings.historyFiltersButton)
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.background)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 44)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(AppTheme.primaryText)
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
                         resetFilters()
+                    } label: {
+                        Text(strings.historyClearFilters)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AppTheme.primaryText)
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 44)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(AppTheme.cardFill)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .stroke(AppTheme.cardBorder, lineWidth: 1)
+                                    )
+                            )
                     }
-                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.plain)
+                    .disabled(!historyFilter.isActive)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var filteredSummaryCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(strings.historyFilteredTotalTitle)
+                    .font(.headline)
                     .foregroundStyle(AppTheme.primaryText)
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    MetricCardView(
+                        title: strings.historyFilteredCountTitle,
+                        value: "\(filteredCount)",
+                        subtitle: historyFilter.isActive ? strings.historyFilteredResultsSubtitle : strings.historyAllExpensesSubtitle
+                    )
+                    MetricCardView(
+                        title: strings.pdfTotalSpent,
+                        value: viewModel.displayCurrency(filteredTotal),
+                        subtitle: historyFilter.isActive ? strings.historyFilteredResultsSubtitle : strings.historyAllExpensesSubtitle
+                    )
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -184,26 +287,40 @@ struct HistoryView: View {
                 }
 
                 VStack(spacing: 10) {
-                    ShareLink(item: viewModel.csvExport.fileURL) {
-                        exportButtonLabel(title: strings.exportCSV, systemImage: "doc.text")
+                    if let csvExport {
+                        ShareLink(item: csvExport.fileURL) {
+                            exportButtonLabel(title: strings.exportCSV, systemImage: "doc.text")
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Button {
+                            // Intentionally left empty. The CSV is prepared in the background.
+                        } label: {
+                            exportButtonLabel(title: strings.exportCSV, systemImage: "doc.text")
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(true)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(strings.exportCSV)
-                    .accessibilityHint(strings.exportDescription)
 
-                    ShareLink(item: viewModel.jsonExport.fileURL) {
-                        exportButtonLabel(title: strings.exportJSON, systemImage: "curlybraces")
+                    if let jsonExport {
+                        ShareLink(item: jsonExport.fileURL) {
+                            exportButtonLabel(title: strings.exportJSON, systemImage: "curlybraces")
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Button {
+                            // Intentionally left empty. The JSON is prepared in the background.
+                        } label: {
+                            exportButtonLabel(title: strings.exportJSON, systemImage: "curlybraces")
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(true)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(strings.exportJSON)
-                    .accessibilityHint(strings.exportDescription)
 
                     ShareLink(item: viewModel.monthlySummaryReportText) {
                         exportButtonLabel(title: strings.exportMonthlySummary, systemImage: "text.alignleft")
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(strings.exportMonthlySummary)
-                    .accessibilityHint(strings.exportDescription)
 
                     Text(strings.exportPDF)
                         .font(.caption.weight(.semibold))
@@ -240,8 +357,27 @@ struct HistoryView: View {
     }
 
     private func resetFilters() {
-        timeFilter = .all
-        selectedCategoryID = nil
+        historyFilter = ExpenseFilter()
+        draftFilter = ExpenseFilter()
+    }
+
+    private func filterChip(title: String, systemImage: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+            Text(title)
+        }
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(AppTheme.primaryText)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            Capsule(style: .continuous)
+                .fill(AppTheme.chipFill)
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(AppTheme.cardBorder, lineWidth: 1)
+                )
+        )
     }
 
     @ViewBuilder
@@ -267,19 +403,25 @@ struct HistoryView: View {
     }
 
     @MainActor
-    private func preparePDFExports() async {
-        let monthlyReport = viewModel.pdfReportData(for: .monthly)
-        let weeklyReport = viewModel.pdfReportData(for: .weekly)
-        let allDataReport = viewModel.pdfReportData(for: .allData)
+    private func prepareExports() async {
+        let exportExpenses = exportExpenses
+        let csv = viewModel.csvExport(for: exportExpenses)
+        let json = viewModel.jsonExport(for: exportExpenses)
+        let weeklyReport = viewModel.pdfReportData(for: .weekly, expenses: exportExpenses)
+        let monthlyReport = viewModel.pdfReportData(for: .monthly, expenses: exportExpenses)
+        let allDataReport = viewModel.pdfReportData(for: .allData, expenses: exportExpenses)
 
-        let monthlyExport = pdfExportService.export(report: monthlyReport)
         let weeklyExport = pdfExportService.export(report: weeklyReport)
+        let monthlyExport = pdfExportService.export(report: monthlyReport)
         let allDataExport = pdfExportService.export(report: allDataReport)
 
         var exports: [ExpensePDFReportType: ExpensePDFExport] = [:]
         if let weeklyExport { exports[.weekly] = weeklyExport }
         if let monthlyExport { exports[.monthly] = monthlyExport }
         if let allDataExport { exports[.allData] = allDataExport }
+
+        self.csvExport = csv
+        self.jsonExport = json
         pdfExports = exports
 
         if monthlyExport == nil || weeklyExport == nil || allDataExport == nil {
@@ -287,6 +429,385 @@ struct HistoryView: View {
         } else {
             pdfExportErrorMessage = nil
         }
+    }
+
+    private func dateRangeLabel(for range: ExpenseDateRange) -> String {
+        if range.isAll {
+            return strings.historyFilterAllDates
+        }
+
+        if let startDate = range.startDate, let endDate = range.endDate {
+            let formatter = DateFormatter()
+            formatter.locale = Locale.current
+            formatter.dateStyle = .short
+
+            return "\(formatter.string(from: startDate)) - \(formatter.string(from: endDate))"
+        }
+
+        return strings.historyFilterAllDates
+    }
+}
+
+private struct HistoryFilterSheetView: View {
+    @Environment(\.pocketLeakStrings) private var strings: AppStrings
+    @Environment(\.appTextSize) private var appTextSize: AppTextSize
+
+    @Binding var filter: ExpenseFilter
+    let availableMerchants: [String]
+    let categories: [ExpenseCategory]
+    let onApply: () -> Void
+    let onReset: () -> Void
+    let onCancel: () -> Void
+
+    @State private var merchantSearchText: String = ""
+    @FocusState private var focusedField: Field?
+
+    private enum Field {
+        case merchant
+        case minAmount
+        case maxAmount
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    headerCard
+                    dateRangeCard
+                    categoryCard
+                    merchantCard
+                    sourceCard
+                    amountCard
+                    sortCard
+                }
+                .padding(16)
+            }
+            .background(AppTheme.background.ignoresSafeArea())
+            .navigationTitle(strings.historyFilterSheetTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(strings.cancel) {
+                        onCancel()
+                    }
+                    .foregroundStyle(AppTheme.primaryText)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(strings.historyFilterResetButton) {
+                        onReset()
+                    }
+                    .foregroundStyle(AppTheme.primaryText)
+                }
+            }
+            .onAppear {
+                merchantSearchText = filter.merchant
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(strings.done) {
+                        focusedField = nil
+                    }
+                }
+            }
+        }
+    }
+
+    private var headerCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(strings.historyFilterSheetTitle)
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.primaryText)
+                Text(strings.historyFilterSheetSubtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.secondaryText)
+                HStack {
+                    Button(strings.historyFilterApplyButton) {
+                        filter.merchant = merchantSearchText
+                        onApply()
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(AppTheme.background)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppTheme.primaryText)
+                    )
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var dateRangeCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(strings.historyFilterDateTitle)
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.primaryText)
+
+                HStack(spacing: 8) {
+                    filterToggle(strings.historyFilterAllDates, isSelected: filter.dateRange.isAll) {
+                        filter.dateRange = .all
+                    }
+                    filterToggle(strings.historyFilterToday, isSelected: !filter.dateRange.isAll && filter.dateRange.signature == ExpenseDateRange.today().signature) {
+                        filter.dateRange = .today()
+                    }
+                    filterToggle(strings.historyFilterWeek, isSelected: !filter.dateRange.isAll && filter.dateRange.signature == ExpenseDateRange.week().signature) {
+                        filter.dateRange = .week()
+                    }
+                    filterToggle(strings.historyFilterMonth, isSelected: !filter.dateRange.isAll && filter.dateRange.signature == ExpenseDateRange.month().signature) {
+                        filter.dateRange = .month()
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var categoryCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(strings.historyFilterCategoriesTitle)
+                        .font(.headline)
+                        .foregroundStyle(AppTheme.primaryText)
+                    Spacer()
+                    Button(strings.historyFilterAllCategories) {
+                        filter.categories.removeAll()
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AppTheme.primaryText)
+                }
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 108), spacing: 10)], spacing: 8) {
+                    ForEach(categories) { category in
+                        CategoryPillView(category: category, isSelected: filter.categories.contains(category))
+                            .onTapGesture {
+                                if filter.categories.contains(category) {
+                                    filter.categories.remove(category)
+                                } else {
+                                    filter.categories.insert(category)
+                                }
+                            }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var merchantCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(strings.historyFilterMerchantTitle)
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.primaryText)
+
+                TextField(
+                    strings.historyFilterMerchantTitle,
+                    text: $merchantSearchText
+                )
+                .textFieldStyle(.plain)
+                .focused($focusedField, equals: .merchant)
+                .foregroundColor(AppTheme.primaryText)
+                .tint(AppTheme.primaryText)
+                .accentColor(AppTheme.primaryText)
+                .padding(.vertical, 14)
+                .padding(.horizontal, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(AppTheme.inputFill)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(AppTheme.inputBorder, lineWidth: 1)
+                        )
+                )
+
+                if !availableMerchants.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(availableMerchants.prefix(6), id: \.self) { merchant in
+                                Button {
+                                    merchantSearchText = merchant
+                                } label: {
+                                    Text(merchant)
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(AppTheme.primaryText)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            Capsule(style: .continuous)
+                                                .fill(AppTheme.chipFill)
+                                                .overlay(
+                                                    Capsule(style: .continuous)
+                                                        .stroke(AppTheme.cardBorder, lineWidth: 1)
+                                                )
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var sourceCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(strings.historyFilterSourceTitle)
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.primaryText)
+
+                Menu {
+                    Button(strings.historyFilterAllSources) {
+                        filter.source = nil
+                    }
+
+                    Divider()
+
+                    ForEach(ExpenseSource.allCases) { source in
+                        Button(source.displayName) {
+                            filter.source = source
+                        }
+                    }
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(strings.historyFilterSourceTitle)
+                                .font(.caption)
+                                .foregroundStyle(AppTheme.tertiaryText)
+                            Text(filter.source?.displayName ?? strings.historyFilterAllSources)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AppTheme.primaryText)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(AppTheme.secondaryText)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppTheme.cardFill)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var amountCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(strings.historyFilterAmountRangeTitle)
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.primaryText)
+
+                HStack(spacing: 10) {
+                    amountTextField(
+                        placeholder: strings.historyFilterMinAmountPlaceholder,
+                        text: Binding(
+                            get: { stringAmount(filter.minAmount) },
+                            set: { filter.minAmount = doubleValue($0) }
+                        ),
+                        field: .minAmount
+                    )
+
+                    amountTextField(
+                        placeholder: strings.historyFilterMaxAmountPlaceholder,
+                        text: Binding(
+                            get: { stringAmount(filter.maxAmount) },
+                            set: { filter.maxAmount = doubleValue($0) }
+                        ),
+                        field: .maxAmount
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var sortCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(strings.historySortTitle)
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.primaryText)
+
+                Picker(strings.historySortTitle, selection: $filter.sortOrder) {
+                    ForEach(ExpenseFilterSortOrder.allCases) { sortOrder in
+                        Text(sortOrder.title).tag(sortOrder)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .tint(AppTheme.primaryText)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func amountTextField(placeholder: String, text: Binding<String>, field: Field) -> some View {
+        TextField(placeholder, text: text)
+            .keyboardType(.decimalPad)
+            .textFieldStyle(.plain)
+            .focused($focusedField, equals: field)
+            .foregroundColor(AppTheme.primaryText)
+            .tint(AppTheme.primaryText)
+            .accentColor(AppTheme.primaryText)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(AppTheme.inputFill)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(AppTheme.inputBorder, lineWidth: 1)
+                    )
+            )
+    }
+
+    private func filterToggle(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AppTheme.primaryText)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(isSelected ? AppTheme.chipSelectedFill : AppTheme.chipFill)
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(AppTheme.cardBorder, lineWidth: 1)
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func stringAmount(_ value: Double?) -> String {
+        guard let value else { return "" }
+        return String(format: "%.2f", value)
+    }
+
+    private func doubleValue(_ text: String) -> Double? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let normalized = trimmed.replacingOccurrences(of: ",", with: ".")
+        guard let value = Double(normalized), value.isFinite else { return nil }
+        return value
     }
 }
 
@@ -357,6 +878,6 @@ private struct HistoryRow: View {
     }
 
     private func formattedAmount(_ amount: Double) -> String {
-        String(format: "$%.2f", amount)
+        viewModel.displayCurrency(amount)
     }
 }

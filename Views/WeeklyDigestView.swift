@@ -5,6 +5,7 @@ struct WeeklyDigestView: View {
     let strings: AppStrings
     let shareURL: URL?
 
+    @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -51,7 +52,7 @@ struct WeeklyDigestView: View {
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(AppTheme.secondaryText)
 
-                                Text(currency(digest.totalSpend))
+                                Text(viewModel.displayCurrency(digest.totalSpend))
                                     .font(.system(size: 44, weight: .bold, design: .rounded))
                                     .foregroundStyle(AppTheme.primaryText)
                                     .lineLimit(1)
@@ -82,7 +83,7 @@ struct WeeklyDigestView: View {
 
                             metricTile(
                                 label: strings.weeklyDigestAverageDailyLabel,
-                                value: currency(digest.averageDailySpend),
+                                value: viewModel.displayCurrency(digest.averageDailySpend),
                                 tint: AppTheme.primaryText,
                                 symbol: "calendar"
                             )
@@ -145,9 +146,9 @@ struct WeeklyDigestView: View {
         guard let expense = digest.largestExpense else { return "—" }
         let merchant = expense.merchant.trimmingCharacters(in: .whitespacesAndNewlines)
         if merchant.isEmpty {
-            return currency(expense.amount)
+            return viewModel.displayCurrency(expense.amount)
         }
-        return "\(currency(expense.amount)) · \(merchant)"
+        return "\(viewModel.displayCurrency(expense.amount)) · \(merchant)"
     }
 
     private var goalStatusText: String {
@@ -310,7 +311,7 @@ struct WeeklyDigestView: View {
         )
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(insight.title)
-        .accessibilityValue(insight.message)
+        .accessibilityValue(viewModel.privacyAwareText(insight.message))
     }
 
     private func comparisonSummaryText(for comparison: SpendingComparison) -> String {
@@ -321,9 +322,9 @@ struct WeeklyDigestView: View {
         let directionText: String
         switch comparison.direction {
         case .up:
-            directionText = String(format: strings.trendHigherMessageTemplate, currency(abs(comparison.deltaAmount)))
+            directionText = String(format: strings.trendHigherMessageTemplate, viewModel.displayCurrency(abs(comparison.deltaAmount)))
         case .down:
-            directionText = String(format: strings.trendLowerMessageTemplate, currency(abs(comparison.deltaAmount)))
+            directionText = String(format: strings.trendLowerMessageTemplate, viewModel.displayCurrency(abs(comparison.deltaAmount)))
         case .flat:
             directionText = strings.trendFlatMessage
         }
@@ -337,8 +338,8 @@ struct WeeklyDigestView: View {
         }
 
         return [
-            "\(strings.trendCurrentLabel): \(currency(comparison.currentAmount))",
-            "\(strings.trendPreviousLabel): \(currency(comparison.previousAmount))"
+            "\(strings.trendCurrentLabel): \(viewModel.displayCurrency(comparison.currentAmount))",
+            "\(strings.trendPreviousLabel): \(viewModel.displayCurrency(comparison.previousAmount))"
         ]
         .joined(separator: " • ")
     }
@@ -356,7 +357,4 @@ struct WeeklyDigestView: View {
         }
     }
 
-    private func currency(_ amount: Double) -> String {
-        String(format: "$%.2f", amount)
-    }
 }

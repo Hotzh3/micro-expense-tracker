@@ -5,6 +5,7 @@ struct SpendingComparisonCardView: View {
     let strings: AppStrings
     var compact: Bool = false
 
+    @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
 
     var body: some View {
@@ -42,7 +43,7 @@ struct SpendingComparisonCardView: View {
                                 )
                         }
 
-                        Text(interpretation)
+                        Text(viewModel.privacyAwareText(interpretation))
                             .font(.system(size: compact ? 13 * scale : 14 * scale))
                             .foregroundStyle(AppTheme.secondaryText)
                             .lineLimit(compact ? 3 : 4)
@@ -81,11 +82,11 @@ struct SpendingComparisonCardView: View {
     }
 
     private func amountBlock(title: String, amount: Double, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(AppTheme.tertiaryText)
-            Text(currency(amount))
+            Text(viewModel.displayCurrency(amount))
                 .font(.system(size: 16 * appTextSize.scale, weight: .semibold))
                 .foregroundStyle(tint)
                 .lineLimit(1)
@@ -101,9 +102,9 @@ struct SpendingComparisonCardView: View {
 
         switch comparison.direction {
         case .up:
-            return String(format: strings.trendHigherMessageTemplate, currency(abs(comparison.deltaAmount)))
+            return String(format: strings.trendHigherMessageTemplate, viewModel.displayCurrency(abs(comparison.deltaAmount)))
         case .down:
-            return String(format: strings.trendLowerMessageTemplate, currency(abs(comparison.deltaAmount)))
+            return String(format: strings.trendLowerMessageTemplate, viewModel.displayCurrency(abs(comparison.deltaAmount)))
         case .flat:
             return strings.trendFlatMessage
         }
@@ -125,23 +126,19 @@ struct SpendingComparisonCardView: View {
     private var accessibilityValue: String {
         if comparison.hasPreviousData {
             return [
-                strings.trendCurrentLabel + ": " + currency(comparison.currentAmount),
-                strings.trendPreviousLabel + ": " + currency(comparison.previousAmount),
+                strings.trendCurrentLabel + ": " + viewModel.displayCurrency(comparison.currentAmount),
+                strings.trendPreviousLabel + ": " + viewModel.displayCurrency(comparison.previousAmount),
                 String(format: "%.0f%%", comparison.percentChange),
-                interpretation
+                viewModel.privacyAwareText(interpretation)
             ]
             .joined(separator: ". ")
         }
 
         return [
-            strings.trendCurrentLabel + ": " + currency(comparison.currentAmount),
-            strings.trendPreviousLabel + ": " + currency(comparison.previousAmount),
-            interpretation
+            strings.trendCurrentLabel + ": " + viewModel.displayCurrency(comparison.currentAmount),
+            strings.trendPreviousLabel + ": " + viewModel.displayCurrency(comparison.previousAmount),
+            viewModel.privacyAwareText(interpretation)
         ]
         .joined(separator: ". ")
-    }
-
-    private func currency(_ amount: Double) -> String {
-        String(format: "$%.2f", amount)
     }
 }

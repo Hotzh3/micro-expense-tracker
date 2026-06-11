@@ -42,18 +42,22 @@ final class ShareViewController: UIViewController {
 
         primaryButton.setTitle(strings.openPocketLeak, for: .normal)
         primaryButton.titleLabel?.font = .preferredFont(forTextStyle: .headline)
-        primaryButton.backgroundColor = .label
-        primaryButton.setTitleColor(.systemBackground, for: .normal)
-        primaryButton.layer.cornerRadius = 16
-        primaryButton.contentEdgeInsets = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)
+        var primaryConfiguration = UIButton.Configuration.filled()
+        primaryConfiguration.baseBackgroundColor = .label
+        primaryConfiguration.baseForegroundColor = .systemBackground
+        primaryConfiguration.cornerStyle = .medium
+        primaryConfiguration.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)
+        primaryButton.configuration = primaryConfiguration
         primaryButton.addTarget(self, action: #selector(openPocketLeak), for: .touchUpInside)
 
         cancelButton.setTitle(strings.cancel, for: .normal)
         cancelButton.titleLabel?.font = .preferredFont(forTextStyle: .headline)
-        cancelButton.backgroundColor = .secondarySystemBackground
-        cancelButton.setTitleColor(.label, for: .normal)
-        cancelButton.layer.cornerRadius = 16
-        cancelButton.contentEdgeInsets = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)
+        var cancelConfiguration = UIButton.Configuration.filled()
+        cancelConfiguration.baseBackgroundColor = .secondarySystemBackground
+        cancelConfiguration.baseForegroundColor = .label
+        cancelConfiguration.cornerStyle = .medium
+        cancelConfiguration.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)
+        cancelButton.configuration = cancelConfiguration
         cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
 
         let stack = UIStackView(arrangedSubviews: [

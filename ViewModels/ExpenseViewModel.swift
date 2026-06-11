@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 #if canImport(WidgetKit)
@@ -26,6 +27,80 @@ final class ExpenseViewModel: ObservableObject {
         let percentage: Double
 
         var id: UUID { category.id }
+    }
+
+    struct DashboardCategorySummary: Identifiable, Equatable {
+        let key: String
+        let categoryName: String
+        let total: Double
+        let count: Int
+        let percentage: Double
+        let accentColor: Color
+
+        var id: String { key }
+    }
+
+    struct DashboardTrendPoint: Identifiable, Equatable {
+        let index: Int
+        let date: Date
+        let total: Double
+
+        var id: Int { index }
+    }
+
+    struct DashboardTopCategorySignal: Identifiable, Equatable {
+        let key: String
+        let categoryName: String
+        let total: Double
+        let percentage: Double
+        let count: Int
+        let accentColor: Color
+
+        var id: String { key }
+    }
+
+    struct DashboardSignal: Identifiable, Equatable {
+        enum Kind: Equatable {
+            case budget
+            case topCategory
+        }
+
+        let id: String
+        let kind: Kind
+        let title: String
+        let detail: String
+        let accentColor: Color
+    }
+
+    struct DashboardCategoryBudgetSignal: Identifiable, Equatable {
+        let id: String
+        let categoryName: String
+        let cadenceText: String
+        let spentText: String
+        let limitText: String
+        let remainingText: String
+        let percentText: String
+        let progressFraction: Double
+        let statusText: String
+        let accentColor: Color
+    }
+
+    struct DashboardRecurringSignal: Identifiable, Equatable {
+        let id: UUID
+        let merchant: String
+        let amountText: String
+        let categoryName: String
+        let dueDateText: String
+        let cadenceText: String
+        let accentColor: Color
+    }
+
+    struct DashboardSmartInsight: Identifiable, Equatable {
+        let id: String
+        let title: String
+        let message: String
+        let symbolName: String
+        let accentColor: Color
     }
 
     struct CategorySpendPoint: Identifiable, Equatable {
@@ -89,6 +164,33 @@ final class ExpenseViewModel: ObservableObject {
         }
     }
 
+    struct CategoryBudgetOverview: Identifiable, Equatable {
+        let budget: CategoryBudget
+        let spent: Double
+        let remaining: Double
+        let percentUsed: Double
+        let progressFraction: Double
+        let status: CategoryBudgetStatus
+
+        var id: UUID { budget.id }
+
+        var limitText: String {
+            String(format: "$%.2f", budget.limit)
+        }
+
+        var spentText: String {
+            String(format: "$%.2f", spent)
+        }
+
+        var remainingText: String {
+            String(format: "$%.2f", remaining)
+        }
+
+        var percentUsedText: String {
+            String(format: "%.0f%%", percentUsed)
+        }
+    }
+
     @Published var expenses: [Expense]
     @Published var selectedCategory: ExpenseCategory
     @Published var amountText: String = ""
@@ -100,6 +202,8 @@ final class ExpenseViewModel: ObservableObject {
     @Published var parseFeedback: Feedback?
     @Published var weeklyGoal: SpendingGoal?
     @Published var monthlyGoal: SpendingGoal?
+    @Published var categoryBudgets: [CategoryBudget] = []
+    @Published var recurringExpenses: [RecurringExpense] = []
     @Published var goalForecasts: [GoalForecast] = []
     @Published var spendingComparisons: [SpendingComparison] = []
     @Published var smartInsights: [SmartInsight] = []
@@ -107,11 +211,15 @@ final class ExpenseViewModel: ObservableObject {
     @Published var weeklyDigest: WeeklyDigest
     @Published var isQuickAddInputFocused: Bool = false
     @Published var isGoalsInputFocused: Bool = false
+    @Published var privacyModeHideAmounts: Bool = UserDefaults.standard.bool(forKey: AppPreferenceKeys.privacyModeHideAmounts)
+    @Published var hideAmountsInWidgets: Bool = UserDefaults.standard.bool(forKey: AppPreferenceKeys.hideAmountsInWidgets)
 
     let categories: [ExpenseCategory]
 
     private let store: ExpenseStore
     private let goalStore: GoalStore
+    private let categoryBudgetStore: CategoryBudgetStore
+    private let recurringExpenseStore: RecurringExpenseStore
     private let parser: ExpenseTextParser
     private let goalIntelligenceService: GoalIntelligenceService
     private let spendingComparisonService: SpendingComparisonService
@@ -130,10 +238,14 @@ final class ExpenseViewModel: ObservableObject {
     init(
         store: ExpenseStore = ExpenseStore(),
         goalStore: GoalStore = GoalStore(),
+        categoryBudgetStore: CategoryBudgetStore = CategoryBudgetStore(),
+        recurringExpenseStore: RecurringExpenseStore = RecurringExpenseStore(),
         parser: ExpenseTextParser = ExpenseTextParser()
     ) {
         self.store = store
         self.goalStore = goalStore
+        self.categoryBudgetStore = categoryBudgetStore
+        self.recurringExpenseStore = recurringExpenseStore
         self.parser = parser
         self.goalIntelligenceService = GoalIntelligenceService()
         self.spendingComparisonService = SpendingComparisonService()
@@ -150,7 +262,11 @@ final class ExpenseViewModel: ObservableObject {
         let goals = goalStore.loadGoals()
         self.weeklyGoal = goals.weekly
         self.monthlyGoal = goals.monthly
+        self.categoryBudgets = categoryBudgetStore.loadBudgets()
+        self.recurringExpenses = recurringExpenseStore.loadRecurringExpenses()
         self.selectedCategory = initialCategory
+        self.privacyModeHideAmounts = UserDefaults.standard.bool(forKey: AppPreferenceKeys.privacyModeHideAmounts)
+        self.hideAmountsInWidgets = UserDefaults.standard.bool(forKey: AppPreferenceKeys.hideAmountsInWidgets)
         self.weeklyDigest = WeeklyDigest(
             weekStart: .now,
             weekEnd: .now,
@@ -163,14 +279,6 @@ final class ExpenseViewModel: ObservableObject {
             goalStatus: nil,
             comparisonVsLastWeek: nil
         )
-        refreshGoalForecasts()
-        refreshSpendingComparisons()
-        refreshSmartInsights()
-        refreshSmartAlerts()
-        refreshWeeklyDigest()
-        syncWidgetSummary()
-        syncLocalNotifications()
-
         print("Loaded goals:", String(describing: self.weeklyGoal), String(describing: self.monthlyGoal))
 
         smartAlertsDefaultsObserver = NotificationCenter.default.addObserver(
@@ -359,15 +467,107 @@ final class ExpenseViewModel: ObservableObject {
     func clearAllData() {
         clearAllExpenses()
         clearAllGoals()
+        clearAllCategoryBudgets()
+        clearAllRecurringExpenses()
         smartAlertService.clearDismissedAlerts()
         refreshSmartAlerts()
         syncLocalNotifications()
     }
 
+    func restoreBackup(
+        _ backup: DataBackupDocument,
+        mode: DataBackupRestoreMode
+    ) -> DataBackupRestorationSummary {
+        let importedExpenses = backup.expenses
+            .filter { $0.amount.isFinite && $0.amount > 0 }
+            .sorted { $0.date > $1.date }
+        let importedGoals = backup.goals.sanitized
+        let importedBudgets = backup.categoryBudgets.filter { $0.isValid }
+        let importedRecurringExpenses = backup.recurringExpenses.filter { $0.isValid }
+
+        switch mode {
+        case .replace:
+            expenses = importedExpenses
+            weeklyGoal = importedGoals.weekly
+            monthlyGoal = importedGoals.monthly
+            categoryBudgets = importedBudgets
+            recurringExpenses = importedRecurringExpenses
+        case .merge:
+            expenses = mergeExpenses(current: expenses, imported: importedExpenses)
+            weeklyGoal = weeklyGoal ?? importedGoals.weekly
+            monthlyGoal = monthlyGoal ?? importedGoals.monthly
+            categoryBudgets = mergeCategoryBudgets(current: categoryBudgets, imported: importedBudgets)
+            recurringExpenses = mergeRecurringExpenses(current: recurringExpenses, imported: importedRecurringExpenses)
+        }
+
+        persistExpenses(refreshDerivedState: false)
+        persistGoals(refreshDerivedState: false)
+        persistCategoryBudgets()
+        persistRecurringExpenses()
+        refreshGoalForecasts()
+        refreshSpendingComparisons()
+        refreshSmartInsights()
+        refreshSmartAlerts()
+        refreshWeeklyDigest()
+        syncWidgetSummary()
+        syncLocalNotifications()
+
+        return DataBackupRestorationSummary(
+            expenseCount: importedExpenses.count,
+            goalCount: importedGoals.activeGoals.count,
+            categoryBudgetCount: importedBudgets.count,
+            recurringExpenseCount: importedRecurringExpenses.count,
+            settingsApplied: backup.settings != nil
+        )
+    }
+
+#if DEBUG
+    func loadDemoData() {
+        print("Generating demo data")
+        clearAllData()
+
+        expenses = store.sampleExpenses().sorted { $0.date > $1.date }
+        persistExpenses()
+
+        saveGoal(cadence: .weekly, limit: 180)
+        saveGoal(cadence: .monthly, limit: 760)
+
+        saveCategoryBudget(category: .coffee, cadence: .monthly, limit: 80)
+        saveCategoryBudget(category: .transport, cadence: .monthly, limit: 120)
+        saveRecurringExpense(
+            merchant: "Netflix",
+            amount: 149.0,
+            category: .entertainment,
+            cadence: .monthly,
+            nextDueDate: calendar.date(byAdding: .day, value: 7, to: .now) ?? .now
+        )
+
+        refreshGoalForecasts()
+        refreshSpendingComparisons()
+        refreshSmartInsights()
+        refreshSmartAlerts()
+        refreshWeeklyDigest()
+        syncWidgetSummary()
+        syncLocalNotifications()
+
+        showSaveFeedback(message: "Demo data generated", isError: false)
+    }
+#endif
+
     func clearAllGoals() {
         weeklyGoal = nil
         monthlyGoal = nil
         persistGoals(refreshDerivedState: false)
+    }
+
+    func clearAllCategoryBudgets() {
+        categoryBudgets.removeAll()
+        persistCategoryBudgets()
+    }
+
+    func clearAllRecurringExpenses() {
+        recurringExpenses.removeAll()
+        persistRecurringExpenses()
     }
 
     func dismissSmartAlert(id: String) {
@@ -398,6 +598,131 @@ final class ExpenseViewModel: ObservableObject {
         persistGoals(refreshDerivedState: false)
     }
 
+    func saveCategoryBudget(
+        budgetID: UUID? = nil,
+        category: ExpenseCategory,
+        cadence: SpendingGoalCadence,
+        limit: Double,
+        isActive: Bool = true
+    ) {
+        guard limit.isFinite, limit > 0 else {
+            print("Invalid budget ignored:", limit)
+            return
+        }
+
+        let resolvedCategory = resolvedCategory(from: category)
+        let sanitizedBudget = CategoryBudget(
+            id: budgetID ?? UUID(),
+            category: resolvedCategory,
+            cadence: cadence,
+            limit: limit,
+            createdAt: existingCategoryBudget(id: budgetID)?.createdAt ?? .now,
+            updatedAt: .now,
+            isActive: isActive
+        )
+
+        print("Saving category budget:", resolvedCategory.displayName, cadence.rawValue, limit)
+        if let budgetID, let index = categoryBudgets.firstIndex(where: { $0.id == budgetID }) {
+            categoryBudgets[index] = sanitizedBudget
+        } else if let index = categoryBudgets.firstIndex(where: { $0.storageKey == sanitizedBudget.storageKey }) {
+            categoryBudgets[index] = sanitizedBudget
+        } else {
+            categoryBudgets.append(sanitizedBudget)
+        }
+
+        persistCategoryBudgets()
+    }
+
+    func removeCategoryBudget(id: UUID) {
+        print("Removing category budget:", id)
+        categoryBudgets.removeAll { $0.id == id }
+        persistCategoryBudgets()
+    }
+
+    func saveRecurringExpense(
+        recurringID: UUID? = nil,
+        merchant: String,
+        amount: Double,
+        category: ExpenseCategory,
+        cadence: RecurringExpenseCadence,
+        nextDueDate: Date,
+        isActive: Bool = true
+    ) {
+        guard amount.isFinite, amount > 0 else {
+            print("Invalid recurring expense ignored:", amount)
+            return
+        }
+
+        let normalizedMerchant = merchant.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedCategory = resolvedCategory(from: category)
+        let sanitizedRecurring = RecurringExpense(
+            id: recurringID ?? UUID(),
+            merchant: normalizedMerchant,
+            amount: amount,
+            category: normalizedCategory,
+            cadence: cadence,
+            nextDueDate: nextDueDate,
+            isActive: isActive,
+            createdAt: existingRecurringExpense(id: recurringID)?.createdAt ?? .now,
+            updatedAt: .now
+        )
+
+        guard sanitizedRecurring.isValid else {
+            print("Invalid recurring expense ignored:", sanitizedRecurring)
+            return
+        }
+
+        print("Saving recurring expense:", normalizedMerchant, cadence.rawValue, amount)
+        if let recurringID, let index = recurringExpenses.firstIndex(where: { $0.id == recurringID }) {
+            recurringExpenses[index] = sanitizedRecurring
+        } else {
+            recurringExpenses.append(sanitizedRecurring)
+        }
+
+        persistRecurringExpenses()
+    }
+
+    func removeRecurringExpense(id: UUID) {
+        print("Removing recurring expense:", id)
+        recurringExpenses.removeAll { $0.id == id }
+        persistRecurringExpenses()
+    }
+
+    func markRecurringAsPaid(id: UUID) {
+        guard let recurring = recurringExpenses.first(where: { $0.id == id && $0.isValid }) else { return }
+        let expense = generateExpenseFromRecurring(recurring)
+        expenses.insert(expense, at: 0)
+        persistExpenses()
+
+        guard let nextDueDate = recurring.nextOccurrenceFromStoredDate() else {
+            recurringExpenses.removeAll { $0.id == id }
+            persistRecurringExpenses()
+            return
+        }
+
+        saveRecurringExpense(
+            recurringID: recurring.id,
+            merchant: recurring.merchant,
+            amount: recurring.amount,
+            category: recurring.category,
+            cadence: recurring.cadence,
+            nextDueDate: nextDueDate,
+            isActive: recurring.isActive
+        )
+    }
+
+    func generateExpenseFromRecurring(_ recurring: RecurringExpense) -> Expense {
+        Expense(
+            amount: recurring.amount,
+            category: resolvedCategory(from: recurring.category),
+            merchant: recurring.normalizedMerchant,
+            note: "Recurring expense",
+            date: recurring.nextDueDate,
+            source: .manual,
+            confidence: 1.0
+        )
+    }
+
     func clearSaveFeedback() {
         guard !isResettingDraft else { return }
         saveFeedback = nil
@@ -411,9 +736,41 @@ final class ExpenseViewModel: ObservableObject {
         parseFeedback = Feedback(message: message, isError: isError)
     }
 
+    func updatePrivacyPreferences(hideAmounts: Bool, hideAmountsInWidgets: Bool) {
+        privacyModeHideAmounts = hideAmounts
+        self.hideAmountsInWidgets = hideAmountsInWidgets
+        syncWidgetSummary()
+    }
+
     func expenses(matching category: ExpenseCategory?, timeFilter: HistoryTimeFilter) -> [Expense] {
         filteredExpenses(category: category, timeFilter: timeFilter)
             .sorted { $0.date > $1.date }
+    }
+
+    func filteredExpenses(using filter: ExpenseFilter) -> [Expense] {
+        let matchingExpenses = safeExpenses.filter { filter.matches($0, calendar: calendar) }
+        return filter.sortOrder.sorted(matchingExpenses)
+    }
+
+    func filteredExpenseCount(using filter: ExpenseFilter) -> Int {
+        filteredExpenses(using: filter).count
+    }
+
+    func filteredExpenseTotal(using filter: ExpenseFilter) -> Double {
+        filteredExpenses(using: filter).reduce(0) { $0 + $1.amount }
+    }
+
+    var availableMerchants: [String] {
+        Array(
+            Set(
+                safeExpenses
+                    .map { $0.merchant.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+            )
+        )
+        .sorted { lhs, rhs in
+            lhs.localizedCaseInsensitiveCompare(rhs) == .orderedAscending
+        }
     }
 
     var todayTotal: Double {
@@ -507,6 +864,241 @@ final class ExpenseViewModel: ObservableObject {
                 percentage: (item.total / monthTotal) * 100
             )
         }
+    }
+
+    var dashboardCategorySummariesSafe: [DashboardCategorySummary] {
+        let monthExpenses = expenses(in: .month).filter { $0.amount.isFinite && $0.amount > 0 }
+        guard !monthExpenses.isEmpty else { return [] }
+
+        let grouped = Dictionary(grouping: monthExpenses, by: { normalizedCategoryKey(for: $0.category) })
+        let total = monthExpenses.reduce(0) { $0 + $1.amount }
+        guard total > 0 else { return [] }
+
+        return grouped.compactMap { key, items in
+            let validItems = items.filter { $0.amount.isFinite && $0.amount > 0 }
+            guard !validItems.isEmpty else { return nil }
+            let category = validItems.first?.category ?? items.first?.category
+            guard let category else { return nil }
+
+            let categoryTotal = validItems.reduce(0) { $0 + $1.amount }
+            guard categoryTotal.isFinite, categoryTotal > 0 else { return nil }
+
+            let percentage = clampPercentage(categoryTotal / total)
+            guard percentage.isFinite else { return nil }
+
+            return DashboardCategorySummary(
+                key: key,
+                categoryName: category.displayName,
+                total: categoryTotal,
+                count: validItems.count,
+                percentage: percentage,
+                accentColor: category.accentColor
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.total == rhs.total {
+                return lhs.categoryName < rhs.categoryName
+            }
+            return lhs.total > rhs.total
+        }
+    }
+
+    var dashboardTrendPointsSafe: [DashboardTrendPoint] {
+        let daysToShow = 14
+        guard let startDate = calendar.date(byAdding: .day, value: -(daysToShow - 1), to: calendar.startOfDay(for: .now)) else {
+            return []
+        }
+
+        let sourceExpenses = safeExpenses.filter { $0.amount > 0 && $0.amount.isFinite }
+        let totalsByDay = Dictionary(
+            grouping: sourceExpenses,
+            by: { calendar.startOfDay(for: $0.date) }
+        ).mapValues { items in
+            items.reduce(0) { $0 + $1.amount }
+        }
+
+        return (0..<daysToShow).compactMap { index in
+            guard let date = calendar.date(byAdding: .day, value: index, to: startDate) else {
+                return nil
+            }
+
+            let total = totalsByDay[date] ?? 0
+            guard total.isFinite, total >= 0 else { return nil }
+
+            return DashboardTrendPoint(
+                index: index,
+                date: date,
+                total: total
+            )
+        }
+    }
+
+    var dashboardTopCategorySafe: DashboardTopCategorySignal? {
+        dashboardCategorySummariesSafe.first.map {
+            DashboardTopCategorySignal(
+                key: $0.key,
+                categoryName: $0.categoryName,
+                total: $0.total,
+                percentage: $0.percentage,
+                count: $0.count,
+                accentColor: $0.accentColor
+            )
+        }
+    }
+
+    var dashboardSignalSafe: DashboardSignal? {
+        let strings = AppStrings.current()
+
+        if let overview = primaryCategoryBudgetOverview {
+            let cadenceLabel = overview.budget.cadence == .weekly
+                ? strings.categoryBudgetsWeeklyLabel
+                : strings.categoryBudgetsMonthlyLabel
+
+            let detail = String(
+                format: strings.categoryBudgetInsightTemplate,
+                overview.budget.category.displayName,
+                overview.percentUsedText,
+                cadenceLabel
+            )
+
+            return DashboardSignal(
+                id: "budget-\(overview.id.uuidString)",
+                kind: .budget,
+                title: overview.budget.category.displayName,
+                detail: detail,
+                accentColor: overview.status.tintColor
+            )
+        }
+
+        guard let top = dashboardTopCategorySafe else { return nil }
+        let detail = "\(currency(top.total)) • \(percentageString(top.percentage)) of month"
+
+        return DashboardSignal(
+            id: "top-\(top.id)",
+            kind: .topCategory,
+            title: top.categoryName,
+            detail: detail,
+            accentColor: top.accentColor
+        )
+    }
+
+    var dashboardCategoryBudgetSignalSafe: DashboardCategoryBudgetSignal? {
+        guard let overview = primaryCategoryBudgetOverview else { return nil }
+        let cadenceText = overview.budget.cadence == .weekly
+            ? AppStrings.current().categoryBudgetsWeeklyLabel
+            : AppStrings.current().categoryBudgetsMonthlyLabel
+
+        return DashboardCategoryBudgetSignal(
+            id: overview.id.uuidString,
+            categoryName: overview.budget.category.displayName,
+            cadenceText: cadenceText,
+            spentText: currency(overview.spent),
+            limitText: currency(overview.budget.limit),
+            remainingText: currency(overview.remaining),
+            percentText: overview.percentUsedText,
+            progressFraction: clampPercentage(overview.progressFraction),
+            statusText: categoryBudgetStatusText(for: overview.status),
+            accentColor: overview.status.tintColor
+        )
+    }
+
+    var dashboardRecurringSignalSafe: DashboardRecurringSignal? {
+        guard let recurring = nextRecurringExpense,
+              recurring.amount.isFinite,
+              recurring.amount > 0,
+              recurring.nextDueDate.timeIntervalSinceReferenceDate.isFinite else {
+            return nil
+        }
+
+        let merchant = recurring.normalizedMerchant.isEmpty ? recurring.category.displayName : recurring.normalizedMerchant
+        let cadenceText = recurringExpenseCadenceText(for: recurring.cadence)
+
+        return DashboardRecurringSignal(
+            id: recurring.id,
+            merchant: merchant,
+            amountText: currency(recurring.amount),
+            categoryName: recurring.category.displayName,
+            dueDateText: recurring.nextDueDate.formatted(date: .abbreviated, time: .omitted),
+            cadenceText: cadenceText,
+            accentColor: recurring.category.accentColor
+        )
+    }
+
+    var dashboardSmartInsightSafe: DashboardSmartInsight? {
+        let monthExpenses = expenses(in: .month).filter { $0.amount.isFinite && $0.amount > 0 }
+        guard !monthExpenses.isEmpty else { return nil }
+
+        if let budget = dashboardCategoryBudgetSignalSafe, budget.progressFraction >= 0.75 {
+            let title = AppStrings.current().dashboardSmartInsightTitle
+            let message = String(
+                format: AppStrings.current().categoryBudgetInsightTemplate,
+                budget.categoryName,
+                budget.percentText,
+                budget.cadenceText
+            )
+
+            return DashboardSmartInsight(
+                id: "budget-\(budget.id)",
+                title: title,
+                message: message,
+                symbolName: budget.progressFraction >= 1 ? "exclamationmark.triangle.fill" : "exclamationmark.circle.fill",
+                accentColor: budget.accentColor
+            )
+        }
+
+        let thisWeekTotal = expenses(in: .week).reduce(0) { $0 + $1.amount }
+        let previousWeekStart = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: .now)) ?? .now
+        let previousWeekEnd = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: .now)) ?? .now
+        let previousWeekTotal = safeExpenses.filter { expense in
+            expense.amount.isFinite
+                && expense.amount > 0
+                && expense.date >= previousWeekStart
+                && expense.date <= previousWeekEnd
+        }.reduce(0) { $0 + $1.amount }
+
+        if previousWeekTotal > 0, thisWeekTotal.isFinite, previousWeekTotal.isFinite {
+            let delta = thisWeekTotal - previousWeekTotal
+            let title = AppStrings.current().dashboardSmartInsightTitle
+            if delta > 0 {
+                return DashboardSmartInsight(
+                    id: "trend-up",
+                    title: title,
+                    message: String(format: AppStrings.current().smartInsightsSpendingIncreaseMessage, currency(delta), percentageString((delta / max(previousWeekTotal, 1)) * 100)),
+                    symbolName: "arrow.up.right",
+                    accentColor: Color(red: 0.86, green: 0.25, blue: 0.24)
+                )
+            } else if delta < 0 {
+                let saved = abs(delta)
+                return DashboardSmartInsight(
+                    id: "trend-down",
+                    title: title,
+                    message: String(format: AppStrings.current().smartInsightsSpendingDecreaseMessage, currency(saved), percentageString((saved / max(previousWeekTotal, 1)) * 100)),
+                    symbolName: "arrow.down.right",
+                    accentColor: Color(red: 0.19, green: 0.64, blue: 0.38)
+                )
+            }
+        }
+
+        if let top = dashboardTopCategorySafe, top.percentage.isFinite, top.percentage > 0 {
+            return DashboardSmartInsight(
+                id: "top-\(top.id)",
+                title: AppStrings.current().dashboardSmartInsightTitle,
+                message: "\(top.categoryName) is \(percentageString(top.percentage)) of your tracked leaks this month.",
+                symbolName: "chart.pie.fill",
+                accentColor: top.accentColor
+            )
+        }
+
+        let avgDaily = averageDailySpend
+        guard avgDaily.isFinite, avgDaily > 0 else { return nil }
+
+        return DashboardSmartInsight(
+            id: "avg-daily",
+            title: AppStrings.current().dashboardSmartInsightTitle,
+            message: "You are averaging \(currency(avgDaily)) per day this month.",
+            symbolName: "calendar",
+            accentColor: Color(red: 0.18, green: 0.47, blue: 0.88)
+        )
     }
 
     var recentSpendTrendData: [DailySpendPoint] {
@@ -708,8 +1300,12 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     func pdfReportData(for reportType: ExpensePDFReportType) -> ExpensePDFReportData {
+        pdfReportData(for: reportType, expenses: pdfExpenses(for: reportType))
+    }
+
+    func pdfReportData(for reportType: ExpensePDFReportType, expenses: [Expense]) -> ExpensePDFReportData {
         let strings = AppStrings.current()
-        let reportExpenses = pdfExpenses(for: reportType)
+        let reportExpenses = expenses
         let breakdown = categoryBreakdown(from: reportExpenses, sortMode: .amount)
         let goalSummaries = goalOverviews.map { overview in
             ExpensePDFGoalSummary(
@@ -1037,13 +1633,17 @@ final class ExpenseViewModel: ObservableObject {
             return AppStrings.current().goalsNoGoalMessage
         }
 
+        let limitText = displayCurrency(overview.goal.limit)
+        let spentText = displayCurrency(overview.spent)
+        let remainingText = displayCurrency(overview.remaining)
+
         return [
-            overview.limitText,
-            overview.spentText,
-            overview.remainingText,
+            limitText,
+            spentText,
+            remainingText,
             overview.percentUsedText,
             overview.statusText,
-            overview.motivationText
+            privacyAwareText(overview.motivationText)
         ]
         .joined(separator: ". ")
     }
@@ -1052,11 +1652,198 @@ final class ExpenseViewModel: ObservableObject {
         let merchant = expense.merchant.isEmpty ? expense.category.displayName : expense.merchant
         let note = expense.note.trimmingCharacters(in: .whitespacesAndNewlines)
         let noteText = note.isEmpty ? "" : ". Note: \(note)"
-        return "\(currency(expense.amount)) in \(expense.category.displayName). Merchant: \(merchant). \(expense.date.formatted(date: .abbreviated, time: .shortened))\(noteText)"
+        return "\(displayCurrency(expense.amount)) in \(expense.category.displayName). Merchant: \(merchant). \(expense.date.formatted(date: .abbreviated, time: .shortened))\(noteText)"
     }
 
     var goalOverviews: [GoalOverview] {
         [goalOverview(for: .weekly), goalOverview(for: .monthly)].compactMap { $0 }
+    }
+
+    var activeCategoryBudgets: [CategoryBudget] {
+        categoryBudgets.filter { $0.isActive && $0.isValid }
+    }
+
+    var categoryBudgetOverviews: [CategoryBudgetOverview] {
+        activeCategoryBudgets.compactMap { categoryBudgetOverview(for: $0) }
+            .sorted { lhs, rhs in
+                if lhs.percentUsed == rhs.percentUsed {
+                    return lhs.budget.updatedAt > rhs.budget.updatedAt
+                }
+                return lhs.percentUsed > rhs.percentUsed
+            }
+    }
+
+    var primaryCategoryBudgetOverview: CategoryBudgetOverview? {
+        categoryBudgetOverviews.first
+    }
+
+    var activeRecurringExpenses: [RecurringExpense] {
+        recurringExpenses.filter { $0.isActive && $0.isValid }
+    }
+
+    var upcomingRecurringExpenses: [RecurringExpense] {
+        activeRecurringExpenses.sorted { lhs, rhs in
+            if lhs.nextDueDate == rhs.nextDueDate {
+                return lhs.updatedAt > rhs.updatedAt
+            }
+            return lhs.nextDueDate < rhs.nextDueDate
+        }
+    }
+
+    var nextRecurringExpense: RecurringExpense? {
+        upcomingRecurringExpenses.first
+    }
+
+    var upcomingRecurringLeakSummaryText: String {
+        guard let nextRecurringExpense else {
+            return AppStrings.current().recurringExpensesNoUpcomingMessage
+        }
+
+        let strings = AppStrings.current()
+        let dueDate = nextRecurringExpense.nextDueDate.formatted(date: .abbreviated, time: .omitted)
+        let merchant = nextRecurringExpense.normalizedMerchant.isEmpty
+            ? nextRecurringExpense.category.displayName
+            : nextRecurringExpense.normalizedMerchant
+
+        return String(
+            format: strings.recurringExpensesUpcomingSummaryTemplate,
+            merchant,
+            currency(nextRecurringExpense.amount),
+            dueDate
+        )
+    }
+
+    func categoryBudget(for category: ExpenseCategory, cadence: SpendingGoalCadence) -> CategoryBudget? {
+        categoryBudgets.first { budget in
+            budget.isActive
+                && budget.isValid
+                && budget.category.id == category.id
+                && budget.cadence == cadence
+        }
+    }
+
+    func categoryBudgetSpentAmount(for budget: CategoryBudget) -> Double {
+        categoryBudgetExpenses(for: budget).reduce(0) { $0 + $1.amount }
+    }
+
+    func categoryBudgetRemainingAmount(for budget: CategoryBudget) -> Double {
+        guard budget.limit.isFinite, budget.limit > 0 else { return 0 }
+        let spent = categoryBudgetSpentAmount(for: budget)
+        guard spent.isFinite else { return 0 }
+        let remaining = budget.limit - spent
+        return remaining.isFinite ? max(remaining, 0) : 0
+    }
+
+    func categoryBudgetPercentUsed(for budget: CategoryBudget) -> Double {
+        guard budget.limit.isFinite, budget.limit > 0 else { return 0 }
+        let spent = categoryBudgetSpentAmount(for: budget)
+        guard spent.isFinite else { return 0 }
+        let percent = (spent / budget.limit) * 100
+        return percent.isFinite ? min(percent, 999) : 0
+    }
+
+    func categoryBudgetProgressFraction(for budget: CategoryBudget) -> Double {
+        guard budget.limit.isFinite, budget.limit > 0 else { return 0 }
+        let spent = categoryBudgetSpentAmount(for: budget)
+        guard spent.isFinite else { return 0 }
+        let fraction = spent / budget.limit
+        return fraction.isFinite ? min(fraction, 1) : 0
+    }
+
+    func categoryBudgetStatus(for budget: CategoryBudget) -> CategoryBudgetStatus {
+        switch categoryBudgetPercentUsed(for: budget) {
+        case 100...:
+            return .over
+        case 75..<100:
+            return .watch
+        default:
+            return .safe
+        }
+    }
+
+    func categoryBudgetStatusText(for budget: CategoryBudget) -> String {
+        categoryBudgetStatusText(for: categoryBudgetStatus(for: budget))
+    }
+
+    func categoryBudgetStatusText(for status: CategoryBudgetStatus) -> String {
+        let strings = AppStrings.current()
+        switch status {
+        case .safe:
+            return strings.categoryBudgetsStatusSafe
+        case .watch:
+            return strings.categoryBudgetsStatusWatch
+        case .over:
+            return strings.categoryBudgetsStatusOver
+        }
+    }
+
+    func categoryBudgetOverview(for budget: CategoryBudget) -> CategoryBudgetOverview? {
+        guard budget.isActive, budget.isValid else { return nil }
+        let spent = categoryBudgetSpentAmount(for: budget)
+        let remaining = categoryBudgetRemainingAmount(for: budget)
+        let percentUsed = categoryBudgetPercentUsed(for: budget)
+        let progressFraction = categoryBudgetProgressFraction(for: budget)
+        guard spent.isFinite, remaining.isFinite, percentUsed.isFinite, progressFraction.isFinite else {
+            return nil
+        }
+
+        return CategoryBudgetOverview(
+            budget: budget,
+            spent: spent,
+            remaining: remaining,
+            percentUsed: percentUsed,
+            progressFraction: progressFraction,
+            status: categoryBudgetStatus(for: budget)
+        )
+    }
+
+    func categoryBudgetInsightText(for overview: CategoryBudgetOverview) -> String {
+        let strings = AppStrings.current()
+        let cadenceLabel = overview.budget.cadence == .weekly ? strings.categoryBudgetsWeeklyLabel : strings.categoryBudgetsMonthlyLabel
+        return String(
+            format: strings.categoryBudgetInsightTemplate,
+            overview.budget.category.displayName,
+            overview.percentUsedText,
+            cadenceLabel
+        )
+    }
+
+    func categoryBudgetAccessibilityValue(for budget: CategoryBudget) -> String {
+        guard let overview = categoryBudgetOverview(for: budget) else {
+            return AppStrings.current().categoryBudgetsEmptyMessage
+        }
+
+        return [
+            displayCurrency(overview.budget.limit),
+            displayCurrency(overview.spent),
+            displayCurrency(overview.remaining),
+            overview.percentUsedText,
+            categoryBudgetStatusText(for: overview.status)
+        ]
+        .joined(separator: ". ")
+    }
+
+    func recurringExpenseTitle(for expense: RecurringExpense) -> String {
+        expense.normalizedMerchant.isEmpty ? expense.category.displayName : expense.normalizedMerchant
+    }
+
+    func recurringExpenseCadenceText(for cadence: RecurringExpenseCadence) -> String {
+        let strings = AppStrings.current()
+        switch cadence {
+        case .daily:
+            return strings.recurringCadenceDaily
+        case .weekly:
+            return strings.recurringCadenceWeekly
+        case .monthly:
+            return strings.recurringCadenceMonthly
+        case .yearly:
+            return strings.recurringCadenceYearly
+        }
+    }
+
+    func recurringExpenseNextDueText(for expense: RecurringExpense) -> String {
+        let date = expense.nextDueDate.formatted(date: .abbreviated, time: .omitted)
+        return String(format: AppStrings.current().recurringExpensesNextDueTemplate, date)
     }
 
     func remainingDailyBudget(for cadence: SpendingGoalCadence) -> Double {
@@ -1092,6 +1879,14 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var jsonExport: ExpenseJSONExport {
+        ExpenseJSONExport(expenses: expenses)
+    }
+
+    func csvExport(for expenses: [Expense]) -> ExpenseCSVExport {
+        ExpenseCSVExport(expenses: expenses)
+    }
+
+    func jsonExport(for expenses: [Expense]) -> ExpenseJSONExport {
         ExpenseJSONExport(expenses: expenses)
     }
 
@@ -1181,6 +1976,20 @@ final class ExpenseViewModel: ObservableObject {
                 return $0.count > $1.count
             }
         }
+    }
+
+    private func normalizedCategoryKey(for category: ExpenseCategory) -> String {
+        category.slug.isEmpty ? category.displayName.lowercased() : category.slug
+    }
+
+    private func clampPercentage(_ value: Double) -> Double {
+        guard value.isFinite else { return 0 }
+        return min(max(value, 0), 1)
+    }
+
+    private func categoryBudgetExpenses(for budget: CategoryBudget) -> [Expense] {
+        let range: TimeRange = budget.cadence == .weekly ? .week : .month
+        return expenses(in: range).filter { $0.category.id == budget.category.id }
     }
 
     private func pdfExpenses(for reportType: ExpensePDFReportType) -> [Expense] {
@@ -1383,20 +2192,15 @@ final class ExpenseViewModel: ObservableObject {
         return nil
     }
 
-    private func persistExpenses() {
+    private func persistExpenses(refreshDerivedState: Bool = true) {
         let sanitizedExpenses = safeExpenses
         if sanitizedExpenses.count != expenses.count {
             expenses = sanitizedExpenses
         }
         store.saveExpenses(sanitizedExpenses)
         expenses = store.loadExpenses().filter { $0.amount.isFinite }
-        refreshGoalForecasts()
-        refreshSpendingComparisons()
-        refreshSmartInsights()
-        refreshSmartAlerts()
-        refreshWeeklyDigest()
-        syncWidgetSummary()
-        syncLocalNotifications()
+        guard refreshDerivedState else { return }
+        refreshDerivedDataAfterMutation()
     }
 
     private func persistGoals(refreshDerivedState: Bool = true) {
@@ -1409,13 +2213,92 @@ final class ExpenseViewModel: ObservableObject {
         guard refreshDerivedState else {
             return
         }
+        refreshDerivedDataAfterMutation()
+    }
 
+    private func persistCategoryBudgets() {
+        let sanitizedBudgets = categoryBudgets.filter { $0.isValid }
+        if sanitizedBudgets.count != categoryBudgets.count {
+            categoryBudgets = sanitizedBudgets
+        }
+        categoryBudgetStore.saveBudgets(sanitizedBudgets)
+        categoryBudgets = categoryBudgetStore.loadBudgets()
+    }
+
+    private func persistRecurringExpenses() {
+        let sanitizedRecurring = recurringExpenses.filter { $0.isValid }
+        if sanitizedRecurring.count != recurringExpenses.count {
+            recurringExpenses = sanitizedRecurring
+        }
+        recurringExpenseStore.saveRecurringExpenses(sanitizedRecurring)
+        recurringExpenses = recurringExpenseStore.loadRecurringExpenses()
+    }
+
+    private func refreshDerivedDataAfterMutation() {
         refreshGoalForecasts()
+        refreshSpendingComparisons()
         refreshSmartInsights()
         refreshSmartAlerts()
         refreshWeeklyDigest()
         syncWidgetSummary()
         syncLocalNotifications()
+    }
+
+    private func mergeExpenses(current: [Expense], imported: [Expense]) -> [Expense] {
+        var mergedByID: [UUID: Expense] = [:]
+        current.forEach { mergedByID[$0.id] = $0 }
+
+        for expense in imported {
+            if mergedByID[expense.id] == nil {
+                mergedByID[expense.id] = expense
+            }
+        }
+
+        return mergedByID.values.sorted { $0.date > $1.date }
+    }
+
+    private func mergeCategoryBudgets(current: [CategoryBudget], imported: [CategoryBudget]) -> [CategoryBudget] {
+        var mergedByKey: [String: CategoryBudget] = [:]
+        current.forEach { mergedByKey[$0.storageKey] = $0 }
+
+        for budget in imported {
+            if let existing = mergedByKey[budget.storageKey] {
+                if budget.updatedAt > existing.updatedAt {
+                    mergedByKey[budget.storageKey] = budget
+                }
+            } else {
+                mergedByKey[budget.storageKey] = budget
+            }
+        }
+
+        return mergedByKey.values.sorted { lhs, rhs in
+            if lhs.updatedAt == rhs.updatedAt {
+                return lhs.category.displayName < rhs.category.displayName
+            }
+            return lhs.updatedAt > rhs.updatedAt
+        }
+    }
+
+    private func mergeRecurringExpenses(current: [RecurringExpense], imported: [RecurringExpense]) -> [RecurringExpense] {
+        var mergedByID: [UUID: RecurringExpense] = [:]
+        current.forEach { mergedByID[$0.id] = $0 }
+
+        for recurring in imported {
+            if let existing = mergedByID[recurring.id] {
+                if recurring.updatedAt > existing.updatedAt {
+                    mergedByID[recurring.id] = recurring
+                }
+            } else {
+                mergedByID[recurring.id] = recurring
+            }
+        }
+
+        return mergedByID.values.sorted { lhs, rhs in
+            if lhs.updatedAt == rhs.updatedAt {
+                return lhs.nextDueDate < rhs.nextDueDate
+            }
+            return lhs.updatedAt > rhs.updatedAt
+        }
     }
 
     private func resetDraftForm() {
@@ -1489,9 +2372,25 @@ final class ExpenseViewModel: ObservableObject {
         String(format: "$%.2f", amount)
     }
 
+    func displayCurrency(_ amount: Double) -> String {
+        guard !privacyModeHideAmounts else { return "••••" }
+        return currency(amount)
+    }
+
+    func privacyAwareText(_ text: String) -> String {
+        guard privacyModeHideAmounts else { return text }
+        guard let regex = Self.currencyRedactionRegex else { return text }
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "••••")
+    }
+
     private func percentageString(_ value: Double) -> String {
         String(format: "%.0f%%", value)
     }
+
+    private static let currencyRedactionRegex: NSRegularExpression? = {
+        try? NSRegularExpression(pattern: "\\$\\d[\\d,]*(?:\\.\\d{1,2})?", options: [])
+    }()
 
     private func applyParsedSuggestion(_ suggestion: ExpenseParseResult) {
         if let amount = suggestion.amount, amount.isFinite, amount > 0 {
@@ -1539,6 +2438,16 @@ final class ExpenseViewModel: ObservableObject {
             ?? category
     }
 
+    private func existingCategoryBudget(id: UUID?) -> CategoryBudget? {
+        guard let id else { return nil }
+        return categoryBudgets.first(where: { $0.id == id })
+    }
+
+    private func existingRecurringExpense(id: UUID?) -> RecurringExpense? {
+        guard let id else { return nil }
+        return recurringExpenses.first(where: { $0.id == id })
+    }
+
     private func daysLeft(in range: TimeRange) -> Int {
         switch range {
         case .today:
@@ -1562,9 +2471,6 @@ final class ExpenseViewModel: ObservableObject {
         let hasContent = !expenses.isEmpty || hasGoal
         guard hasContent else {
             widgetSummaryStore.clearSummary()
-            #if canImport(WidgetKit)
-            WidgetCenter.shared.reloadAllTimelines()
-            #endif
             return
         }
 
@@ -1578,14 +2484,11 @@ final class ExpenseViewModel: ObservableObject {
             monthlyGoalStatus: widgetGoalStatus(for: .monthly),
             weeklyGoalForecastText: widgetGoalForecastText(for: .weekly),
             monthlyGoalForecastText: widgetGoalForecastText(for: .monthly),
-            categoryTop3: categoryBreakdown.prefix(3).map { WidgetCategorySummary(name: $0.category.displayName, amount: $0.total) }
+            categoryTop3: categoryBreakdown.prefix(3).map { WidgetCategorySummary(name: $0.category.displayName, amount: $0.total) },
+            hideAmounts: hideAmountsInWidgets
         )
 
         widgetSummaryStore.saveSummary(summary)
-
-        #if canImport(WidgetKit)
-        WidgetCenter.shared.reloadAllTimelines()
-        #endif
     }
 
     private func refreshSmartInsights() {
@@ -1708,15 +2611,16 @@ enum HistoryTimeFilter: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var title: String {
+        let strings = AppStrings.current()
         switch self {
         case .all:
-            return "All"
+            return strings.historyFilterAllDates
         case .today:
-            return "Today"
+            return strings.historyFilterToday
         case .week:
-            return "Week"
+            return strings.historyFilterWeek
         case .month:
-            return "Month"
+            return strings.historyFilterMonth
         }
     }
 }

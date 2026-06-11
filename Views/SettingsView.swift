@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import UserNotifications
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -8,8 +9,13 @@ struct SettingsView: View {
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
+    @EnvironmentObject private var viewModel: ExpenseViewModel
     @AppStorage(AppPreferenceKeys.hapticsEnabled) private var hapticsEnabled = true
     @AppStorage(AppPreferenceKeys.smartAlertsEnabled) private var smartAlertsEnabled = true
+    @AppStorage(AppPreferenceKeys.appLockEnabled) private var appLockEnabled = false
+    @AppStorage(AppPreferenceKeys.requireFaceIDOnLaunch) private var requireFaceIDOnLaunch = true
+    @AppStorage(AppPreferenceKeys.privacyModeHideAmounts) private var privacyModeHideAmounts = false
+    @AppStorage(AppPreferenceKeys.hideAmountsInWidgets) private var hideAmountsInWidgets = false
     @AppStorage(AppPreferenceKeys.localNotificationsEnabled) private var localNotificationsEnabled = false
     @AppStorage(AppPreferenceKeys.dailyCheckInEnabled) private var dailyCheckInEnabled = false
     @AppStorage(AppPreferenceKeys.goalWarningsEnabled) private var goalWarningsEnabled = false
@@ -19,6 +25,7 @@ struct SettingsView: View {
     @AppStorage(AppPreferenceKeys.weeklyDigestWeekday) private var weeklyDigestWeekday = 1
     @AppStorage(AppPreferenceKeys.weeklyDigestHour) private var weeklyDigestHour = 9
     @AppStorage(AppPreferenceKeys.weeklyDigestMinute) private var weeklyDigestMinute = 0
+    @AppStorage(AppPreferenceKeys.hasSeenOnboarding) private var hasSeenOnboarding = false
 
     @Binding var appearanceSelection: AppAppearance
     @Binding var textSizeSelection: AppTextSize
@@ -28,6 +35,7 @@ struct SettingsView: View {
     let onOpenHistory: (() -> Void)?
     let onOpenGoals: (() -> Void)?
     let onOpenQuickAdd: (() -> Void)?
+    let onOpenRecurringExpenses: (() -> Void)? = nil
     let onCopyQuickAddURL: (() -> Void)?
     let onCopyPrefillURLExample: (() -> Void)?
     let onOpenQuickAddRoute: (() -> Void)?
@@ -36,9 +44,19 @@ struct SettingsView: View {
     let onResetLocalData: () -> Void
 
     @State private var showResetConfirmation = false
+    @State private var showBackupImportConfirmation = false
+    @State private var showBackupImporter = false
+    @State private var showShortcutsGuide = false
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
     @State private var notificationFeedback: String?
+    @State private var backupFeedback: String?
+    @State private var backupFeedbackIsError = false
+    @State private var backupExport: DataBackupExport?
+    @State private var pendingBackupDocument: DataBackupDocument?
     @State private var isSyncingNotificationSettings = false
+    private let appLockService = AppLockService.shared
+
+    private let backupService = DataBackupService()
 
     private var scale: CGFloat {
         appTextSize.scale
@@ -58,7 +76,9 @@ struct SettingsView: View {
                     smartAlertsCard
                     notificationsCard
                     privacyCard
+                    backupCard
                     exportCard
+                    recurringCard
                     backTapCard
                     resetCard
                     versionCard
@@ -91,12 +111,66 @@ struct SettingsView: View {
             } message: {
                 Text(strings.resetConfirmationMessage)
             }
+            .confirmationDialog(
+                strings.backupTitle,
+                isPresented: $showBackupImportConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button(strings.backupImportMerge) {
+                    restorePendingBackup(mode: .merge)
+                }
+                Button(strings.backupImportReplace, role: .destructive) {
+                    restorePendingBackup(mode: .replace)
+                }
+                Button(strings.cancel, role: .cancel) {}
+            } message: {
+                Text(backupImportMessage)
+            }
+            .fileImporter(
+                isPresented: $showBackupImporter,
+                allowedContentTypes: [.json]
+            ) { result in
+                handleBackupImport(result: result)
+            }
+            .sheet(isPresented: $showShortcutsGuide) {
+                ShortcutsGuideView(
+                    onCopyQuickAddURL: onCopyQuickAddURL,
+                    onCopyPrefillURLExample: onCopyPrefillURLExample,
+                    onOpenQuickAddRoute: onOpenQuickAddRoute
+                )
+                .environment(\.pocketLeakStrings, strings)
+                .environment(\.appTextSize, appTextSize)
+            }
             .task {
                 await refreshNotificationStatus()
+                await MainActor.run {
+                    syncPrivacyPreferences()
+                }
+            }
+            .task(id: backupSignature) {
+                prepareBackupExport()
+            }
+            .onChange(of: appLockEnabled) { _, _ in
+                syncPrivacyPreferences()
+            }
+            .onChange(of: requireFaceIDOnLaunch) { _, _ in
+                syncPrivacyPreferences()
+            }
+            .onChange(of: privacyModeHideAmounts) { _, _ in
+                syncPrivacyPreferences()
+            }
+            .onChange(of: hideAmountsInWidgets) { _, _ in
+                syncPrivacyPreferences()
             }
             .onChange(of: scenePhase) { _, newValue in
                 guard newValue == .active else { return }
-                Task { await refreshNotificationStatus() }
+                Task {
+                    await refreshNotificationStatus()
+                    prepareBackupExport()
+                    await MainActor.run {
+                        syncPrivacyPreferences()
+                    }
+                }
             }
         }
     }
@@ -389,13 +463,131 @@ struct SettingsView: View {
 
     private var privacyCard: some View {
         GlassCardView {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text(strings.privacyTitle)
                     .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
                     .foregroundStyle(AppTheme.primaryText)
+
                 Text(strings.privacyNote)
                     .font(.system(size: 15 * scale))
                     .foregroundStyle(AppTheme.secondaryText)
+
+                Divider()
+                    .overlay(AppTheme.cardBorder.opacity(0.5))
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Toggle(isOn: $appLockEnabled) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(strings.enableAppLock)
+                                .font(.system(size: 15 * scale, weight: .semibold))
+                                .foregroundStyle(AppTheme.primaryText)
+                            Text(strings.appLockDescription)
+                                .font(.system(size: 13 * scale))
+                                .foregroundStyle(AppTheme.secondaryText)
+                        }
+                    }
+                    .tint(AppTheme.primaryText)
+
+                    Toggle(isOn: $requireFaceIDOnLaunch) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(strings.requireFaceIDOnLaunch)
+                                .font(.system(size: 15 * scale, weight: .semibold))
+                                .foregroundStyle(AppTheme.primaryText)
+                            Text(appLockService.biometryDescription())
+                                .font(.system(size: 13 * scale))
+                                .foregroundStyle(AppTheme.secondaryText)
+                        }
+                    }
+                    .tint(AppTheme.primaryText)
+                    .disabled(!appLockEnabled)
+
+                    Toggle(isOn: $privacyModeHideAmounts) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(strings.privacyModeHideAmountsTitle)
+                                .font(.system(size: 15 * scale, weight: .semibold))
+                                .foregroundStyle(AppTheme.primaryText)
+                            Text(strings.privacyModeHideAmountsDescription)
+                                .font(.system(size: 13 * scale))
+                                .foregroundStyle(AppTheme.secondaryText)
+                        }
+                    }
+                    .tint(AppTheme.primaryText)
+
+                    Toggle(isOn: $hideAmountsInWidgets) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(strings.hideAmountsInWidgetsTitle)
+                                .font(.system(size: 15 * scale, weight: .semibold))
+                                .foregroundStyle(AppTheme.primaryText)
+                            Text(strings.hideAmountsInWidgetsDescription)
+                                .font(.system(size: 13 * scale))
+                                .foregroundStyle(AppTheme.secondaryText)
+                        }
+                    }
+                    .tint(AppTheme.primaryText)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var backupCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(strings.backupTitle)
+                        .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
+                        .foregroundStyle(AppTheme.primaryText)
+                    Text(strings.backupDescription)
+                        .font(.system(size: 15 * scale))
+                        .foregroundStyle(AppTheme.secondaryText)
+                    Text(strings.backupLocalOnlyNote)
+                        .font(.system(size: 13 * scale))
+                        .foregroundStyle(AppTheme.tertiaryText)
+                }
+
+                VStack(spacing: 10) {
+                    if let backupExport {
+                        ShareLink(item: backupExport.fileURL) {
+                            actionButtonLabel(title: strings.exportBackup, systemImage: "square.and.arrow.up")
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Button {
+                            prepareBackupExport()
+                        } label: {
+                            actionButtonLabel(title: strings.exportBackup, systemImage: "square.and.arrow.up")
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(true)
+                    }
+
+                    Button {
+                        showBackupImporter = true
+                    } label: {
+                        actionButtonLabel(title: strings.importBackup, systemImage: "tray.and.arrow.down")
+                    }
+                    .buttonStyle(.plain)
+
+#if DEBUG
+                    Button {
+                        viewModel.loadDemoData()
+                        backupFeedback = strings.backupDemoDataSuccess
+                        backupFeedbackIsError = false
+                        prepareBackupExport()
+                    } label: {
+                        actionButtonLabel(title: strings.backupGenerateDemoData, systemImage: "sparkles")
+                    }
+                    .buttonStyle(.plain)
+
+                    Text(strings.backupGenerateDemoDataDescription)
+                        .font(.system(size: 12 * scale))
+                        .foregroundStyle(AppTheme.tertiaryText)
+#endif
+                }
+
+                if let backupFeedback {
+                    backupFeedbackBanner(message: backupFeedback, isError: backupFeedbackIsError)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -463,6 +655,44 @@ struct SettingsView: View {
         }
     }
 
+    private var recurringCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(strings.recurringExpensesTitle)
+                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AppTheme.primaryText)
+                Text(strings.recurringExpensesSubtitle)
+                    .font(.system(size: 15 * scale))
+                    .foregroundStyle(AppTheme.secondaryText)
+
+                Button {
+                    dismiss()
+                    DispatchQueue.main.async {
+                        onOpenRecurringExpenses?()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "repeat")
+                        Text(strings.recurringExpensesCreateButton)
+                    }
+                    .font(.system(size: 15 * scale, weight: .semibold))
+                    .foregroundStyle(AppTheme.background)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppTheme.primaryText)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(strings.recurringExpensesCreateButton)
+                .accessibilityHint(strings.recurringExpensesSubtitle)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     private var backTapCard: some View {
         GlassCardView {
             VStack(alignment: .leading, spacing: 10) {
@@ -485,6 +715,31 @@ struct SettingsView: View {
                     instructionRow(strings.backTapStepOpenAccessibility)
                     instructionRow(strings.backTapStepSelectShortcut)
                 }
+
+                Button {
+                    showShortcutsGuide = true
+                } label: {
+                    HStack {
+                        Image(systemName: "sparkles")
+                        Text(strings.openShortcutsGuide)
+                    }
+                    .font(.system(size: 15 * scale, weight: .semibold))
+                    .foregroundStyle(AppTheme.primaryText)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppTheme.cardFill)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(AppTheme.cardBorder, lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(strings.openShortcutsGuide)
+                .accessibilityHint(strings.backTapDescription)
 
                 Button {
                     onCopyQuickAddURL?()
@@ -566,7 +821,7 @@ struct SettingsView: View {
                 } label: {
                     HStack {
                         Image(systemName: "arrow.up.right.circle")
-                        Text(strings.openQuickAddRoute)
+                        Text(strings.testQuickAddLink)
                     }
                     .font(.system(size: 15 * scale, weight: .semibold))
                     .foregroundStyle(AppTheme.primaryText)
@@ -583,7 +838,7 @@ struct SettingsView: View {
                     )
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(strings.openQuickAddRoute)
+                .accessibilityLabel(strings.testQuickAddLink)
                 .accessibilityHint(strings.backTapDescription)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -683,6 +938,100 @@ struct SettingsView: View {
                         .stroke(Color.orange.opacity(0.25), lineWidth: 1)
                 )
         )
+    }
+
+    private func backupFeedbackBanner(message: String, isError: Bool) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: isError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                .foregroundStyle(isError ? Color.orange : Color.green)
+            Text(message)
+                .font(.system(size: 13 * scale))
+                .foregroundStyle(AppTheme.primaryText)
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill((isError ? Color.orange : Color.green).opacity(0.12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke((isError ? Color.orange : Color.green).opacity(0.25), lineWidth: 1)
+                )
+        )
+    }
+
+    private func actionButtonLabel(title: String, systemImage: String) -> some View {
+        HStack {
+            Image(systemName: systemImage)
+            Text(title)
+        }
+        .font(.system(size: 15 * scale, weight: .semibold))
+        .foregroundStyle(AppTheme.primaryText)
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: 44)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppTheme.cardFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(AppTheme.cardBorder, lineWidth: 1)
+                )
+        )
+    }
+
+    private var backupImportMessage: String {
+        guard let pendingBackupDocument else {
+            return strings.backupImportConfirmationMessage
+        }
+
+        let summary = String(
+            format: strings.backupImportSummaryTemplate,
+            pendingBackupDocument.expenses.count,
+            pendingBackupDocument.goals.activeGoals.count,
+            pendingBackupDocument.categoryBudgets.count,
+            pendingBackupDocument.recurringExpenses.count
+        )
+        return "\(summary)\n\n\(strings.backupImportConfirmationMessage)"
+    }
+
+    private var backupSignature: String {
+        let expenseSignature = viewModel.expenses
+            .map { "\($0.id.uuidString):\($0.amount):\($0.date.timeIntervalSince1970):\($0.category.id.uuidString):\($0.merchant):\($0.note):\($0.source.rawValue)" }
+            .joined(separator: ",")
+
+        let goalSignature = [
+            viewModel.weeklyGoal.map { "\($0.id.uuidString):\($0.limit):\($0.updatedAt.timeIntervalSince1970)" } ?? "nil",
+            viewModel.monthlyGoal.map { "\($0.id.uuidString):\($0.limit):\($0.updatedAt.timeIntervalSince1970)" } ?? "nil"
+        ]
+        .joined(separator: "|")
+
+        let budgetSignature = viewModel.categoryBudgets
+            .map { "\($0.id.uuidString):\($0.category.id.uuidString):\($0.cadence.rawValue):\($0.limit):\($0.updatedAt.timeIntervalSince1970):\($0.isActive)" }
+            .joined(separator: ",")
+
+        let recurringSignature = viewModel.recurringExpenses
+            .map { "\($0.id.uuidString):\($0.merchant):\($0.amount):\($0.category.id.uuidString):\($0.cadence.rawValue):\($0.nextDueDate.timeIntervalSince1970):\($0.updatedAt.timeIntervalSince1970):\($0.isActive)" }
+            .joined(separator: ",")
+
+        let settingsSignature = [
+            appearanceSelection.rawValue,
+            textSizeSelection.rawValue,
+            languageSelection.rawValue,
+            String(hapticsEnabled),
+            String(smartAlertsEnabled),
+            String(localNotificationsEnabled),
+            String(dailyCheckInEnabled),
+            String(goalWarningsEnabled),
+            String(weeklyDigestReminderEnabled),
+            "\(dailyCheckInHour):\(dailyCheckInMinute)",
+            "\(weeklyDigestWeekday):\(weeklyDigestHour):\(weeklyDigestMinute)",
+            String(hasSeenOnboarding)
+        ]
+        .joined(separator: "|")
+
+        return [expenseSignature, goalSignature, budgetSignature, recurringSignature, settingsSignature].joined(separator: "||")
     }
 
     private var notificationStatusText: String {
@@ -806,6 +1155,140 @@ struct SettingsView: View {
         let symbols = Calendar.current.weekdaySymbols
         guard symbols.indices.contains(weekday - 1) else { return "\(weekday)" }
         return symbols[weekday - 1]
+    }
+
+    private func prepareBackupExport() {
+        let settings = currentBackupSettingsSnapshot()
+        backupExport = backupService.export(
+            expenses: viewModel.expenses,
+            goals: SpendingGoals(weekly: viewModel.weeklyGoal, monthly: viewModel.monthlyGoal),
+            categoryBudgets: viewModel.categoryBudgets,
+            recurringExpenses: viewModel.recurringExpenses,
+            settings: settings
+        )
+    }
+
+    private func currentBackupSettingsSnapshot() -> DataBackupSettingsSnapshot {
+        DataBackupSettingsSnapshot(
+                appearance: appearanceSelection.rawValue,
+                textSize: textSizeSelection.rawValue,
+                language: languageSelection.rawValue,
+                hapticsEnabled: hapticsEnabled,
+                smartAlertsEnabled: smartAlertsEnabled,
+                appLockEnabled: appLockEnabled,
+                requireFaceIDOnLaunch: requireFaceIDOnLaunch,
+                privacyModeHideAmounts: privacyModeHideAmounts,
+                hideAmountsInWidgets: hideAmountsInWidgets,
+                localNotificationsEnabled: localNotificationsEnabled,
+                dailyCheckInEnabled: dailyCheckInEnabled,
+                goalWarningsEnabled: goalWarningsEnabled,
+                weeklyDigestReminderEnabled: weeklyDigestReminderEnabled,
+            dailyCheckInHour: dailyCheckInHour,
+            dailyCheckInMinute: dailyCheckInMinute,
+            weeklyDigestWeekday: weeklyDigestWeekday,
+            weeklyDigestHour: weeklyDigestHour,
+            weeklyDigestMinute: weeklyDigestMinute,
+            hasSeenOnboarding: hasSeenOnboarding
+        )
+    }
+
+    private func handleBackupImport(result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            guard url.startAccessingSecurityScopedResource() else {
+                if let document = backupService.loadBackup(from: url) {
+                    pendingBackupDocument = document
+                    showBackupImportConfirmation = true
+                    backupFeedback = nil
+                    backupFeedbackIsError = false
+                } else {
+                    backupFeedback = strings.backupImportFailed
+                    backupFeedbackIsError = true
+                }
+                return
+            }
+
+            defer { url.stopAccessingSecurityScopedResource() }
+
+            guard let document = backupService.loadBackup(from: url) else {
+                backupFeedback = strings.backupImportFailed
+                backupFeedbackIsError = true
+                return
+            }
+
+            pendingBackupDocument = document
+            showBackupImportConfirmation = true
+            backupFeedback = nil
+            backupFeedbackIsError = false
+        case .failure:
+            backupFeedback = strings.backupImportFailed
+            backupFeedbackIsError = true
+        }
+    }
+
+    private func restorePendingBackup(mode: DataBackupRestoreMode) {
+        guard let document = pendingBackupDocument else { return }
+
+        if let settings = document.settings {
+            applyImportedSettings(settings)
+        }
+
+        let summary = viewModel.restoreBackup(document, mode: mode)
+        pendingBackupDocument = nil
+        showBackupImportConfirmation = false
+        backupFeedbackIsError = false
+        backupFeedback = summaryMessage(for: summary)
+        prepareBackupExport()
+    }
+
+    private func applyImportedSettings(_ settings: DataBackupSettingsSnapshot) {
+        appearanceSelection = AppAppearance(rawValue: settings.appearance) ?? appearanceSelection
+        textSizeSelection = AppTextSize(rawValue: settings.textSize) ?? textSizeSelection
+        languageSelection = AppLanguage(rawValue: settings.language) ?? languageSelection
+        hapticsEnabled = settings.hapticsEnabled
+        smartAlertsEnabled = settings.smartAlertsEnabled
+        if let appLockEnabled = settings.appLockEnabled {
+            self.appLockEnabled = appLockEnabled
+        }
+        if let requireFaceIDOnLaunch = settings.requireFaceIDOnLaunch {
+            self.requireFaceIDOnLaunch = requireFaceIDOnLaunch
+        }
+        if let privacyModeHideAmounts = settings.privacyModeHideAmounts {
+            self.privacyModeHideAmounts = privacyModeHideAmounts
+        }
+        if let hideAmountsInWidgets = settings.hideAmountsInWidgets {
+            self.hideAmountsInWidgets = hideAmountsInWidgets
+        }
+        localNotificationsEnabled = settings.localNotificationsEnabled
+        dailyCheckInEnabled = settings.dailyCheckInEnabled
+        goalWarningsEnabled = settings.goalWarningsEnabled
+        weeklyDigestReminderEnabled = settings.weeklyDigestReminderEnabled
+        dailyCheckInHour = settings.dailyCheckInHour
+        dailyCheckInMinute = settings.dailyCheckInMinute
+        weeklyDigestWeekday = settings.weeklyDigestWeekday
+        weeklyDigestHour = settings.weeklyDigestHour
+        weeklyDigestMinute = settings.weeklyDigestMinute
+        hasSeenOnboarding = settings.hasSeenOnboarding
+    }
+
+    private func summaryMessage(for summary: DataBackupRestorationSummary) -> String {
+        let dataSummary = String(
+            format: strings.backupImportSummaryTemplate,
+            summary.expenseCount,
+            summary.goalCount,
+            summary.categoryBudgetCount,
+            summary.recurringExpenseCount
+        )
+
+        return "\(dataSummary) \(strings.backupImportSuccess)"
+    }
+
+    @MainActor
+    private func syncPrivacyPreferences() {
+        viewModel.updatePrivacyPreferences(
+            hideAmounts: privacyModeHideAmounts,
+            hideAmountsInWidgets: hideAmountsInWidgets
+        )
     }
 
     private func openSystemSettings() {

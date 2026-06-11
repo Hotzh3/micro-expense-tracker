@@ -27,9 +27,16 @@ final class ExpenseStore {
             }
 
             let data = try Data(contentsOf: fileURL)
-            return try decoder.decode([Expense].self, from: data).filter { $0.amount.isFinite }
+            let expenses = try decoder.decode([Expense].self, from: data)
+            let sanitized = expenses.filter { $0.amount.isFinite && $0.amount > 0 }
+            if sanitized.count != expenses.count {
+                saveExpenses(sanitized)
+            }
+            return sanitized
         } catch {
             print("Failed to load expenses: \(error)")
+            print("ExpenseStore decode failed; clearing corrupt expenses")
+            removeCorruptExpensesFile()
             return []
         }
     }
@@ -60,6 +67,16 @@ final class ExpenseStore {
         let directoryURL = fileURL.deletingLastPathComponent()
         if !fileManager.fileExists(atPath: directoryURL.path) {
             try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil)
+        }
+    }
+
+    private func removeCorruptExpensesFile() {
+        do {
+            if fileManager.fileExists(atPath: fileURL.path) {
+                try fileManager.removeItem(at: fileURL)
+            }
+        } catch {
+            print("Failed to remove corrupt expenses file: \(error)")
         }
     }
 

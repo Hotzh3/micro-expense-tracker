@@ -41,4 +41,18 @@ enum ExpenseSource: String, CaseIterable, Identifiable, Codable {
     case demo
 
     var id: String { rawValue }
+
+    var displayName: String {
+        let strings = AppStrings.current()
+        switch self {
+        case .manual:
+            return strings.expenseSourceManual
+        case .parsedText:
+            return strings.expenseSourceParsedText
+        case .imported:
+            return strings.expenseSourceImported
+        case .demo:
+            return strings.expenseSourceDemo
+        }
+    }
 }

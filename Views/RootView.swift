@@ -100,11 +100,6 @@ struct RootView: View {
                     showOnboarding = true
                 }
             }
-
-            if let sharedText = SharedTextStore.shared.consumePendingText() {
-                setSelectedTab(.quickAdd, playHaptic: false)
-                viewModel.loadImportedText(sharedText)
-            }
         }
         .sheet(isPresented: $showSettings) {
             SettingsView(
@@ -152,34 +147,6 @@ struct RootView: View {
                     viewModel.clearAllData()
                 }
             )
-        }
-        .onOpenURL { url in
-            guard let route = PocketLeakRoute(url: url) else { return }
-
-            switch route {
-            case .dashboard:
-                setSelectedTab(.dashboard, playHaptic: false)
-            case .history:
-                setSelectedTab(.history, playHaptic: false)
-            case .insights:
-                setSelectedTab(.insights, playHaptic: false)
-            case .goals:
-                setSelectedTab(.goals, playHaptic: false)
-            case .quickAdd(let draft):
-                setSelectedTab(.quickAdd, playHaptic: false)
-                viewModel.resetDraftForExternalEntry()
-                viewModel.prefillDraft(
-                    amount: draft.amount,
-                    merchant: draft.merchant,
-                    category: draft.category,
-                    source: draft.hasPrefill ? .imported : .manual
-                )
-                viewModel.clearParseFeedback()
-            case .parseText(let text):
-                setSelectedTab(.quickAdd, playHaptic: false)
-                viewModel.loadImportedText(text)
-                SharedTextStore.shared.clearPendingText()
-            }
         }
     }
 

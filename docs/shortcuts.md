@@ -2,6 +2,8 @@
 
 Pocket Leak stays privacy-safe: it does not read system notifications from other apps. The supported fast-entry path is explicit user action through Shortcuts, URL schemes, manual paste, or a user-initiated Share Extension.
 
+Inside Pocket Leak, Settings now includes a Back Tap shortcut guide, a copy button for the Quick Add URL, and a `Test Quick Add Link` action so you can verify the deep link before assigning it to Back Tap.
+
 ## Supported URL Schemes
 
 Both schemes below resolve to the same in-app routes:
@@ -40,6 +42,7 @@ The `parse` route opens Quick Add and places decoded text into the pasted-text a
 5. Save the shortcut with a clear name such as `Open Pocket Leak Quick Add`.
 6. Optional: create a second shortcut that opens `pocketleak://add?amount=120&merchant=Oxxo&category=food` to test prefilled capture.
 7. Optional: create a third shortcut that opens `pocketleak://parse?text=Compra%20por%20%24129%20en%20OXXO` to test text handoff.
+8. In Pocket Leak Settings, tap `Open Shortcuts Guide` if you want a quick reference before assigning Back Tap.
 
 ## Back Tap Setup
 
@@ -50,6 +53,7 @@ The `parse` route opens Quick Add and places decoded text into the pasted-text a
 5. For the fastest flow, use the shortcut that opens `pocketleak://quick-add`.
 6. If you want a prefilled route, assign a separate shortcut to the `add` URL example above.
 7. If you want a text handoff route, assign a separate shortcut to the `parse` URL example above.
+8. Use `Test Quick Add Link` in Pocket Leak Settings to confirm that the app opens Quick Add before you map it to Back Tap.
 
 ## Shortcut-Friendly Text Intake
 

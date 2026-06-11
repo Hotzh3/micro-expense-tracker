@@ -71,6 +71,7 @@ targets:
             CFBundleURLSchemes:
               - jtap
               - pocketleak
+        NSFaceIDUsageDescription: Pocket Leak uses Face ID or Touch ID to protect your local expense data.
 
   PocketLeakWidget:
     type: app-extension
