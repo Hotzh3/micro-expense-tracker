@@ -57,11 +57,6 @@ final class ShareCardRenderer {
     }
 
     private func fileName(for variant: ShareCardVariant) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = .current
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyyMMdd-HHmmss"
-        return "Pocket-Leak-\(variant.rawValue)-\(formatter.string(from: .now)).png"
+        return "Pocket-Leak-\(variant.rawValue)-\(PocketLeakFormatters.shareCardFileDateFormatter.string(from: .now)).png"
     }
 }

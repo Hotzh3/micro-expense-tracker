@@ -17,6 +17,8 @@ struct HistoryView: View {
     private let pdfExportService = ExpensePDFExportService()
 
     var body: some View {
+        let summary = viewModel.historySummary(using: historyFilter)
+
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 ScreenHeaderView(
@@ -29,7 +31,7 @@ struct HistoryView: View {
                     .opacity(didAnimateIn ? 1 : 0)
                     .offset(y: didAnimateIn ? 0 : 8)
 
-                filteredSummaryCard
+                filteredSummaryCard(summary: summary)
                     .opacity(didAnimateIn ? 1 : 0)
                     .offset(y: didAnimateIn ? 0 : 8)
 
@@ -49,7 +51,7 @@ struct HistoryView: View {
                     )
                     .opacity(didAnimateIn ? 1 : 0)
                     .offset(y: didAnimateIn ? 0 : 8)
-                } else if filteredExpenses.isEmpty {
+                } else if summary.filteredExpenses.isEmpty {
                     EmptyStateView(
                         title: strings.historyNoResultsTitle,
                         message: strings.historyNoResultsMessage,
@@ -62,7 +64,7 @@ struct HistoryView: View {
                     .offset(y: didAnimateIn ? 0 : 8)
                 } else {
                     LazyVStack(spacing: 12) {
-                        ForEach(filteredExpenses) { expense in
+                        ForEach(summary.filteredExpenses) { expense in
                             HistoryRow(expense: expense)
                         }
                     }
@@ -112,15 +114,15 @@ struct HistoryView: View {
     }
 
     private var filteredExpenses: [Expense] {
-        viewModel.filteredExpenses(using: historyFilter)
+        viewModel.historySummary(using: historyFilter).filteredExpenses
     }
 
     private var filteredTotal: Double {
-        viewModel.filteredExpenseTotal(using: historyFilter)
+        viewModel.historySummary(using: historyFilter).filteredTotal
     }
 
     private var filteredCount: Int {
-        viewModel.filteredExpenseCount(using: historyFilter)
+        viewModel.historySummary(using: historyFilter).filteredCount
     }
 
     private var exportExpenses: [Expense] {
@@ -250,7 +252,7 @@ struct HistoryView: View {
         }
     }
 
-    private var filteredSummaryCard: some View {
+    private func filteredSummaryCard(summary: ExpenseViewModel.HistorySummary) -> some View {
         GlassCardView {
             VStack(alignment: .leading, spacing: 10) {
                 Text(strings.historyFilteredTotalTitle)
@@ -260,12 +262,12 @@ struct HistoryView: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                     MetricCardView(
                         title: strings.historyFilteredCountTitle,
-                        value: "\(filteredCount)",
+                        value: "\(summary.filteredCount)",
                         subtitle: historyFilter.isActive ? strings.historyFilteredResultsSubtitle : strings.historyAllExpensesSubtitle
                     )
                     MetricCardView(
                         title: strings.pdfTotalSpent,
-                        value: viewModel.displayCurrency(filteredTotal),
+                        value: viewModel.displayCurrency(summary.filteredTotal),
                         subtitle: historyFilter.isActive ? strings.historyFilteredResultsSubtitle : strings.historyAllExpensesSubtitle
                     )
                 }
@@ -437,10 +439,7 @@ struct HistoryView: View {
         }
 
         if let startDate = range.startDate, let endDate = range.endDate {
-            let formatter = DateFormatter()
-            formatter.locale = Locale.current
-            formatter.dateStyle = .short
-
+            let formatter = PocketLeakFormatters.shortDateRangeFormatter
             return "\(formatter.string(from: startDate)) - \(formatter.string(from: endDate))"
         }
 
@@ -850,7 +849,7 @@ private struct HistoryRow: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
-                    Text(expense.date.formatted(date: .abbreviated, time: .shortened))
+                    Text(PocketLeakFormatters.historyRowDateFormatter.string(from: expense.date))
                         .font(.caption)
                         .foregroundStyle(AppTheme.tertiaryText)
                 }

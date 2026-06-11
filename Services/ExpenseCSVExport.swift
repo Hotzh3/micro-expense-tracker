@@ -21,12 +21,6 @@ struct ExpenseCSVExport: Transferable {
     }
 
     private static func makeCSV(from expenses: [Expense]) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = .current
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-
         let sortedExpenses = expenses.sorted { $0.date > $1.date }
         var rows = [
             ["date", "amount", "category", "merchant", "note", "source"].joined(separator: ",")
@@ -34,7 +28,7 @@ struct ExpenseCSVExport: Transferable {
 
         rows.append(contentsOf: sortedExpenses.map { expense in
             [
-                csvField(formatter.string(from: expense.date)),
+                csvField(PocketLeakFormatters.csvDateFormatter.string(from: expense.date)),
                 csvField(String(format: "%.2f", expense.amount)),
                 csvField(expense.category.displayName),
                 csvField(expense.merchant),
@@ -56,11 +50,6 @@ struct ExpenseCSVExport: Transferable {
     }
 
     private static func defaultFileName() -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = .current
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyy-MM-dd"
-        return "Pocket-Leak-Export-\(formatter.string(from: .now)).csv"
+        return "Pocket-Leak-Export-\(PocketLeakFormatters.exportFileDateFormatter.string(from: .now)).csv"
     }
 }

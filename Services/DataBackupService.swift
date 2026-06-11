@@ -302,24 +302,14 @@ final class DataBackupService {
     private func rawDate(_ value: Any?) -> Date? {
         guard let string = value as? String else { return nil }
 
-        let fractionalFormatter = ISO8601DateFormatter()
-        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        if let date = fractionalFormatter.date(from: string) {
+        if let date = PocketLeakFormatters.iso8601FractionalFormatter.date(from: string) {
             return date
         }
 
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: string)
+        return PocketLeakFormatters.iso8601Formatter.date(from: string)
     }
 
     private func defaultFileName(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = .current
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyy-MM-dd-HHmm"
-        return "Pocket-Leak-Backup-\(formatter.string(from: date)).json"
+        return "Pocket-Leak-Backup-\(PocketLeakFormatters.backupFileDateFormatter.string(from: date)).json"
     }
 }

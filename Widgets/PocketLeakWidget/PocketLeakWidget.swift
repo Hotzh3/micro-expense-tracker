@@ -185,7 +185,9 @@ struct PocketLeakWidgetView: View {
     }
 
     private var largeView: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let maxCategoryAmount = safeMaxCategoryAmount
+
+        return VStack(alignment: .leading, spacing: 12) {
             header
 
             HStack(alignment: .top, spacing: 12) {
@@ -223,7 +225,7 @@ struct PocketLeakWidgetView: View {
                                         .frame(height: 8)
                                     Capsule(style: .continuous)
                                         .fill(Color.white)
-                                        .frame(width: max(10, geometry.size.width * progress(for: item.amount)), height: 8)
+                                        .frame(width: max(10, geometry.size.width * progress(for: item.amount, maxValue: maxCategoryAmount)), height: 8)
                                 }
                             }
                             .frame(height: 8)
@@ -331,9 +333,17 @@ struct PocketLeakWidgetView: View {
         return String(format: "%.1f", value)
     }
 
-    private func progress(for amount: Double) -> Double {
-        let maxValue = max(entry.summary.categoryTop3.map(\.amount).max() ?? 1, 1)
-        return min(amount / maxValue, 1)
+    private var safeMaxCategoryAmount: Double {
+        let maxValue = entry.summary.categoryTop3
+            .map(\.amount)
+            .filter { $0.isFinite && $0 > 0 }
+            .max() ?? 1
+        return max(maxValue, 1)
+    }
+
+    private func progress(for amount: Double, maxValue: Double) -> Double {
+        guard amount.isFinite, maxValue.isFinite, maxValue > 0 else { return 0 }
+        return min(max(amount / maxValue, 0), 1)
     }
 }
 

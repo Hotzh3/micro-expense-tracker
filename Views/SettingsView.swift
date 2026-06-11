@@ -54,6 +54,13 @@ struct SettingsView: View {
     @State private var backupExport: DataBackupExport?
     @State private var pendingBackupDocument: DataBackupDocument?
     @State private var isSyncingNotificationSettings = false
+    @State private var showLoadDemoConfirmation = false
+    @State private var showResetDemoConfirmation = false
+    @State private var showStressDemoConfirmation = false
+    @State private var showStressClearConfirmation = false
+#if DEBUG
+    @State private var selectedStressScenario: StressDemoScenario = .thirtyDays
+#endif
     private let appLockService = AppLockService.shared
 
     private let backupService = DataBackupService()
@@ -77,6 +84,10 @@ struct SettingsView: View {
                     notificationsCard
                     privacyCard
                     backupCard
+                    demoModeCard
+#if DEBUG
+                    stressToolsCard
+#endif
                     exportCard
                     recurringCard
                     backTapCard
@@ -112,6 +123,37 @@ struct SettingsView: View {
                 Text(strings.resetConfirmationMessage)
             }
             .confirmationDialog(
+                strings.demoModeTitle,
+                isPresented: $showLoadDemoConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button(strings.loadDemoData, role: .destructive) {
+                    viewModel.loadDemoData()
+                    backupFeedback = strings.demoDataLoaded
+                    backupFeedbackIsError = false
+                }
+                Button(strings.cancel, role: .cancel) {}
+            } message: {
+                Text(strings.demoDataWarning)
+            }
+            .confirmationDialog(
+                strings.demoModeTitle,
+                isPresented: $showResetDemoConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button(strings.resetDemoData, role: .destructive) {
+                    if viewModel.resetDemoData() {
+                        backupFeedback = strings.demoDataCleared
+                        backupFeedbackIsError = false
+                    } else {
+                        showResetConfirmation = true
+                    }
+                }
+                Button(strings.cancel, role: .cancel) {}
+            } message: {
+                Text(strings.demoDataWarning)
+            }
+            .confirmationDialog(
                 strings.backupTitle,
                 isPresented: $showBackupImportConfirmation,
                 titleVisibility: .visible
@@ -126,6 +168,39 @@ struct SettingsView: View {
             } message: {
                 Text(backupImportMessage)
             }
+#if DEBUG
+            .confirmationDialog(
+                "Generate demo data?",
+                isPresented: $showStressDemoConfirmation,
+                titleVisibility: .visible,
+                presenting: selectedStressScenario
+            ) { scenario in
+                Button("Generate \(scenario.title)", role: .destructive) {
+                    viewModel.loadStressDemoData(days: scenario.days, expensesPerDay: scenario.dailyExpenseCount)
+                    backupFeedback = "Generated \(scenario.days) days of demo data"
+                    backupFeedbackIsError = false
+                    prepareBackupExport()
+                }
+                Button(strings.cancel, role: .cancel) {}
+            } message: { scenario in
+                Text("This will replace current expenses with \(scenario.title.lowercased()) of synthetic data.")
+            }
+            .confirmationDialog(
+                "Clear demo data?",
+                isPresented: $showStressClearConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Clear demo expenses", role: .destructive) {
+                    viewModel.clearAllExpenses()
+                    backupFeedback = "Demo expenses cleared"
+                    backupFeedbackIsError = false
+                    prepareBackupExport()
+                }
+                Button(strings.cancel, role: .cancel) {}
+            } message: {
+                Text("This removes the generated demo expenses from the local store.")
+            }
+#endif
             .fileImporter(
                 isPresented: $showBackupImporter,
                 allowedContentTypes: [.json]
@@ -567,22 +642,6 @@ struct SettingsView: View {
                         actionButtonLabel(title: strings.importBackup, systemImage: "tray.and.arrow.down")
                     }
                     .buttonStyle(.plain)
-
-#if DEBUG
-                    Button {
-                        viewModel.loadDemoData()
-                        backupFeedback = strings.backupDemoDataSuccess
-                        backupFeedbackIsError = false
-                        prepareBackupExport()
-                    } label: {
-                        actionButtonLabel(title: strings.backupGenerateDemoData, systemImage: "sparkles")
-                    }
-                    .buttonStyle(.plain)
-
-                    Text(strings.backupGenerateDemoDataDescription)
-                        .font(.system(size: 12 * scale))
-                        .foregroundStyle(AppTheme.tertiaryText)
-#endif
                 }
 
                 if let backupFeedback {
@@ -592,6 +651,127 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
+
+    private var demoModeCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(strings.demoModeTitle)
+                        .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
+                        .foregroundStyle(AppTheme.primaryText)
+                    Text(strings.demoDataWarning)
+                        .font(.system(size: 15 * scale))
+                        .foregroundStyle(AppTheme.secondaryText)
+                }
+
+                VStack(spacing: 10) {
+                    Button {
+                        showLoadDemoConfirmation = true
+                    } label: {
+                        actionButtonLabel(title: strings.loadDemoData, systemImage: "sparkles")
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showResetDemoConfirmation = true
+                    } label: {
+                        actionButtonLabel(title: strings.resetDemoData, systemImage: "arrow.counterclockwise")
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showResetConfirmation = true
+                    } label: {
+                        actionButtonLabel(title: strings.clearDemoData, systemImage: "trash")
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+#if DEBUG
+    private enum StressDemoScenario: String, CaseIterable, Identifiable {
+        case thirtyDays
+        case sixtyDays
+        case ninetyDays
+
+        var id: String { rawValue }
+
+        var days: Int {
+            switch self {
+            case .thirtyDays:
+                return 30
+            case .sixtyDays:
+                return 60
+            case .ninetyDays:
+                return 90
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .thirtyDays:
+                return "30 days demo data"
+            case .sixtyDays:
+                return "60 days demo data"
+            case .ninetyDays:
+                return "90 days demo data"
+            }
+        }
+
+        var dailyExpenseCount: Int {
+            5
+        }
+    }
+
+    private var stressToolsCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Stress / Demo Tools")
+                    .font(.system(size: 18 * scale, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AppTheme.primaryText)
+
+                Text("Generate synthetic expense history to test launch speed, dashboard rendering, history filters, and export behavior.")
+                    .font(.system(size: 13 * scale))
+                    .foregroundStyle(AppTheme.secondaryText)
+
+                Button {
+                    selectedStressScenario = .thirtyDays
+                    showStressDemoConfirmation = true
+                } label: {
+                    actionButtonLabel(title: "Generate 30 days demo data", systemImage: "sparkles")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    selectedStressScenario = .sixtyDays
+                    showStressDemoConfirmation = true
+                } label: {
+                    actionButtonLabel(title: "Generate 60 days demo data", systemImage: "sparkles")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    selectedStressScenario = .ninetyDays
+                    showStressDemoConfirmation = true
+                } label: {
+                    actionButtonLabel(title: "Generate 90 days demo data", systemImage: "sparkles")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showStressClearConfirmation = true
+                } label: {
+                    actionButtonLabel(title: "Clear demo data", systemImage: "trash")
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+#endif
 
     private var exportCard: some View {
         GlassCardView {

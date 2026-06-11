@@ -103,6 +103,29 @@ final class ExpenseViewModel: ObservableObject {
         let accentColor: Color
     }
 
+    struct DashboardSummary: Equatable {
+        let todayTotal: Double
+        let weekTotal: Double
+        let monthTotal: Double
+        let totalExpenseCount: Int
+        let averageExpenseAmount: Double
+        let highestExpense: Expense?
+        let largestExpenseThisMonth: Expense?
+        let topCategory: ExpenseCategory?
+        let mostFrequentCategory: ExpenseCategory?
+        let categorySummaries: [DashboardCategorySummary]
+        let trendPoints: [DashboardTrendPoint]
+        let recentExpenses: [Expense]
+    }
+
+    struct HistorySummary: Equatable {
+        let filteredExpenses: [Expense]
+        let filteredTotal: Double
+        let filteredCount: Int
+        let availableMerchants: [String]
+        let availableCategories: [ExpenseCategory]
+    }
+
     struct CategorySpendPoint: Identifiable, Equatable {
         let category: ExpenseCategory
         let total: Double
@@ -191,7 +214,11 @@ final class ExpenseViewModel: ObservableObject {
         }
     }
 
-    @Published var expenses: [Expense]
+    @Published var expenses: [Expense] {
+        didSet {
+            rebuildExpenseAnalyticsCache()
+        }
+    }
     @Published var selectedCategory: ExpenseCategory
     @Published var amountText: String = ""
     @Published var merchantText: String = ""
@@ -234,6 +261,7 @@ final class ExpenseViewModel: ObservableObject {
     private var draftConfidence: Double = 1.0
     private var isResettingDraft = false
     private var smartAlertsDefaultsObserver: NSObjectProtocol?
+    private var expenseAnalytics = ExpenseAnalyticsSnapshot.empty
 
     init(
         store: ExpenseStore = ExpenseStore(),
@@ -258,15 +286,7 @@ final class ExpenseViewModel: ObservableObject {
         self.categories = ExpenseCategory.allDefaults
         let initialCategory = ExpenseCategory.allDefaults.last ?? .other
         self.defaultCategory = initialCategory
-        self.expenses = store.loadExpenses()
-        let goals = goalStore.loadGoals()
-        self.weeklyGoal = goals.weekly
-        self.monthlyGoal = goals.monthly
-        self.categoryBudgets = categoryBudgetStore.loadBudgets()
-        self.recurringExpenses = recurringExpenseStore.loadRecurringExpenses()
         self.selectedCategory = initialCategory
-        self.privacyModeHideAmounts = UserDefaults.standard.bool(forKey: AppPreferenceKeys.privacyModeHideAmounts)
-        self.hideAmountsInWidgets = UserDefaults.standard.bool(forKey: AppPreferenceKeys.hideAmountsInWidgets)
         self.weeklyDigest = WeeklyDigest(
             weekStart: .now,
             weekEnd: .now,
@@ -279,6 +299,15 @@ final class ExpenseViewModel: ObservableObject {
             goalStatus: nil,
             comparisonVsLastWeek: nil
         )
+        self.expenses = store.loadExpenses()
+        let goals = goalStore.loadGoals()
+        self.weeklyGoal = goals.weekly
+        self.monthlyGoal = goals.monthly
+        self.categoryBudgets = categoryBudgetStore.loadBudgets()
+        self.recurringExpenses = recurringExpenseStore.loadRecurringExpenses()
+        self.privacyModeHideAmounts = UserDefaults.standard.bool(forKey: AppPreferenceKeys.privacyModeHideAmounts)
+        self.hideAmountsInWidgets = UserDefaults.standard.bool(forKey: AppPreferenceKeys.hideAmountsInWidgets)
+        rebuildExpenseAnalyticsCache()
         print("Loaded goals:", String(describing: self.weeklyGoal), String(describing: self.monthlyGoal))
 
         smartAlertsDefaultsObserver = NotificationCenter.default.addObserver(
@@ -469,9 +498,56 @@ final class ExpenseViewModel: ObservableObject {
         clearAllGoals()
         clearAllCategoryBudgets()
         clearAllRecurringExpenses()
+        clearDemoDataManifest()
         smartAlertService.clearDismissedAlerts()
         refreshSmartAlerts()
         syncLocalNotifications()
+    }
+
+    func loadDemoData(days: Int = 45) {
+        let generator = DemoDataGenerator(referenceDate: .now)
+        let demoState = generator.makeDemoState(days: days)
+
+        expenses = demoState.expenses
+        weeklyGoal = demoState.goals.weekly
+        monthlyGoal = demoState.goals.monthly
+        categoryBudgets = demoState.categoryBudgets
+        recurringExpenses = demoState.recurringExpenses
+        persistExpenses(refreshDerivedState: false)
+        persistGoals(refreshDerivedState: false)
+        persistCategoryBudgets()
+        persistRecurringExpenses()
+        saveDemoDataManifest(demoState.manifest)
+        smartAlertService.clearDismissedAlerts()
+        refreshDerivedDataAfterMutation()
+    }
+
+    @discardableResult
+    func resetDemoData() -> Bool {
+        guard let manifest = loadDemoDataManifest() else {
+            return false
+        }
+
+        let demoExpenseIDs = Set(manifest.expenseIDs)
+        expenses.removeAll { $0.source == .demo || demoExpenseIDs.contains($0.id) }
+
+        if let weeklyGoal, manifest.goalIDs.contains(weeklyGoal.id) {
+            self.weeklyGoal = nil
+        }
+
+        if let monthlyGoal, manifest.goalIDs.contains(monthlyGoal.id) {
+            self.monthlyGoal = nil
+        }
+
+        categoryBudgets.removeAll { manifest.categoryBudgetIDs.contains($0.id) }
+        recurringExpenses.removeAll { manifest.recurringExpenseIDs.contains($0.id) }
+        clearDemoDataManifest()
+        persistExpenses(refreshDerivedState: false)
+        persistGoals(refreshDerivedState: false)
+        persistCategoryBudgets()
+        persistRecurringExpenses()
+        refreshDerivedDataAfterMutation()
+        return true
     }
 
     func restoreBackup(
@@ -511,6 +587,7 @@ final class ExpenseViewModel: ObservableObject {
         refreshWeeklyDigest()
         syncWidgetSummary()
         syncLocalNotifications()
+        clearDemoDataManifest()
 
         return DataBackupRestorationSummary(
             expenseCount: importedExpenses.count,
@@ -522,35 +599,18 @@ final class ExpenseViewModel: ObservableObject {
     }
 
 #if DEBUG
-    func loadDemoData() {
-        print("Generating demo data")
-        clearAllData()
+    func loadStressDemoData(days: Int, expensesPerDay: Int) {
+        let generator = DemoDataGenerator()
+        let generatedExpenses = generator.generateExpenses(days: days, expensesPerDay: expensesPerDay)
 
-        expenses = store.sampleExpenses().sorted { $0.date > $1.date }
+        print("Generating stress demo data:", days, expensesPerDay, generatedExpenses.count)
+        expenses = generatedExpenses
         persistExpenses()
 
-        saveGoal(cadence: .weekly, limit: 180)
-        saveGoal(cadence: .monthly, limit: 760)
-
-        saveCategoryBudget(category: .coffee, cadence: .monthly, limit: 80)
-        saveCategoryBudget(category: .transport, cadence: .monthly, limit: 120)
-        saveRecurringExpense(
-            merchant: "Netflix",
-            amount: 149.0,
-            category: .entertainment,
-            cadence: .monthly,
-            nextDueDate: calendar.date(byAdding: .day, value: 7, to: .now) ?? .now
+        showSaveFeedback(
+            message: "Generated \(generatedExpenses.count) stress demo expenses",
+            isError: false
         )
-
-        refreshGoalForecasts()
-        refreshSpendingComparisons()
-        refreshSmartInsights()
-        refreshSmartAlerts()
-        refreshWeeklyDigest()
-        syncWidgetSummary()
-        syncLocalNotifications()
-
-        showSaveFeedback(message: "Demo data generated", isError: false)
     }
 #endif
 
@@ -748,101 +808,88 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     func filteredExpenses(using filter: ExpenseFilter) -> [Expense] {
-        let matchingExpenses = safeExpenses.filter { filter.matches($0, calendar: calendar) }
+        let matchingExpenses = expenseAnalytics.safeExpenses.filter { filter.matches($0, calendar: calendar) }
         return filter.sortOrder.sorted(matchingExpenses)
     }
 
     func filteredExpenseCount(using filter: ExpenseFilter) -> Int {
-        filteredExpenses(using: filter).count
+        historySummary(using: filter).filteredCount
     }
 
     func filteredExpenseTotal(using filter: ExpenseFilter) -> Double {
-        filteredExpenses(using: filter).reduce(0) { $0 + $1.amount }
+        historySummary(using: filter).filteredTotal
     }
 
     var availableMerchants: [String] {
-        Array(
-            Set(
-                safeExpenses
-                    .map { $0.merchant.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
-            )
-        )
-        .sorted { lhs, rhs in
-            lhs.localizedCaseInsensitiveCompare(rhs) == .orderedAscending
-        }
+        expenseAnalytics.availableMerchants
     }
 
     var todayTotal: Double {
-        expenses(in: .today).reduce(0) { $0 + $1.amount }
+        expenseAnalytics.todayTotal
     }
 
     var weekTotal: Double {
-        expenses(in: .week).reduce(0) { $0 + $1.amount }
+        expenseAnalytics.weekTotal
     }
 
     var monthTotal: Double {
-        expenses(in: .month).reduce(0) { $0 + $1.amount }
+        expenseAnalytics.monthTotal
     }
 
     var totalExpenseCount: Int {
-        safeExpenses.count
+        expenseAnalytics.totalExpenseCount
     }
 
     var expenseCountThisMonth: Int {
-        expenses(in: .month).count
+        expenseAnalytics.expenseCountThisMonth
     }
 
     var averageExpenseAmount: Double {
-        guard !safeExpenses.isEmpty else { return 0 }
-        return totalAmount / Double(safeExpenses.count)
+        expenseAnalytics.averageExpenseAmount
     }
 
     var averageDailySpend: Double {
-        guard monthTotal > 0 else { return 0 }
-        let elapsedDays = max(calendar.component(.day, from: .now), 1)
-        return monthTotal / Double(elapsedDays)
+        expenseAnalytics.averageDailySpend
     }
 
     var projectedMonthlySpend: Double {
-        projectedMonthSpend
+        expenseAnalytics.projectedMonthSpend
     }
 
     var projectedMonthSpend: Double {
-        let daysInCurrentMonth = calendar.range(of: .day, in: .month, for: .now)?.count ?? 30
-        return averageDailySpend * Double(daysInCurrentMonth)
+        expenseAnalytics.projectedMonthSpend
     }
 
     var daysLeftInMonth: Int {
-        daysLeft(in: .month)
+        expenseAnalytics.daysLeftInMonth
     }
 
     var daysLeftInWeek: Int {
-        daysLeft(in: .week)
+        expenseAnalytics.daysLeftInWeek
     }
 
     var highestExpense: Expense? {
-        safeExpenses.max(by: { $0.amount < $1.amount })
+        expenseAnalytics.highestExpense
     }
 
     var largestExpenseThisMonth: Expense? {
-        expenses(in: .month).max(by: { $0.amount < $1.amount })
+        expenseAnalytics.largestExpenseThisMonth
     }
 
     var topCategory: ExpenseCategory? {
-        categoryBreakdown.first?.category
+        expenseAnalytics.topCategory
     }
 
     var mostFrequentCategory: ExpenseCategory? {
-        categoryBreakdown(by: .count).first?.category
+        expenseAnalytics.mostFrequentCategory
     }
 
     var categoryBreakdown: [CategoryBreakdown] {
-        categoryBreakdown(by: .amount)
+        expenseAnalytics.monthCategoryBreakdownByAmount
     }
 
     var categorySpendChartData: [CategorySpendPoint] {
-        categoryBreakdown.map {
+        expenseAnalytics.monthCategoryBreakdownByAmount.map {
             CategorySpendPoint(category: $0.category, total: $0.total)
         }
     }
@@ -852,85 +899,15 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var categorySharesThisMonth: [CategoryShare] {
-        let monthBreakdown = categoryBreakdown
-        let monthTotal = self.monthTotal
-        guard monthTotal > 0 else { return [] }
-
-        return monthBreakdown.map { item in
-            CategoryShare(
-                category: item.category,
-                total: item.total,
-                count: item.count,
-                percentage: (item.total / monthTotal) * 100
-            )
-        }
+        expenseAnalytics.categorySharesThisMonth
     }
 
     var dashboardCategorySummariesSafe: [DashboardCategorySummary] {
-        let monthExpenses = expenses(in: .month).filter { $0.amount.isFinite && $0.amount > 0 }
-        guard !monthExpenses.isEmpty else { return [] }
-
-        let grouped = Dictionary(grouping: monthExpenses, by: { normalizedCategoryKey(for: $0.category) })
-        let total = monthExpenses.reduce(0) { $0 + $1.amount }
-        guard total > 0 else { return [] }
-
-        return grouped.compactMap { key, items in
-            let validItems = items.filter { $0.amount.isFinite && $0.amount > 0 }
-            guard !validItems.isEmpty else { return nil }
-            let category = validItems.first?.category ?? items.first?.category
-            guard let category else { return nil }
-
-            let categoryTotal = validItems.reduce(0) { $0 + $1.amount }
-            guard categoryTotal.isFinite, categoryTotal > 0 else { return nil }
-
-            let percentage = clampPercentage(categoryTotal / total)
-            guard percentage.isFinite else { return nil }
-
-            return DashboardCategorySummary(
-                key: key,
-                categoryName: category.displayName,
-                total: categoryTotal,
-                count: validItems.count,
-                percentage: percentage,
-                accentColor: category.accentColor
-            )
-        }
-        .sorted { lhs, rhs in
-            if lhs.total == rhs.total {
-                return lhs.categoryName < rhs.categoryName
-            }
-            return lhs.total > rhs.total
-        }
+        expenseAnalytics.dashboardCategorySummaries
     }
 
     var dashboardTrendPointsSafe: [DashboardTrendPoint] {
-        let daysToShow = 14
-        guard let startDate = calendar.date(byAdding: .day, value: -(daysToShow - 1), to: calendar.startOfDay(for: .now)) else {
-            return []
-        }
-
-        let sourceExpenses = safeExpenses.filter { $0.amount > 0 && $0.amount.isFinite }
-        let totalsByDay = Dictionary(
-            grouping: sourceExpenses,
-            by: { calendar.startOfDay(for: $0.date) }
-        ).mapValues { items in
-            items.reduce(0) { $0 + $1.amount }
-        }
-
-        return (0..<daysToShow).compactMap { index in
-            guard let date = calendar.date(byAdding: .day, value: index, to: startDate) else {
-                return nil
-            }
-
-            let total = totalsByDay[date] ?? 0
-            guard total.isFinite, total >= 0 else { return nil }
-
-            return DashboardTrendPoint(
-                index: index,
-                date: date,
-                total: total
-            )
-        }
+        expenseAnalytics.dashboardTrendPoints
     }
 
     var dashboardTopCategorySafe: DashboardTopCategorySignal? {
@@ -1025,7 +1002,7 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var dashboardSmartInsightSafe: DashboardSmartInsight? {
-        let monthExpenses = expenses(in: .month).filter { $0.amount.isFinite && $0.amount > 0 }
+        let monthExpenses = expenseAnalytics.monthExpenses
         guard !monthExpenses.isEmpty else { return nil }
 
         if let budget = dashboardCategoryBudgetSignalSafe, budget.progressFraction >= 0.75 {
@@ -1046,15 +1023,8 @@ final class ExpenseViewModel: ObservableObject {
             )
         }
 
-        let thisWeekTotal = expenses(in: .week).reduce(0) { $0 + $1.amount }
-        let previousWeekStart = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: .now)) ?? .now
-        let previousWeekEnd = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: .now)) ?? .now
-        let previousWeekTotal = safeExpenses.filter { expense in
-            expense.amount.isFinite
-                && expense.amount > 0
-                && expense.date >= previousWeekStart
-                && expense.date <= previousWeekEnd
-        }.reduce(0) { $0 + $1.amount }
+        let thisWeekTotal = weekTotal
+        let previousWeekTotal = expenseAnalytics.previousWeekTotal
 
         if previousWeekTotal > 0, thisWeekTotal.isFinite, previousWeekTotal.isFinite {
             let delta = thisWeekTotal - previousWeekTotal
@@ -1102,63 +1072,15 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var recentSpendTrendData: [DailySpendPoint] {
-        let daysToShow = 14
-        guard let startDate = calendar.date(byAdding: .day, value: -(daysToShow - 1), to: calendar.startOfDay(for: .now)) else {
-            return []
-        }
-
-        let totalsByDay = Dictionary(
-            grouping: safeExpenses,
-            by: { calendar.startOfDay(for: $0.date) }
-        ).mapValues { items in
-            items.reduce(0) { $0 + $1.amount }
-        }
-
-        return (0..<daysToShow).compactMap { offset in
-            guard let date = calendar.date(byAdding: .day, value: offset, to: startDate) else {
-                return nil
-            }
-
-            return DailySpendPoint(
-                date: date,
-                total: totalsByDay[date] ?? 0
-            )
-        }
+        expenseAnalytics.recentSpendTrendData
     }
 
     var weeklySpendTrendData: [WeeklySpendPoint] {
-        let weeksToShow = 6
-        guard let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: .now)?.start else {
-            return []
-        }
-
-        let totalsByWeek = Dictionary(
-            grouping: safeExpenses,
-            by: { expense in
-                calendar.dateInterval(of: .weekOfYear, for: expense.date)?.start ?? calendar.startOfDay(for: expense.date)
-            }
-        ).mapValues { items in
-            items.reduce(0) { $0 + $1.amount }
-        }
-
-        return (0..<weeksToShow).compactMap { offset in
-            guard let weekStart = calendar.date(byAdding: .weekOfYear, value: offset - (weeksToShow - 1), to: currentWeekStart) else {
-                return nil
-            }
-
-            return WeeklySpendPoint(
-                weekStart: weekStart,
-                total: totalsByWeek[weekStart] ?? 0
-            )
-        }
+        expenseAnalytics.weeklySpendTrendData
     }
 
     var hasWeeklyTrendData: Bool {
-        Set(
-            safeExpenses.compactMap { expense in
-                calendar.dateInterval(of: .weekOfYear, for: expense.date)?.start
-            }
-        ).count >= 2
+        expenseAnalytics.hasWeeklyTrendData
     }
 
     var insightText: String {
@@ -1213,7 +1135,7 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var recentTrendAccessibilitySummary: String {
-        let points = recentSpendTrendData
+        let points = expenseAnalytics.recentSpendTrendData
         guard !points.isEmpty else {
             return AppStrings.current().dashboardNoRecentTrend
         }
@@ -1228,7 +1150,7 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var weeklyTrendAccessibilitySummary: String {
-        let points = weeklySpendTrendData
+        let points = expenseAnalytics.weeklySpendTrendData
         guard !points.isEmpty else {
             return AppStrings.current().insightsWeeklyTotalsTitle
         }
@@ -1381,6 +1303,35 @@ final class ExpenseViewModel: ObservableObject {
             primaryGoalForecast?.id.rawValue ?? "no-goal-forecast"
         ]
         .joined(separator: "|")
+    }
+
+    func dashboardSummary(recentLimit: Int = 5) -> DashboardSummary {
+        DashboardSummary(
+            todayTotal: todayTotal,
+            weekTotal: weekTotal,
+            monthTotal: monthTotal,
+            totalExpenseCount: totalExpenseCount,
+            averageExpenseAmount: averageExpenseAmount,
+            highestExpense: highestExpense,
+            largestExpenseThisMonth: largestExpenseThisMonth,
+            topCategory: topCategory,
+            mostFrequentCategory: mostFrequentCategory,
+            categorySummaries: dashboardCategorySummariesSafe,
+            trendPoints: dashboardTrendPointsSafe,
+            recentExpenses: Array(expenseAnalytics.recentExpenses.prefix(max(recentLimit, 0)))
+        )
+    }
+
+    func historySummary(using filter: ExpenseFilter) -> HistorySummary {
+        let filtered = filteredExpenses(using: filter)
+        let total = filtered.reduce(0) { $0 + $1.amount }
+        return HistorySummary(
+            filteredExpenses: filtered,
+            filteredTotal: total,
+            filteredCount: filtered.count,
+            availableMerchants: expenseAnalytics.availableMerchants,
+            availableCategories: expenseAnalytics.availableCategories
+        )
     }
 
     func goal(for cadence: SpendingGoalCadence) -> SpendingGoal? {
@@ -1891,11 +1842,11 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     private var safeExpenses: [Expense] {
-        expenses.filter { $0.amount.isFinite }
+        expenseAnalytics.safeExpenses
     }
 
     private var totalAmount: Double {
-        safeExpenses.reduce(0) { $0 + $1.amount }
+        expenseAnalytics.totalAmount
     }
 
     private func filteredExpenses(category: ExpenseCategory?, timeFilter: HistoryTimeFilter) -> [Expense] {
@@ -1918,15 +1869,13 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     private func expenses(in range: TimeRange) -> [Expense] {
-        safeExpenses.filter { expense in
-            switch range {
-            case .today:
-                return calendar.isDateInToday(expense.date)
-            case .week:
-                return isDate(expense.date, inside: .week)
-            case .month:
-                return isDate(expense.date, inside: .month)
-            }
+        switch range {
+        case .today:
+            return expenseAnalytics.todayExpenses
+        case .week:
+            return expenseAnalytics.weekExpenses
+        case .month:
+            return expenseAnalytics.monthExpenses
         }
     }
 
@@ -1944,7 +1893,12 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     private func categoryBreakdown(by sortMode: CategorySortMode) -> [CategoryBreakdown] {
-        categoryBreakdown(from: expenses(in: .month), sortMode: sortMode)
+        switch sortMode {
+        case .amount:
+            return expenseAnalytics.monthCategoryBreakdownByAmount
+        case .count:
+            return expenseAnalytics.monthCategoryBreakdownByCount
+        }
     }
 
     private func categoryBreakdown(in range: TimeRange, sortMode: CategorySortMode) -> [CategoryBreakdown] {
@@ -1995,11 +1949,11 @@ final class ExpenseViewModel: ObservableObject {
     private func pdfExpenses(for reportType: ExpensePDFReportType) -> [Expense] {
         switch reportType {
         case .weekly:
-            return expenses(in: .week).sorted { $0.date > $1.date }
+            return expenseAnalytics.weekExpenses.sorted { $0.date > $1.date }
         case .monthly:
-            return expenses(in: .month).sorted { $0.date > $1.date }
+            return expenseAnalytics.monthExpenses.sorted { $0.date > $1.date }
         case .allData:
-            return safeExpenses.sorted { $0.date > $1.date }
+            return expenseAnalytics.recentExpenses
         }
     }
 
@@ -2027,7 +1981,15 @@ final class ExpenseViewModel: ObservableObject {
 
     private func categoryShares(in range: TimeRange) -> [CategoryShare] {
         let breakdown = categoryBreakdown(in: range, sortMode: .amount)
-        let total = expenses(in: range).reduce(0) { $0 + $1.amount }
+        let total: Double
+        switch range {
+        case .today:
+            total = expenseAnalytics.todayTotal
+        case .week:
+            total = expenseAnalytics.weekTotal
+        case .month:
+            total = expenseAnalytics.monthTotal
+        }
         guard total > 0 else { return [] }
 
         return breakdown.map { item in
@@ -2194,11 +2156,10 @@ final class ExpenseViewModel: ObservableObject {
 
     private func persistExpenses(refreshDerivedState: Bool = true) {
         let sanitizedExpenses = safeExpenses
-        if sanitizedExpenses.count != expenses.count {
+        if sanitizedExpenses != expenses {
             expenses = sanitizedExpenses
         }
         store.saveExpenses(sanitizedExpenses)
-        expenses = store.loadExpenses().filter { $0.amount.isFinite }
         guard refreshDerivedState else { return }
         refreshDerivedDataAfterMutation()
     }
@@ -2206,9 +2167,8 @@ final class ExpenseViewModel: ObservableObject {
     private func persistGoals(refreshDerivedState: Bool = true) {
         let sanitizedGoals = SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal).sanitized
         goalStore.saveGoals(sanitizedGoals)
-        let savedGoals = goalStore.loadGoals().sanitized
-        weeklyGoal = savedGoals.weekly
-        monthlyGoal = savedGoals.monthly
+        weeklyGoal = sanitizedGoals.weekly
+        monthlyGoal = sanitizedGoals.monthly
 
         guard refreshDerivedState else {
             return
@@ -2222,7 +2182,7 @@ final class ExpenseViewModel: ObservableObject {
             categoryBudgets = sanitizedBudgets
         }
         categoryBudgetStore.saveBudgets(sanitizedBudgets)
-        categoryBudgets = categoryBudgetStore.loadBudgets()
+        categoryBudgets = sanitizedBudgets
     }
 
     private func persistRecurringExpenses() {
@@ -2231,7 +2191,7 @@ final class ExpenseViewModel: ObservableObject {
             recurringExpenses = sanitizedRecurring
         }
         recurringExpenseStore.saveRecurringExpenses(sanitizedRecurring)
-        recurringExpenses = recurringExpenseStore.loadRecurringExpenses()
+        recurringExpenses = sanitizedRecurring
     }
 
     private func refreshDerivedDataAfterMutation() {
@@ -2350,6 +2310,33 @@ final class ExpenseViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    private func saveDemoDataManifest(_ manifest: DemoDataManifest) {
+        do {
+            let data = try JSONEncoder().encode(manifest)
+            UserDefaults.standard.set(data, forKey: AppPreferenceKeys.demoDataManifest)
+        } catch {
+            print("Failed to save demo data manifest: \(error)")
+        }
+    }
+
+    private func loadDemoDataManifest() -> DemoDataManifest? {
+        guard let data = UserDefaults.standard.data(forKey: AppPreferenceKeys.demoDataManifest) else {
+            return nil
+        }
+
+        do {
+            return try JSONDecoder().decode(DemoDataManifest.self, from: data)
+        } catch {
+            print("Failed to decode demo data manifest: \(error)")
+            clearDemoDataManifest()
+            return nil
+        }
+    }
+
+    private func clearDemoDataManifest() {
+        UserDefaults.standard.removeObject(forKey: AppPreferenceKeys.demoDataManifest)
     }
 
     private enum FeedbackKind {
@@ -2599,6 +2586,339 @@ final class ExpenseViewModel: ObservableObject {
         default:
             return false
         }
+    }
+
+    private func rebuildExpenseAnalyticsCache() {
+        expenseAnalytics = ExpenseAnalyticsSnapshot.make(from: expenses, calendar: calendar)
+    }
+}
+
+private struct ExpenseAnalyticsSnapshot {
+    let safeExpenses: [Expense]
+    let todayExpenses: [Expense]
+    let weekExpenses: [Expense]
+    let monthExpenses: [Expense]
+    let recentExpenses: [Expense]
+    let availableMerchants: [String]
+    let availableCategories: [ExpenseCategory]
+    let totalAmount: Double
+    let todayTotal: Double
+    let weekTotal: Double
+    let monthTotal: Double
+    let totalExpenseCount: Int
+    let expenseCountThisMonth: Int
+    let averageExpenseAmount: Double
+    let averageDailySpend: Double
+    let projectedMonthSpend: Double
+    let daysLeftInWeek: Int
+    let daysLeftInMonth: Int
+    let highestExpense: Expense?
+    let largestExpenseThisMonth: Expense?
+    let topCategory: ExpenseCategory?
+    let mostFrequentCategory: ExpenseCategory?
+    let monthCategoryBreakdownByAmount: [ExpenseViewModel.CategoryBreakdown]
+    let monthCategoryBreakdownByCount: [ExpenseViewModel.CategoryBreakdown]
+    let categorySharesThisMonth: [ExpenseViewModel.CategoryShare]
+    let dashboardCategorySummaries: [ExpenseViewModel.DashboardCategorySummary]
+    let dashboardTrendPoints: [ExpenseViewModel.DashboardTrendPoint]
+    let recentSpendTrendData: [ExpenseViewModel.DailySpendPoint]
+    let weeklySpendTrendData: [ExpenseViewModel.WeeklySpendPoint]
+    let hasWeeklyTrendData: Bool
+    let currentWeekTotal: Double
+    let previousWeekTotal: Double
+
+    static let empty = ExpenseAnalyticsSnapshot(
+        safeExpenses: [],
+        todayExpenses: [],
+        weekExpenses: [],
+        monthExpenses: [],
+        recentExpenses: [],
+        availableMerchants: [],
+        availableCategories: [],
+        totalAmount: 0,
+        todayTotal: 0,
+        weekTotal: 0,
+        monthTotal: 0,
+        totalExpenseCount: 0,
+        expenseCountThisMonth: 0,
+        averageExpenseAmount: 0,
+        averageDailySpend: 0,
+        projectedMonthSpend: 0,
+        daysLeftInWeek: 1,
+        daysLeftInMonth: 1,
+        highestExpense: nil,
+        largestExpenseThisMonth: nil,
+        topCategory: nil,
+        mostFrequentCategory: nil,
+        monthCategoryBreakdownByAmount: [],
+        monthCategoryBreakdownByCount: [],
+        categorySharesThisMonth: [],
+        dashboardCategorySummaries: [],
+        dashboardTrendPoints: [],
+        recentSpendTrendData: [],
+        weeklySpendTrendData: [],
+        hasWeeklyTrendData: false,
+        currentWeekTotal: 0,
+        previousWeekTotal: 0
+    )
+
+    static func make(from expenses: [Expense], calendar: Calendar) -> ExpenseAnalyticsSnapshot {
+        let safeExpenses = expenses.filter { $0.amount.isFinite }
+        let validExpenses = safeExpenses.filter { $0.amount > 0 }
+        let weekInterval = calendar.dateInterval(of: .weekOfYear, for: .now)
+        let monthInterval = calendar.dateInterval(of: .month, for: .now)
+
+        let todayExpenses = validExpenses.filter { calendar.isDateInToday($0.date) }
+        let weekExpenses = validExpenses.filter { expense in
+            weekInterval?.contains(expense.date) == true
+        }
+        let monthExpenses = validExpenses.filter { expense in
+            monthInterval?.contains(expense.date) == true
+        }
+
+        let recentExpenses = validExpenses.sorted { $0.date > $1.date }
+        let availableMerchants = Array(
+            Set(
+                validExpenses
+                    .map { $0.merchant.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+            )
+        )
+        .sorted { lhs, rhs in
+            lhs.localizedCaseInsensitiveCompare(rhs) == .orderedAscending
+        }
+
+        let availableCategories = Array(Set(validExpenses.map(\.category)))
+            .sorted { lhs, rhs in
+                lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
+            }
+
+        func sum(_ items: [Expense]) -> Double {
+            items.reduce(0) { $0 + $1.amount }
+        }
+
+        func breakdown(from items: [Expense], sortByCount: Bool) -> [ExpenseViewModel.CategoryBreakdown] {
+            let grouped = Dictionary(grouping: items, by: { $0.category.id })
+
+            let breakdown = grouped.compactMap { categoryID, groupedItems -> ExpenseViewModel.CategoryBreakdown? in
+                guard let category = groupedItems.first?.category ?? items.first(where: { $0.category.id == categoryID })?.category else {
+                    return nil
+                }
+
+                let total = sum(groupedItems)
+                guard total.isFinite, total > 0 else { return nil }
+
+                return ExpenseViewModel.CategoryBreakdown(
+                    category: category,
+                    total: total,
+                    count: groupedItems.count
+                )
+            }
+
+            if sortByCount {
+                return breakdown.sorted {
+                    if $0.count == $1.count {
+                        return $0.total > $1.total
+                    }
+                    return $0.count > $1.count
+                }
+            }
+
+            return breakdown.sorted { lhs, rhs in
+                if lhs.total == rhs.total {
+                    return lhs.category.displayName < rhs.category.displayName
+                }
+                return lhs.total > rhs.total
+            }
+        }
+
+        let totalAmount = sum(validExpenses)
+        let todayTotal = sum(todayExpenses)
+        let weekTotal = sum(weekExpenses)
+        let monthTotal = sum(monthExpenses)
+        let totalExpenseCount = validExpenses.count
+        let expenseCountThisMonth = monthExpenses.count
+        let averageExpenseAmount = totalExpenseCount > 0 ? totalAmount / Double(totalExpenseCount) : 0
+        let elapsedDays = max(calendar.component(.day, from: .now), 1)
+        let averageDailySpend = monthTotal > 0 ? monthTotal / Double(elapsedDays) : 0
+        let daysInCurrentMonth = calendar.range(of: .day, in: .month, for: .now)?.count ?? 30
+        let projectedMonthSpend = averageDailySpend * Double(daysInCurrentMonth)
+
+        func daysLeft(in range: ExpenseViewModel.TimeRange) -> Int {
+            switch range {
+            case .today:
+                return 1
+            case .week:
+                guard let interval = calendar.dateInterval(of: .weekOfYear, for: .now) else { return 7 }
+                let start = calendar.startOfDay(for: .now)
+                let end = calendar.startOfDay(for: interval.end)
+                let difference = calendar.dateComponents([.day], from: start, to: end).day ?? 0
+                return max(difference, 1)
+            case .month:
+                guard let interval = calendar.dateInterval(of: .month, for: .now) else { return 30 }
+                let start = calendar.startOfDay(for: .now)
+                let end = calendar.startOfDay(for: interval.end)
+                let difference = calendar.dateComponents([.day], from: start, to: end).day ?? 0
+                return max(difference, 1)
+            }
+        }
+
+        let highestExpense = validExpenses.max(by: { $0.amount < $1.amount })
+        let largestExpenseThisMonth = monthExpenses.max(by: { $0.amount < $1.amount })
+        let monthBreakdownByAmount = breakdown(from: monthExpenses, sortByCount: false)
+        let monthBreakdownByCount = breakdown(from: monthExpenses, sortByCount: true)
+
+        let monthShares: [ExpenseViewModel.CategoryShare]
+        if monthTotal > 0 {
+            monthShares = monthBreakdownByAmount.map { item in
+                ExpenseViewModel.CategoryShare(
+                    category: item.category,
+                    total: item.total,
+                    count: item.count,
+                    percentage: (item.total / monthTotal) * 100
+                )
+            }
+        } else {
+            monthShares = []
+        }
+
+        let dashboardCategorySummaries: [ExpenseViewModel.DashboardCategorySummary] = {
+            let grouped = Dictionary(grouping: monthExpenses, by: { expense -> String in
+                expense.category.slug.isEmpty ? expense.category.displayName.lowercased() : expense.category.slug
+            })
+
+            return grouped.compactMap { key, items in
+                guard let category = items.first?.category else { return nil }
+                let total = sum(items)
+                guard total.isFinite, total > 0 else { return nil }
+                let percentage = monthTotal > 0 ? min(max(total / monthTotal, 0), 1) : 0
+                return ExpenseViewModel.DashboardCategorySummary(
+                    key: key,
+                    categoryName: category.displayName,
+                    total: total,
+                    count: items.count,
+                    percentage: percentage,
+                    accentColor: category.accentColor
+                )
+            }
+            .sorted { lhs, rhs in
+                if lhs.total == rhs.total {
+                    return lhs.categoryName < rhs.categoryName
+                }
+                return lhs.total > rhs.total
+            }
+        }()
+
+        let daysToShow = 14
+        let startDate = calendar.date(byAdding: .day, value: -(daysToShow - 1), to: calendar.startOfDay(for: .now))
+        let dashboardTrendPoints: [ExpenseViewModel.DashboardTrendPoint] = {
+            guard let startDate else { return [] }
+
+            let totalsByDay = Dictionary(
+                grouping: validExpenses,
+                by: { calendar.startOfDay(for: $0.date) }
+            ).mapValues { sum($0) }
+
+            return (0..<daysToShow).compactMap { index in
+                guard let date = calendar.date(byAdding: .day, value: index, to: startDate) else {
+                    return nil
+                }
+
+                let total = totalsByDay[date] ?? 0
+                guard total.isFinite, total >= 0 else { return nil }
+                return ExpenseViewModel.DashboardTrendPoint(index: index, date: date, total: total)
+            }
+        }()
+
+        let recentSpendTrendData: [ExpenseViewModel.DailySpendPoint] = {
+            guard let startDate else { return [] }
+            let totalsByDay = Dictionary(
+                grouping: validExpenses,
+                by: { calendar.startOfDay(for: $0.date) }
+            ).mapValues { sum($0) }
+
+            return (0..<daysToShow).compactMap { offset in
+                guard let date = calendar.date(byAdding: .day, value: offset, to: startDate) else {
+                    return nil
+                }
+
+                return ExpenseViewModel.DailySpendPoint(
+                    date: date,
+                    total: totalsByDay[date] ?? 0
+                )
+            }
+        }()
+
+        let weeksToShow = 6
+        let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: .now)?.start
+        let weeklySpendTrendData: [ExpenseViewModel.WeeklySpendPoint] = {
+            guard let currentWeekStart else { return [] }
+
+            let totalsByWeek = Dictionary(
+                grouping: validExpenses,
+                by: { expense in
+                    calendar.dateInterval(of: .weekOfYear, for: expense.date)?.start ?? calendar.startOfDay(for: expense.date)
+                }
+            ).mapValues { sum($0) }
+
+            return (0..<weeksToShow).compactMap { offset in
+                guard let weekStart = calendar.date(byAdding: .weekOfYear, value: offset - (weeksToShow - 1), to: currentWeekStart) else {
+                    return nil
+                }
+
+                return ExpenseViewModel.WeeklySpendPoint(
+                    weekStart: weekStart,
+                    total: totalsByWeek[weekStart] ?? 0
+                )
+            }
+        }()
+
+        let hasWeeklyTrendData = Set(
+            validExpenses.compactMap { expense in
+                calendar.dateInterval(of: .weekOfYear, for: expense.date)?.start
+            }
+        ).count >= 2
+
+        let previousWeekStart = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: .now)) ?? .now
+        let previousWeekEnd = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: .now)) ?? .now
+        let previousWeekTotal = validExpenses.filter { expense in
+            expense.date >= previousWeekStart && expense.date <= previousWeekEnd
+        }.reduce(0) { $0 + $1.amount }
+
+        return ExpenseAnalyticsSnapshot(
+            safeExpenses: safeExpenses,
+            todayExpenses: todayExpenses,
+            weekExpenses: weekExpenses,
+            monthExpenses: monthExpenses,
+            recentExpenses: recentExpenses,
+            availableMerchants: availableMerchants,
+            availableCategories: availableCategories,
+            totalAmount: totalAmount,
+            todayTotal: todayTotal,
+            weekTotal: weekTotal,
+            monthTotal: monthTotal,
+            totalExpenseCount: totalExpenseCount,
+            expenseCountThisMonth: expenseCountThisMonth,
+            averageExpenseAmount: averageExpenseAmount,
+            averageDailySpend: averageDailySpend,
+            projectedMonthSpend: projectedMonthSpend,
+            daysLeftInWeek: daysLeft(in: .week),
+            daysLeftInMonth: daysLeft(in: .month),
+            highestExpense: highestExpense,
+            largestExpenseThisMonth: largestExpenseThisMonth,
+            topCategory: monthBreakdownByAmount.first?.category,
+            mostFrequentCategory: monthBreakdownByCount.first?.category,
+            monthCategoryBreakdownByAmount: monthBreakdownByAmount,
+            monthCategoryBreakdownByCount: monthBreakdownByCount,
+            categorySharesThisMonth: monthShares,
+            dashboardCategorySummaries: dashboardCategorySummaries,
+            dashboardTrendPoints: dashboardTrendPoints,
+            recentSpendTrendData: recentSpendTrendData,
+            weeklySpendTrendData: weeklySpendTrendData,
+            hasWeeklyTrendData: hasWeeklyTrendData,
+            currentWeekTotal: weekTotal,
+            previousWeekTotal: previousWeekTotal
+        )
     }
 }
 

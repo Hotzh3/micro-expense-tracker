@@ -132,11 +132,7 @@ struct WeeklyDigestView: View {
     }
 
     private var dateRangeText: String {
-        let formatter = DateFormatter()
-        formatter.locale = .current
-        formatter.calendar = .current
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
+        let formatter = PocketLeakFormatters.weeklyDigestDateRangeFormatter
         let start = formatter.string(from: digest.weekStart)
         let end = formatter.string(from: digest.weekEnd)
         return String(format: strings.weeklyDigestDateRangeTemplate, start, end)

@@ -91,8 +91,6 @@ struct GoalsView: View {
             syncEditorFromSelectedGoal()
         }
         .onAppear {
-            print("GoalsView loaded")
-            print("Loaded goals:", String(describing: viewModel.weeklyGoal), String(describing: viewModel.monthlyGoal))
             guard !didAnimateIn else { return }
             if reduceMotion {
                 didAnimateIn = true
@@ -176,17 +174,17 @@ struct GoalsView: View {
         let createTitle = cadence == .weekly ? strings.goalsCreateWeekly : strings.goalsCreateMonthly
         let sectionTitle = cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle
         let periodLabel = cadence == .weekly ? strings.goalsPeriodThisWeek : strings.goalsPeriodThisMonth
-        let goal = viewModel.goal(for: cadence)
         let summary = viewModel.goalOverview(for: cadence)
+        let goal = summary?.goal
         let hasGoal = goal != nil
-        let safeLimitText = viewModel.displayCurrency(summary?.goal.limit ?? 0)
+        let safeLimitText = viewModel.displayCurrency(goal?.limit ?? 0)
         let safeSpentText = viewModel.displayCurrency(summary?.spent ?? 0)
         let safeRemainingText = viewModel.displayCurrency(summary?.remaining ?? 0)
-        let safePercentText = viewModel.goalPercentUsedText(for: cadence)
-        let safeStatusText = viewModel.goalStatusText(for: cadence)
-        let goalStatus = viewModel.goalStatus(for: cadence)
+        let safePercentText = summary?.percentUsedText ?? "—"
+        let safeStatusText = summary?.statusText ?? viewModel.goalStatusText(for: cadence)
+        let goalStatus = summary?.status ?? .none
         let progressFillColor = progressFill(for: goalStatus)
-        let safeProgress = viewModel.goalProgressFraction(for: cadence)
+        let safeProgress = summary?.progressFraction ?? 0
 
         return ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -294,7 +292,7 @@ struct GoalsView: View {
                         presentCategoryBudgetEditor(for: nil)
                     }
                 } else {
-                    VStack(spacing: 12) {
+                    LazyVStack(spacing: 12) {
                         ForEach(overviews) { overview in
                             categoryBudgetCard(for: overview)
                         }
