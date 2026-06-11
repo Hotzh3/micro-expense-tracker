@@ -19,11 +19,6 @@ struct ExpenseJSONExport {
     }
 
     private static func defaultFileName() -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = .current
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyy-MM-dd"
-        return "Pocket-Leak-Export-\(formatter.string(from: .now)).json"
+        return "Pocket-Leak-Export-\(PocketLeakFormatters.exportFileDateFormatter.string(from: .now)).json"
     }
 }

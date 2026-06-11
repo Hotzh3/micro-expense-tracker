@@ -586,7 +586,7 @@ struct DashboardView: View {
     }
 
     private var recentExpensesCard: some View {
-        let recentExpenses = Array(viewModel.expenses.filter { $0.amount.isFinite && $0.amount > 0 }.sorted { $0.date > $1.date }.prefix(5))
+        let recentExpenses = viewModel.dashboardSummary(recentLimit: 5).recentExpenses
 
         return GlassCardView {
             VStack(alignment: .leading, spacing: 12) {
@@ -599,7 +599,7 @@ struct DashboardView: View {
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.secondaryText)
                 } else {
-                    VStack(spacing: 10) {
+                    LazyVStack(spacing: 10) {
                         ForEach(recentExpenses) { expense in
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 2) {

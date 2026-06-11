@@ -21,6 +21,7 @@ enum AppPreferenceKeys {
     static let weeklyDigestMinute = "app.weeklyDigestMinute"
     static let dismissedSmartAlertIDs = "app.dismissedSmartAlertIDs"
     static let hasSeenOnboarding = "app.hasSeenOnboarding"
+    static let demoDataManifest = "app.demoDataManifest"
 }
 
 enum AppAppearance: String, CaseIterable, Identifiable {
@@ -178,6 +179,13 @@ struct AppStrings {
     let backupGenerateDemoData: String
     let backupGenerateDemoDataDescription: String
     let backupDemoDataSuccess: String
+    let demoModeTitle: String
+    let loadDemoData: String
+    let resetDemoData: String
+    let clearDemoData: String
+    let demoDataWarning: String
+    let demoDataLoaded: String
+    let demoDataCleared: String
     let exportData: String
     let exportDescription: String
     let exportPDF: String
@@ -649,6 +657,13 @@ struct AppStrings {
                 backupGenerateDemoData: "Generate Demo Data",
                 backupGenerateDemoDataDescription: "DEBUG only. Fills Pocket Leak with sample data for screenshots and demos.",
                 backupDemoDataSuccess: "Demo data generated.",
+                demoModeTitle: "Demo Mode",
+                loadDemoData: "Load Demo Data",
+                resetDemoData: "Reset Demo Data",
+                clearDemoData: "Clear All Data",
+                demoDataWarning: "Synthetic local data only. Loading demo replaces your current local data. Reset removes demo-tagged data when possible; otherwise clear all data.",
+                demoDataLoaded: "Demo data loaded.",
+                demoDataCleared: "Demo data cleared.",
                 exportData: "Export Data",
                 exportDescription: "Open History to share CSV, JSON, monthly summary, or PDF reports.",
                 exportPDF: "Export PDF",
@@ -1117,6 +1132,13 @@ struct AppStrings {
                 backupGenerateDemoData: "Generar datos demo",
                 backupGenerateDemoDataDescription: "Solo DEBUG. Llena Pocket Leak con datos de ejemplo para capturas y demos.",
                 backupDemoDataSuccess: "Datos demo generados.",
+                demoModeTitle: "Modo demo",
+                loadDemoData: "Cargar datos demo",
+                resetDemoData: "Restablecer datos demo",
+                clearDemoData: "Borrar todos los datos",
+                demoDataWarning: "Solo datos locales sintéticos. Cargar demo reemplaza los datos locales actuales. Restablecer elimina los datos marcados como demo cuando es posible; si no, borra todo.",
+                demoDataLoaded: "Datos demo cargados.",
+                demoDataCleared: "Datos demo borrados.",
                 exportData: "Exportar datos",
                 exportDescription: "Abre Historial para compartir CSV, JSON, el resumen mensual o reportes PDF.",
                 exportPDF: "Exportar PDF",

@@ -335,7 +335,7 @@ final class ExpensePDFExportService {
 
             let merchant = expense.merchant.isEmpty ? expense.category.displayName : expense.merchant
             drawText(merchant, font: titleFont, color: .label, rect: CGRect(x: rowRect.minX + 10, y: rowRect.minY + 8, width: rowRect.width * 0.62, height: 14))
-            drawText(expense.date.formatted(date: .abbreviated, time: .shortened), font: bodyFont, color: .secondaryLabel, rect: CGRect(x: rowRect.minX + 10, y: rowRect.minY + 24, width: rowRect.width * 0.62, height: 12))
+            drawText(PocketLeakFormatters.pdfDateFormatter.string(from: expense.date), font: bodyFont, color: .secondaryLabel, rect: CGRect(x: rowRect.minX + 10, y: rowRect.minY + 24, width: rowRect.width * 0.62, height: 12))
 
             drawText(currency(expense.amount), font: titleFont, color: .label, rect: CGRect(x: rowRect.maxX - 120, y: rowRect.minY + 8, width: 110, height: 14), alignment: .right)
             drawText(expense.category.displayName, font: bodyFont, color: .secondaryLabel, rect: CGRect(x: rowRect.maxX - 120, y: rowRect.minY + 24, width: 110, height: 12), alignment: .right)
@@ -447,28 +447,16 @@ final class ExpensePDFExportService {
     }
 
     private func currency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = .current
-        return formatter.string(from: NSNumber(value: amount)) ?? String(format: "$%.2f", amount)
+        PocketLeakFormatters.pdfCurrencyFormatter.string(from: NSNumber(value: amount)) ?? String(format: "$%.2f", amount)
     }
 
     private func dateString(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        formatter.locale = .current
-        return formatter.string(from: date)
+        PocketLeakFormatters.pdfDateFormatter.string(from: date)
     }
 
     private func fileName(for report: ExpensePDFReportData) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = .current
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyyMMdd-HHmmss"
         let suffix = report.reportType.rawValue
-        return "Pocket-Leak-\(suffix)-Report-\(formatter.string(from: .now)).pdf"
+        return "Pocket-Leak-\(suffix)-Report-\(PocketLeakFormatters.pdfExportFileDateFormatter.string(from: .now)).pdf"
     }
 
     private struct PDFLayout {

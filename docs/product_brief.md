@@ -1,73 +1,61 @@
 # Product Brief
 
-## Problem Statement
+## Context
 
-People regularly spend on tiny items such as coffee, snacks, transport, tips, and delivery fees. These expenses are small in isolation but meaningful over a week or month. The problem is not motivation alone; it is capture friction. If recording an expense takes too long, it will not happen.
+Pocket Leak is a local-first iPhone app for tracking micro-expenses quickly and presenting the result as a polished portfolio project.
+
+## Problem
+
+Small daily purchases are easy to forget, especially when logging them takes too long. People do not need a heavyweight finance suite to understand coffee, transport, snacks, delivery, and recurring subscriptions. They need a fast capture flow and a clear local summary.
 
 ## Target User
 
-- iPhone users who want better awareness of small daily spending
-- People who prefer fast, manual logging instead of complex budgeting apps
-- Users who want a lightweight companion for habit tracking rather than a full finance suite
+- iPhone users who want a lightweight spending tracker
+- People who prefer manual control over automatic bank import
+- Portfolio reviewers looking for a realistic, well-structured native iOS app
 
-## MVP Scope
+## Product Goals
 
-- Quick add flow with amount and category
-- Optional merchant and note fields
-- Simple dashboard with placeholder summary blocks
-- History list structure
-- Insights skeleton with placeholder metrics
-- Minimal black-and-white visual identity
+- Make expense capture feel fast enough to use daily
+- Keep all personal data local
+- Show useful summaries without forcing account creation
+- Support screenshots, demos, and video recording with safe synthetic data
 
 ## Non-Goals
 
-- Full accounting or budgeting workflows
-- Bank account linking
-- Reading third-party bank notifications
-- OCR-based extraction
-- Shared cloud sync
-- Payment execution or financial transactions
+- No bank scraping
+- No cloud sync
+- No login or social features
+- No payment processing
+- No full accounting suite
+- No platform-dependent bank notification reading
 
-## Technical Limitations
+## Product Shape
 
-The app should not be designed around directly reading push notifications from banking or payment apps. iOS does not provide general access to other apps' notifications, and relying on that would be fragile and platform-dependent. The MVP should instead support a quick manual capture flow, with later optional entry points such as Shortcuts/App Intents or user-pasted text.
+- Quick Add for fast entry
+- Dashboard for high-level spending signals
+- History for browse and filters
+- Goals for weekly and monthly limits
+- Insights for trend and category analysis
+- Widgets for glanceable status
+- Share Extension and manual parser for explicit text handoff
 
-## Architecture Overview
+## Technical Direction
 
-- SwiftUI for the app interface
-- In-memory sample data for the foundation phase
-- A view model layer for state and actions
-- A lightweight service layer placeholder for future storage and import logic
-- Theme primitives for reusable design components
+- SwiftUI-first architecture
+- Local JSON persistence
+- Cached summaries for large local datasets
+- Explicit parsing only when the user pastes or shares text
+- Demo Mode for safe portfolio captures
 
-## Default Categories
+## Portfolio Angle
 
-- Coffee
-- Food
-- Transport
-- Snacks
-- Going Out
-- Delivery
-- Small Purchases
-- Tips
-- Other
+Pocket Leak is strongest as a portfolio artifact because it combines:
 
-## Privacy Approach
+- product thinking around capture friction
+- native iOS architecture
+- privacy-aware design choices
+- local data handling
+- widgets and share extension integration
+- performance cleanup for large lists and derived summaries
 
-- Keep the MVP local-first
-- Avoid bank account access in the base product
-- Make any future import or parsing flows opt-in
-- Minimize sensitive data collection
-
-## Future Ideas
-
-- SwiftData persistence
-- App Intents and Shortcuts integration
-- Back Tap quick capture
-- Swift Charts insights
-- Optional pasted text parsing
-- OCR from receipts if useful and reliable
-
-## LinkedIn and Portfolio Angle
-
-Pocket Leak is best positioned as a focused product design and native iOS systems project. It demonstrates how to take a vague spending problem, narrow it into a frictionless capture workflow, and build an elegant mobile foundation that respects platform constraints.

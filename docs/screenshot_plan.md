@@ -1,73 +1,45 @@
 # Screenshot Plan
 
-Use these screenshots for App Store, README, and portfolio pages.
+Use the same synthetic demo dataset across every capture so the repo feels coherent and polished.
 
 ## 1. Quick Add
 
-- Demo data: one coffee, one ride, one snack
-- Caption: `Fast capture for everyday spending`
-- Recommended mode: Light
-- Recommended language: English
+- Placeholder: `docs/assets/screenshots/quick-add.png`
+- Show the simplest capture flow
+- Keep the form clean and uncluttered
 
-## 2. Parser
+## 2. Dashboard
 
-- Demo data: `Compra por $140 en OXXO`
-- Caption: `Paste or share transaction text to prefill the form`
-- Recommended mode: Light
-- Recommended language: English or Spanish
+- Placeholder: `docs/assets/screenshots/dashboard.png`
+- Show donut chart, trend, recent expenses, goals, budgets, and recurring activity
+- This should be the strongest visual shot
 
-## 3. Dashboard
+## 3. Goals
 
-- Demo data: a week with 5 to 8 expenses
-- Caption: `Daily, weekly, and monthly totals at a glance`
-- Recommended mode: Light
-- Recommended language: English
+- Placeholder: `docs/assets/screenshots/goals.png`
+- Show weekly and monthly progress states clearly
 
-## 4. Goals
+## 4. History
 
-- Demo data: weekly goal near the threshold, monthly goal visible
-- Caption: `Weekly and monthly limits with clear progress`
-- Recommended mode: Light
-- Recommended language: English
+- Placeholder: `docs/assets/screenshots/history.png`
+- Show the search bar, filter chips, and a scrollable list of expenses
 
-## 5. Insights
+## 5. Settings
 
-- Demo data: mixed categories so charts are interesting
-- Caption: `Category breakdowns, averages, and projections`
-- Recommended mode: Light
-- Recommended language: English
+- Placeholder: `docs/assets/screenshots/settings.png`
+- Show Demo Mode, privacy, appearance, and local-only controls
 
-## 6. Widgets
+## Optional Supporting Shots
 
-- Demo data: active week with a few recent expenses
-- Caption: `A quick glance from the Home Screen`
-- Recommended mode: Light
-- Recommended language: English
+- `docs/assets/screenshots/insights.png`
+- `docs/assets/screenshots/widgets.png`
+- `docs/assets/screenshots/share-export.png`
 
-## 7. Settings
+## Capture Rules
 
-- Demo data: visible version, notifications, language, and text size
-- Caption: `Personalize appearance, reminders, and accessibility`
-- Recommended mode: Light
-- Recommended language: English
+- Do not use real user data
+- Do not show debug labels in final exports
+- Prefer light mode for the main portfolio set
+- Keep the number of visible rows low enough to read quickly
+- Use the same demo data story across every image
 
-## 8. Share / Export
-
-- Demo data: any populated month with a few categories
-- Caption: `Export CSV, JSON, or PDF reports locally`
-- Recommended mode: Light
-- Recommended language: English
-
-## Optional Dark Mode Set
-
-- Reuse Quick Add, Dashboard, and Settings
-- Caption: `Dark mode available across the app`
-- Recommended mode: Dark
-- Recommended language: English
-
-## Notes For Captures
-
-- Keep the data realistic and not too dense.
-- Prefer clean layouts with 3 to 6 visible rows where possible.
-- Avoid debug values or placeholder zeros unless showing empty states intentionally.
-- Use the same sample data across screenshots for consistency.

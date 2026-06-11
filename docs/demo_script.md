@@ -1,14 +1,33 @@
 # 60-Second Demo Script
 
-1. Open Pocket Leak on iPhone.
-2. Go to Quick Add and paste a sample transaction text such as `BBVA: Compra aprobada por $85.50 en STARBUCKS`.
-3. Tap `Parse Text`, review the parsed preview, then tap `Use Parsed Expense` and save.
-4. Switch to Dashboard and point out the category distribution, top categories, and largest expense this month.
-5. Open History and share the CSV, JSON, and monthly summary exports.
-6. Mention the `pocketleak://` routes and the widget foundation as the next product surface.
+## Script
 
-## Demo Notes
+1. Open Pocket Leak on iPhone and enter Settings.
+2. Show `Demo Mode`, then tap `Load Demo Data` and confirm the action.
+3. Return to Dashboard and call out the donut chart, trend bars, recent activity, goals, budgets, and recurring item.
+4. Open History and scroll a few rows to show the synthetic dataset and filters.
+5. Open Goals and Insights to show progress and category patterns.
+6. Return to Settings and mention that the data is local only and can be reset from the same section.
 
-- Keep the narration focused on speed, privacy, and local-first capture.
-- Emphasize that parsing only uses text the user pasted manually.
-- Show the minimal black-and-white visual language as an intentional product choice.
+## Talking Points
+
+- Pocket Leak is local-first.
+- No cloud or login is needed for the demo.
+- Demo data is synthetic and not auto-generated on launch.
+- Reset Demo Data removes demo-tagged data when possible.
+- Clear All Data is the safe fallback if a full wipe is needed.
+
+## Timing Guide
+
+- 0-10s: Settings and demo load
+- 10-25s: Dashboard
+- 25-40s: History and Goals
+- 40-50s: Insights
+- 50-60s: Reset and wrap-up
+
+## Recording Notes
+
+- Keep narration direct and short.
+- Use the same dataset for screenshots and the recorded clip.
+- Prefer light mode unless the dark shell is the specific visual point.
+
