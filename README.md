@@ -8,28 +8,12 @@ It is designed for people who want to understand small daily spending without co
 
 Pocket Leak runs locally on iPhone and focuses on fast manual capture, privacy-friendly tracking, visual spending summaries, goals, budgets, recurring expenses, and home screen widgets.
 
-[Watch the demo video](docs/assets/readme/demo-video.mov)
-
-## Screenshots
-
 <p align="center">
-  <img src="docs/assets/readme/app-logo.jpeg" alt="Pocket Leak app icon" width="150"/>
+  <img src="docs/assets/readme/demo-preview.gif" alt="Pocket Leak demo preview" width="280"/>
 </p>
 
 <p align="center">
-  <strong>App installed on iPhone</strong>
-</p>
-
-<p align="center">
-  <img src="docs/assets/readme/home-screen.jpeg" alt="Pocket Leak installed on iPhone home screen" width="280"/>
-</p>
-
-<p align="center">
-  <strong>Home Screen Widgets</strong>
-</p>
-
-<p align="center">
-  <img src="docs/assets/readme/widgets.jpeg" alt="Pocket Leak iOS widgets" width="280"/>
+  <a href="docs/assets/readme/demo-video.mov">Watch the full demo video</a>
 </p>
 
 ## The Problem
@@ -56,12 +40,10 @@ Tiny purchases are easy to forget and hard to summarize later. Coffee, snacks, r
 
 1. Open Settings.
 2. Load Demo Data from the Demo Mode section.
-3. Return to Dashboard and show the donut chart, trend, goals, budgets, and recurring items.
+3. Return to Dashboard and show spending summaries, goals, budgets, and recurring items.
 4. Open History and scroll through the synthetic data set.
 5. Open Goals and Insights to show progress and category patterns.
 6. Reset Demo Data or Clear All Data when you are done.
-
-See [`docs/demo_data_plan.md`](docs/demo_data_plan.md) and [`docs/demo_script.md`](docs/demo_script.md).
 
 ## Tech Stack
 
@@ -84,7 +66,7 @@ See [`docs/demo_data_plan.md`](docs/demo_data_plan.md) and [`docs/demo_script.md
 * `Theme/` contains visual tokens, app settings, and localization strings
 * `Models/` contains expenses, goals, budgets, recurring expenses, filters, and widget summaries
 
-The app uses cached summaries and reusable helpers so Dashboard, History, Goals, Insights, and widgets do not re-run heavy work on every render.
+The app uses reusable summary helpers so Dashboard, History, Goals, Insights, and widgets avoid unnecessary heavy work during rendering.
 
 ## Privacy
 
@@ -99,8 +81,6 @@ Pocket Leak is intentionally local-first.
 * Widgets show local summaries only
 * Share Extension intake is explicit only
 
-Read [`docs/privacy_summary.md`](docs/privacy_summary.md) and [`docs/technical_constraints.md`](docs/technical_constraints.md) for the full privacy and platform constraints.
-
 ## iOS Limitations
 
 * Pocket Leak cannot read other apps' notifications automatically
@@ -109,8 +89,6 @@ Read [`docs/privacy_summary.md`](docs/privacy_summary.md) and [`docs/technical_c
 * Widgets can show summaries, not hidden account data
 * Free installation on a physical iPhone still requires a Mac with Xcode
 * TestFlight and App Store distribution require the Apple Developer Program
-
-See [`docs/free_distribution_guide.md`](docs/free_distribution_guide.md) for the free local development limitations.
 
 ## Run Locally
 
@@ -128,13 +106,14 @@ open JTap.xcodeproj
 
 ## Running Locally For Free
 
-If you want to try Pocket Leak without paying for the Apple Developer Program, use these guides:
+GitHub can share the source code, but it cannot provide a one-tap iPhone installation like the App Store.
 
-* [`docs/setup_xcode.md`](docs/setup_xcode.md)
-* [`docs/free_distribution_guide.md`](docs/free_distribution_guide.md)
-* [`docs/iphone_testing.md`](docs/iphone_testing.md)
+For now, Pocket Leak is meant to be:
 
-GitHub can share the source code, but it cannot provide a one-tap iPhone installation like the App Store. For now, Pocket Leak is meant to be run locally from Xcode or used as a portfolio project.
+* run locally from Xcode
+* installed on a personal iPhone through Xcode
+* used as a SwiftUI/iOS portfolio project
+* extended through future local-first phases
 
 ## XcodeGen Setup
 
@@ -146,15 +125,7 @@ xcodegen generate
 
 After regenerating, open `JTap.xcodeproj` and build the `JTap` scheme in Xcode.
 
-## Testing and Stress Testing
-
-Pocket Leak includes documentation and workflows for validating local performance with larger synthetic datasets.
-
-* [`docs/stress_testing_plan.md`](docs/stress_testing_plan.md) describes the high-volume local stress scenarios
-* [`docs/performance_baseline.md`](docs/performance_baseline.md) records the current manual performance baseline
-* Debug builds include synthetic demo and stress workflows for local validation
-
-Suggested build commands:
+## Suggested Build Commands
 
 ```bash
 xcodegen generate
@@ -164,25 +135,7 @@ xcodebuild -project JTap.xcodeproj -scheme JTap -destination 'generic/platform=i
 xcodebuild -project JTap.xcodeproj -scheme JTap -configuration Release -destination 'generic/platform=iOS' -derivedDataPath /private/tmp/JTapReleaseDerivedData CODE_SIGNING_ALLOWED=NO build
 ```
 
-## Documentation
-
-Useful project docs:
-
-* [`docs/demo_script.md`](docs/demo_script.md)
-* [`docs/demo_data_plan.md`](docs/demo_data_plan.md)
-* [`docs/screenshot_plan.md`](docs/screenshot_plan.md)
-* [`docs/privacy_summary.md`](docs/privacy_summary.md)
-* [`docs/technical_constraints.md`](docs/technical_constraints.md)
-* [`docs/free_distribution_guide.md`](docs/free_distribution_guide.md)
-* [`docs/stress_testing_plan.md`](docs/stress_testing_plan.md)
-* [`docs/performance_baseline.md`](docs/performance_baseline.md)
-* [`docs/portfolio_case_study.md`](docs/portfolio_case_study.md)
-* [`docs/github_project_polish.md`](docs/github_project_polish.md)
-* [`docs/roadmap.md`](docs/roadmap.md)
-
 ## Roadmap
-
-See [`docs/roadmap.md`](docs/roadmap.md) for the current roadmap, completed work, and next steps.
 
 Current focus:
 
@@ -194,18 +147,16 @@ Current focus:
 
 Future work:
 
-* cloud sync
-* account login
+* stronger stress testing for 1-2 months of daily expense data
+* local performance cleanup
+* portfolio case study
+* free local install guide
+* cloud sync planning
+* account login planning
 * multi-device support
 * friend circles
 * privacy-safe leaderboards
 * challenges
-
-## Future Cloud/Social Roadmap
-
-Cloud sync and social features are intentionally documented as future work only. The current app is local-first and does not require accounts or remote services.
-
-See [`docs/cloud_social_roadmap.md`](docs/cloud_social_roadmap.md) for the future phase plan, and [`docs/cloud_architecture_options.md`](docs/cloud_architecture_options.md) for the architecture tradeoffs.
 
 ## Project Status
 
@@ -217,7 +168,7 @@ Current strengths:
 * local persistence
 * widget and share extension support
 * demo mode for screenshots and video
-* stress testing coverage for large local datasets
+* stress testing direction for large local datasets
 * privacy-friendly architecture
 * no dependency on bank scraping or cloud services
 
