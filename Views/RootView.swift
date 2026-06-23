@@ -24,6 +24,7 @@ struct RootView: View {
     @State private var didRunSplashTimer = false
     @State private var showSettings = false
     @State private var showOnboarding = false
+    @State private var suppressLaunchFlow = false
     @State private var splashPhrase = LaunchSplashView.randomPhrase()
 
     var body: some View {
@@ -95,12 +96,13 @@ struct RootView: View {
             withAnimation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.emphasis)) {
                 showLaunchSplash = false
             }
-            if !hasSeenOnboarding {
+            if !hasSeenOnboarding && !suppressLaunchFlow {
                 withAnimation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard)) {
                     showOnboarding = true
                 }
             }
         }
+        .onOpenURL(perform: handleOpenURL)
         .sheet(isPresented: $showSettings) {
             SettingsView(
                 appearanceSelection: Binding(
@@ -273,6 +275,52 @@ struct RootView: View {
         withAnimation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.emphasis)) {
             showOnboarding = false
         }
+    }
+
+    private func handleOpenURL(_ url: URL) {
+        guard let route = PocketLeakRoute(url: url) else { return }
+
+        showSettings = false
+        suppressLaunchFlow = true
+        if showLaunchSplash {
+            showLaunchSplash = false
+            didRunSplashTimer = true
+        }
+        switch route {
+        case .quickAdd(let draft):
+            openQuickAdd(draft: draft)
+        case .dashboard:
+            setSelectedTab(.dashboard)
+        case .history:
+            setSelectedTab(.history)
+        case .insights:
+            setSelectedTab(.insights)
+        case .goals:
+            setSelectedTab(.goals)
+        case .parseText(let text):
+            openQuickAdd(prefilledText: text)
+        }
+    }
+
+    private func openQuickAdd(draft: PocketLeakRoute.QuickAddDraft) {
+        setSelectedTab(.quickAdd, playHaptic: false)
+        viewModel.quickAddRouteToken = UUID()
+        viewModel.resetDraftForExternalEntry()
+
+        if draft.hasPrefill {
+            viewModel.prefillDraft(
+                amount: draft.amount,
+                merchant: draft.merchant,
+                category: draft.category,
+                source: .imported
+            )
+        }
+    }
+
+    private func openQuickAdd(prefilledText: String) {
+        setSelectedTab(.quickAdd, playHaptic: false)
+        viewModel.quickAddRouteToken = UUID()
+        viewModel.prefillFromParsedText(prefilledText)
     }
 }
 

@@ -23,6 +23,7 @@
 		2D8017F842A052E7563EFC46 /* RecurringExpensesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4996FF3874C50A584138CB /* RecurringExpensesView.swift */; };
 		32F0830027148034CFA631B6 /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = C879640230F5C9FE3109AB05 /* Expense.swift */; };
 		3BE8677E8B2D70EA9A521B0B /* ExpenseFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFD4461A479D9ECE1239017 /* ExpenseFilter.swift */; };
+		3F06DBFC6F8E52AEDB6948DD /* ReportingAndNotificationsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 330BF4549CB6B3F156AC987E /* ReportingAndNotificationsTests.swift */; };
 		3FAB4E9726BAAFDE5E40E729 /* CategoryBudgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588545A5544F7FC650EF2E62 /* CategoryBudgetTests.swift */; };
 		40539938AA0B3D0152BF8602 /* ExpenseTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21AD9FBA4FAE272BD3AE0AD /* ExpenseTextParser.swift */; };
 		41177480E1ADB691A282AFF1 /* ShortcutsGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85951DA7A0F1341C1353E60E /* ShortcutsGuideView.swift */; };
@@ -33,7 +34,6 @@
 		4CED521D51A7BCB44B702A05 /* GoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09ABF81BE8B2231F82E79045 /* GoalsView.swift */; };
 		4CF52795AFA522FCF0F823DE /* ExpenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5AFC917E8FB0C250EF623C7 /* ExpenseStore.swift */; };
 		4EBDAD42CD0203F01E7CC561 /* ExpensePDFExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7DAE35B60F307F34C08E2B /* ExpensePDFExport.swift */; };
-		501C69AA43F733748C2D4B51 /* QuickAddImportCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93307D68627E911C30F59847 /* QuickAddImportCardView.swift */; };
 		54B486C8022C05A0220E7BB8 /* DemoDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 251D91C6E2652D3A9258052E /* DemoDataGenerator.swift */; };
 		5693FEFE719BEEB2C97DA03D /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */; };
 		571716022647A0FD9EEC4068 /* RecurringExpenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6827160C1037CB0CB4E668 /* RecurringExpenseStore.swift */; };
@@ -41,6 +41,7 @@
 		5A15308E9B2C48E45F436523 /* ExpenseTextParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9F6E3EDECA62759847B25D /* ExpenseTextParserTests.swift */; };
 		617CCC6B891E98B40CBD8FE0 /* ShareCardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17D6DA79AF62D5D00DD994B /* ShareCardRenderer.swift */; };
 		6A1A58C166E1D61011B0A275 /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCBBFBD042AFC5046770596E /* ShareCardView.swift */; };
+		6BCD9061C60ADBC2132760AE /* CalendarReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 956EC6592F2CF2306BAE83A5 /* CalendarReviewView.swift */; };
 		6DB02DD256C195E94E19C1A9 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF8C91F013BFC9F006FF742 /* AppTheme.swift */; };
 		6F540A7683F8ED7FCE936A43 /* SmartInsightsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE90286C46A8135EF7E7751 /* SmartInsightsService.swift */; };
 		77E20630EE4DA0D57F74EC59 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44048E144E9D5752313C299C /* OnboardingView.swift */; };
@@ -151,6 +152,7 @@
 		25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		2AC19EB6ECA6DBAC6126C8D2 /* HapticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsService.swift; sourceTree = "<group>"; };
 		2C4996FF3874C50A584138CB /* RecurringExpensesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringExpensesView.swift; sourceTree = "<group>"; };
+		330BF4549CB6B3F156AC987E /* ReportingAndNotificationsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportingAndNotificationsTests.swift; sourceTree = "<group>"; };
 		3381D146B3956102E5D5925D /* WidgetSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSummary.swift; sourceTree = "<group>"; };
 		345C13449DE35BEE800F7AB0 /* DataBackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataBackupService.swift; sourceTree = "<group>"; };
 		3AF513937D0D5DE56BEE8EF9 /* AppLockService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockService.swift; sourceTree = "<group>"; };
@@ -177,7 +179,7 @@
 		7E6827160C1037CB0CB4E668 /* RecurringExpenseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringExpenseStore.swift; sourceTree = "<group>"; };
 		85951DA7A0F1341C1353E60E /* ShortcutsGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsGuideView.swift; sourceTree = "<group>"; };
 		8D66E4AF3739D7DF9754F215 /* AppLockScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockScreenView.swift; sourceTree = "<group>"; };
-		93307D68627E911C30F59847 /* QuickAddImportCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddImportCardView.swift; sourceTree = "<group>"; };
+		956EC6592F2CF2306BAE83A5 /* CalendarReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarReviewView.swift; sourceTree = "<group>"; };
 		9934F8C17BF826DD6A372998 /* ExpenseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseViewModel.swift; sourceTree = "<group>"; };
 		99A4A76FBCF56497C3C9CB45 /* RecurringExpense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringExpense.swift; sourceTree = "<group>"; };
 		9B465C2136AF2CCDDBC1593F /* SpendingComparisonService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingComparisonService.swift; sourceTree = "<group>"; };
@@ -252,6 +254,7 @@
 			isa = PBXGroup;
 			children = (
 				8D66E4AF3739D7DF9754F215 /* AppLockScreenView.swift */,
+				956EC6592F2CF2306BAE83A5 /* CalendarReviewView.swift */,
 				0F24C2AA74F8094CEAB59AB2 /* CategoryBudgetEditorView.swift */,
 				D4FDE24A0CC7C4AB709DA7C0 /* DashboardView.swift */,
 				09ABF81BE8B2231F82E79045 /* GoalsView.swift */,
@@ -259,7 +262,6 @@
 				25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */,
 				4E3ABD1CB31A26030C2045ED /* LaunchSplashView.swift */,
 				44048E144E9D5752313C299C /* OnboardingView.swift */,
-				93307D68627E911C30F59847 /* QuickAddImportCardView.swift */,
 				D0F11CF5730320D4AAC50BC8 /* QuickAddView.swift */,
 				2C4996FF3874C50A584138CB /* RecurringExpensesView.swift */,
 				F25A7D50F01059CAEA99CE4C /* RootView.swift */,
@@ -289,6 +291,7 @@
 				6A9F6E3EDECA62759847B25D /* ExpenseTextParserTests.swift */,
 				E2A128B801B304B2EED5283E /* PlaceholderTests.swift */,
 				CAC5EDEC49ED018A506E5807 /* RecurringExpenseTests.swift */,
+				330BF4549CB6B3F156AC987E /* ReportingAndNotificationsTests.swift */,
 				129E77F98A1B39358CA3978A /* SmartAlertServiceTests.swift */,
 				ED46EDEE45E5CB00AD54A049 /* StressUsageTests.swift */,
 			);
@@ -550,6 +553,7 @@
 				01AF00AA1BFD1C97C1D15566 /* AppMotion.swift in Sources */,
 				C501E9BE2AE79EB93925E16E /* AppSettings.swift in Sources */,
 				6DB02DD256C195E94E19C1A9 /* AppTheme.swift in Sources */,
+				6BCD9061C60ADBC2132760AE /* CalendarReviewView.swift in Sources */,
 				05B719A4A0EB1355FD17550A /* CategoryBudget.swift in Sources */,
 				B1F1206AE3237C89516C561B /* CategoryBudgetEditorView.swift in Sources */,
 				9BD40139CA6FD0FBE7CC121B /* CategoryBudgetStore.swift in Sources */,
@@ -583,7 +587,6 @@
 				77E20630EE4DA0D57F74EC59 /* OnboardingView.swift in Sources */,
 				D8BABA03EA92C64832F6ED43 /* PocketLeakFormatters.swift in Sources */,
 				9319939C894C2063EF69BCCD /* PrimaryButton.swift in Sources */,
-				501C69AA43F733748C2D4B51 /* QuickAddImportCardView.swift in Sources */,
 				0BDCD10B88237D0CEDDDA48C /* QuickAddView.swift in Sources */,
 				E1B30539550C9C4FE56364CD /* RecurringExpense.swift in Sources */,
 				571716022647A0FD9EEC4068 /* RecurringExpenseStore.swift in Sources */,
@@ -625,6 +628,7 @@
 				5A15308E9B2C48E45F436523 /* ExpenseTextParserTests.swift in Sources */,
 				19AF1E27D0FF515B90007647 /* PlaceholderTests.swift in Sources */,
 				29CED36296BF3FDB5F03E03D /* RecurringExpenseTests.swift in Sources */,
+				3F06DBFC6F8E52AEDB6948DD /* ReportingAndNotificationsTests.swift in Sources */,
 				94AEA55BB9EC810C9E8EAEFA /* SmartAlertServiceTests.swift in Sources */,
 				A92E6E0756143AA12A0B506F /* StressUsageTests.swift in Sources */,
 			);

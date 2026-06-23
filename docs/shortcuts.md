@@ -1,99 +1,32 @@
-# Shortcuts And Back Tap
+# Shortcuts
 
-Pocket Leak stays privacy-safe: it does not read system notifications from other apps. The supported fast-entry path is explicit user action through Shortcuts, URL schemes, manual paste, or a user-initiated Share Extension.
+Pocket Leak supports local URL schemes for quick navigation and prefilled capture.
 
-Inside Pocket Leak, Settings now includes a Back Tap shortcut guide, a copy button for the Quick Add URL, and a `Test Quick Add Link` action so you can verify the deep link before assigning it to Back Tap.
-
-## Supported URL Schemes
-
-Both schemes below resolve to the same in-app routes:
+## Schemes
 
 - `pocketleak://`
 - `jtap://`
 
-## Available Routes
+## Routes
 
 - `pocketleak://quick-add`
-- `pocketleak://parse?text=Compra%20por%20%24129%20en%20OXXO`
+- `pocketleak://add?amount=120&merchant=Oxxo&category=food`
 - `pocketleak://dashboard`
 - `pocketleak://history`
 - `pocketleak://insights`
 - `pocketleak://goals`
-- `pocketleak://add?amount=120&merchant=Oxxo&category=food`
 
-The `add` route opens Quick Add and can prefill fields when query parameters are present.
-The `parse` route opens Quick Add and places decoded text into the pasted-text area so the user can tap `Parse Text` manually.
-
-## Quick Add Behavior
+## Quick Add
 
 - `quick-add` opens the Quick Add screen.
-- `parse?text=...` opens Quick Add and loads the text into the pasted-text area. Parsing remains manual unless the user taps `Parse Text`.
-- `add?amount=...&merchant=...&category=...` opens Quick Add and pre-fills the form.
-- Prefill is explicit only; Pocket Leak never saves automatically from a URL.
-- When a URL arrives, the current draft state is cleared first so stale parser output does not leak into the new entry.
-- When a Share Extension sends text, Pocket Leak stores it locally in the App Group and opens Quick Add with the pasted-text area ready.
+- `add?amount=...&merchant=...&category=...` opens Quick Add with a prefilled draft.
+- Prefill is explicit only. Pocket Leak never saves from a URL automatically.
 
-## Build A Shortcut
+## Back Tap
 
-1. Open the iOS Shortcuts app.
-2. Create a new shortcut.
-3. Add the `Open URLs` action.
-4. Set the URL to `pocketleak://quick-add`.
-5. Save the shortcut with a clear name such as `Open Pocket Leak Quick Add`.
-6. Optional: create a second shortcut that opens `pocketleak://add?amount=120&merchant=Oxxo&category=food` to test prefilled capture.
-7. Optional: create a third shortcut that opens `pocketleak://parse?text=Compra%20por%20%24129%20en%20OXXO` to test text handoff.
-8. In Pocket Leak Settings, tap `Open Shortcuts Guide` if you want a quick reference before assigning Back Tap.
+See [Back Tap Quick Add](/Users/josema/Documents/micro-expense-tracker/docs/back_tap_shortcut.md) for the step-by-step setup.
 
-## Back Tap Setup
+## Notes
 
-1. Open `Settings` on the iPhone.
-2. Go to `Accessibility` > `Touch` > `Back Tap`.
-3. Choose `Double Tap`.
-4. Select the Shortcut you created in Shortcuts.
-5. For the fastest flow, use the shortcut that opens `pocketleak://quick-add`.
-6. If you want a prefilled route, assign a separate shortcut to the `add` URL example above.
-7. If you want a text handoff route, assign a separate shortcut to the `parse` URL example above.
-8. Use `Test Quick Add Link` in Pocket Leak Settings to confirm that the app opens Quick Add before you map it to Back Tap.
-
-## Shortcut-Friendly Text Intake
-
-You can make a shortcut that starts from copied text or a Share Sheet handoff and then opens Pocket Leak:
-
-1. Receive text in the shortcut.
-2. Build a URL such as `pocketleak://add?amount=129&merchant=OXXO&category=food`.
-3. Open that URL.
-4. Review the draft in Quick Add and tap `Save Expense` only when the details are correct.
-
-For manual workflows, copy the bank text from a notification, open Pocket Leak, paste it into Quick Add, and tap `Parse Text`.
-
-## Examples
-
-- `pocketleak://quick-add`
-- `jtap://quick-add`
-- `pocketleak://dashboard`
-- `pocketleak://history`
-- `pocketleak://insights`
-- `pocketleak://goals`
-- `pocketleak://add?amount=120&merchant=Oxxo&category=food`
-- `pocketleak://add?amount=129.00&merchant=Starbucks%20Coffee&category=food`
-- `pocketleak://parse?text=Compra%20por%20%24129%20en%20OXXO`
-- `pocketleak://parse?text=BBVA%3A%20Compra%20aprobada%20por%20%2485.50%20en%20STARBUCKS`
-
-## Limitations
-
-- iOS does not let Pocket Leak detect Back Tap directly inside the app.
-- Back Tap must be configured manually by the user.
-- Pocket Leak does not read notifications from BBVA, Nu, Mercado Pago, or other apps.
-- The app only handles text that the user explicitly passes through Shortcuts, the clipboard, or paste actions.
-- URL prefill is local-only and does not auto-save.
-- Clipboard intake happens only after an explicit tap in the app.
-- The Share Extension accepts text only and never reads notifications directly.
-- If the Share Extension cannot open the app automatically, the shared text remains in the App Group until the main app consumes it on launch.
-
-## Troubleshooting
-
-- If the shortcut does nothing, confirm the URL uses `pocketleak://` or `jtap://` and not a web URL.
-- If Back Tap does not trigger, re-check `Settings` > `Accessibility` > `Touch` > `Back Tap` and make sure the shortcut is assigned to `Double Tap`.
-- If Quick Add opens with stale fields, close the app, relaunch it, and try the route again.
-- If percent-encoded merchant names look wrong, make sure the Shortcut is opening the full URL and not stripping query parameters.
-- If the route opens the app but not the target tab, use the exact path `pocketleak://quick-add`.
+- If a shortcut opens the app but not the expected screen, use the exact route `pocketleak://quick-add`.
+- The Share Extension can still hand text to the app, but the visible Quick Add experience now focuses on manual entry and past-date capture.
