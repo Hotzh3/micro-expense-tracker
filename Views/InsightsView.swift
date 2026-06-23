@@ -1,4 +1,3 @@
-import Charts
 import SwiftUI
 
 struct InsightsView: View {
@@ -50,6 +49,8 @@ struct InsightsView: View {
                         strings: strings,
                         shareURL: weeklyDigestShareURL
                     )
+
+                    CalendarReviewView()
 
                     if let categoryBudget = viewModel.primaryCategoryBudgetOverview {
                         categoryBudgetInsightCard(for: categoryBudget)
@@ -106,51 +107,6 @@ struct InsightsView: View {
                         MetricCardView(title: "Highest Expense", value: highestExpenseValue, subtitle: highestExpenseSubtitle)
                         MetricCardView(title: "Logged Expenses", value: "\(viewModel.totalExpenseCount)", subtitle: "All local entries")
                         MetricCardView(title: "Average Expense", value: viewModel.displayCurrency(viewModel.averageExpenseAmount), subtitle: "Across all entries")
-                    }
-                    .opacity(didAnimateIn ? 1 : 0)
-                    .offset(y: didAnimateIn ? 0 : 8)
-
-                    GlassCardView {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Weekly Totals")
-                                .font(.headline)
-                                .foregroundStyle(AppTheme.primaryText)
-
-                            if viewModel.hasWeeklyTrendData {
-                                Chart(viewModel.weeklySpendTrendData) { point in
-                                    BarMark(
-                                        x: .value("Week", point.weekStart),
-                                        y: .value("Total", point.total)
-                                    )
-                                    .foregroundStyle(AppTheme.primaryText)
-                                }
-                                .chartLegend(.hidden)
-                                .accessibilityHidden(true)
-                                .chartXAxis {
-                                    AxisMarks(values: .automatic(desiredCount: 4)) { _ in
-                                        AxisGridLine()
-                                        AxisTick()
-                                        AxisValueLabel(format: .dateTime.month().day(), centered: true)
-                                    }
-                                }
-                                .chartYAxis {
-                                    AxisMarks(position: .leading) { _ in
-                                        AxisGridLine()
-                                        AxisTick()
-                                        AxisValueLabel()
-                                    }
-                                }
-                                .frame(height: 180)
-                                .accessibilityElement(children: .ignore)
-                                .accessibilityLabel(strings.insightsWeeklyTotalsTitle)
-                                .accessibilityValue(viewModel.weeklyTrendAccessibilitySummary)
-                            } else {
-                                Text("Add a little more history before weekly totals are shown.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(AppTheme.secondaryText)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .opacity(didAnimateIn ? 1 : 0)
                     .offset(y: didAnimateIn ? 0 : 8)

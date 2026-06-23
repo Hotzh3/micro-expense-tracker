@@ -53,10 +53,15 @@ struct WeeklyDigestView: View {
                                     .foregroundStyle(AppTheme.secondaryText)
 
                                 Text(viewModel.displayCurrency(digest.totalSpend))
-                                    .font(.system(size: 44, weight: .bold, design: .rounded))
-                                    .foregroundStyle(AppTheme.primaryText)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.7)
+                                .font(.system(size: 44, weight: .bold, design: .rounded))
+                                .foregroundStyle(AppTheme.primaryText)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+
+                                Text(digest.summaryText)
+                                    .font(.subheadline)
+                                    .foregroundStyle(AppTheme.secondaryText)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
 
                             Spacer(minLength: 0)
@@ -88,18 +93,32 @@ struct WeeklyDigestView: View {
                                 symbol: "calendar"
                             )
 
-                            metricTile(
-                                label: strings.weeklyDigestLargestExpenseLabel,
-                                value: largestExpenseValue,
-                                tint: AppTheme.primaryText,
-                                symbol: "banknote.fill"
-                            )
+                                metricTile(
+                                    label: strings.weeklyDigestLargestExpenseLabel,
+                                    value: largestExpenseValue,
+                                    tint: AppTheme.primaryText,
+                                    symbol: "banknote.fill"
+                                )
 
-                            metricTile(
-                                label: strings.weeklyDigestGoalStatusLabel,
-                                value: goalStatusText,
-                                tint: goalStatusColor,
-                                symbol: goalStatusSymbol
+                                metricTile(
+                                    label: "Top merchant",
+                                    value: digest.topMerchant ?? "—",
+                                    tint: AppTheme.primaryText,
+                                    symbol: "person.text.rectangle"
+                                )
+
+                                metricTile(
+                                    label: "Active days",
+                                    value: "\(digest.daysWithExpenses)/\(digest.totalDaysInWeek)",
+                                    tint: AppTheme.primaryText,
+                                    symbol: "calendar.badge.clock"
+                                )
+
+                                metricTile(
+                                    label: strings.weeklyDigestGoalStatusLabel,
+                                    value: goalStatusText,
+                                    tint: goalStatusColor,
+                                    symbol: goalStatusSymbol
                             )
                         }
 
@@ -113,6 +132,29 @@ struct WeeklyDigestView: View {
 
                         if let insight = digest.bestInsight {
                             bestInsightStrip(insight)
+                        }
+
+                        if !digest.highlightTexts.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Weekly signals")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(AppTheme.tertiaryText)
+
+                                VStack(alignment: .leading, spacing: 6) {
+                                    ForEach(digest.highlightTexts, id: \.self) { text in
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Circle()
+                                                .fill(AppTheme.primaryText)
+                                                .frame(width: 6, height: 6)
+                                                .padding(.top, 6)
+                                            Text(text)
+                                                .font(.subheadline)
+                                                .foregroundStyle(AppTheme.secondaryText)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

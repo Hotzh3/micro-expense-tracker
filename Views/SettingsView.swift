@@ -8,7 +8,6 @@ struct SettingsView: View {
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
     @Environment(\.openURL) private var openURL
-    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var viewModel: ExpenseViewModel
     @AppStorage(AppPreferenceKeys.hapticsEnabled) private var hapticsEnabled = true
     @AppStorage(AppPreferenceKeys.smartAlertsEnabled) private var smartAlertsEnabled = true
@@ -102,6 +101,9 @@ struct SettingsView: View {
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle(strings.settingsTitle)
             .navigationBarTitleDisplayMode(.inline)
+            .task {
+                await refreshNotificationStatus()
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(strings.done) {
@@ -215,37 +217,6 @@ struct SettingsView: View {
                 )
                 .environment(\.pocketLeakStrings, strings)
                 .environment(\.appTextSize, appTextSize)
-            }
-            .task {
-                await refreshNotificationStatus()
-                await MainActor.run {
-                    syncPrivacyPreferences()
-                }
-            }
-            .task(id: backupSignature) {
-                prepareBackupExport()
-            }
-            .onChange(of: appLockEnabled) { _, _ in
-                syncPrivacyPreferences()
-            }
-            .onChange(of: requireFaceIDOnLaunch) { _, _ in
-                syncPrivacyPreferences()
-            }
-            .onChange(of: privacyModeHideAmounts) { _, _ in
-                syncPrivacyPreferences()
-            }
-            .onChange(of: hideAmountsInWidgets) { _, _ in
-                syncPrivacyPreferences()
-            }
-            .onChange(of: scenePhase) { _, newValue in
-                guard newValue == .active else { return }
-                Task {
-                    await refreshNotificationStatus()
-                    prepareBackupExport()
-                    await MainActor.run {
-                        syncPrivacyPreferences()
-                    }
-                }
             }
         }
     }
@@ -429,10 +400,17 @@ struct SettingsView: View {
                 }
                 .tint(AppTheme.primaryText)
                 .onChange(of: localNotificationsEnabled) { _, _ in
-                    Task { await handleNotificationSettingsChanged() }
+                    Task { await syncNotificationSettings() }
                 }
 
                 notificationStatusRow
+
+                Button {
+                    Task { await requestNotificationPermission() }
+                } label: {
+                    actionButtonLabel(title: "Request Notification Permission", systemImage: "bell.badge")
+                }
+                .buttonStyle(.plain)
 
                 if let notificationFeedback {
                     notificationFeedbackBanner(message: notificationFeedback)
@@ -443,10 +421,10 @@ struct SettingsView: View {
 
                 Toggle(isOn: $dailyCheckInEnabled) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(strings.dailyCheckInTitle)
+                        Text("Enable Daily Reminders")
                             .font(.system(size: 15 * scale, weight: .semibold))
                             .foregroundStyle(AppTheme.primaryText)
-                        Text(strings.dailyCheckInDescription)
+                        Text("Pocket Leak will remind you at 2:00 PM and 8:00 PM.")
                             .font(.system(size: 13 * scale))
                             .foregroundStyle(AppTheme.secondaryText)
                     }
@@ -454,29 +432,15 @@ struct SettingsView: View {
                 .tint(AppTheme.primaryText)
                 .disabled(!localNotificationsEnabled)
                 .onChange(of: dailyCheckInEnabled) { _, _ in
-                    Task { await handleNotificationSettingsChanged() }
-                }
-
-                HStack {
-                    Text(strings.dailyCheckInTimeTitle)
-                        .font(.system(size: 13 * scale, weight: .semibold))
-                        .foregroundStyle(AppTheme.tertiaryText)
-                    Spacer()
-                    DatePicker(
-                        "",
-                        selection: dailyCheckInTimeBinding,
-                        displayedComponents: .hourAndMinute
-                    )
-                    .labelsHidden()
-                    .disabled(!localNotificationsEnabled || !dailyCheckInEnabled)
+                    Task { await syncNotificationSettings() }
                 }
 
                 Toggle(isOn: $goalWarningsEnabled) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(strings.goalWarningsTitle)
+                        Text("Enable Budget Alerts")
                             .font(.system(size: 15 * scale, weight: .semibold))
                             .foregroundStyle(AppTheme.primaryText)
-                        Text(strings.goalWarningsDescription)
+                        Text("Get a local alert when you hit 80% of a weekly or monthly limit.")
                             .font(.system(size: 13 * scale))
                             .foregroundStyle(AppTheme.secondaryText)
                     }
@@ -484,53 +448,12 @@ struct SettingsView: View {
                 .tint(AppTheme.primaryText)
                 .disabled(!localNotificationsEnabled)
                 .onChange(of: goalWarningsEnabled) { _, _ in
-                    Task { await handleNotificationSettingsChanged() }
+                    Task { await syncNotificationSettings() }
                 }
 
-                Toggle(isOn: $weeklyDigestReminderEnabled) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(strings.weeklyDigestReminderTitle)
-                            .font(.system(size: 15 * scale, weight: .semibold))
-                            .foregroundStyle(AppTheme.primaryText)
-                        Text(strings.weeklyDigestReminderDescription)
-                            .font(.system(size: 13 * scale))
-                            .foregroundStyle(AppTheme.secondaryText)
-                    }
-                }
-                .tint(AppTheme.primaryText)
-                .disabled(!localNotificationsEnabled)
-                .onChange(of: weeklyDigestReminderEnabled) { _, _ in
-                    Task { await handleNotificationSettingsChanged() }
-                }
-
-                HStack {
-                    Text(strings.weeklyDigestDayTitle)
-                        .font(.system(size: 13 * scale, weight: .semibold))
-                        .foregroundStyle(AppTheme.tertiaryText)
-                    Spacer()
-                    Picker("", selection: $weeklyDigestWeekday) {
-                        ForEach(1...7, id: \.self) { weekday in
-                            Text(weekdayTitle(for: weekday)).tag(weekday)
-                        }
-                    }
-                    .labelsHidden()
-                    .disabled(!localNotificationsEnabled || !weeklyDigestReminderEnabled)
-                    .frame(maxWidth: 170)
-                }
-
-                HStack {
-                    Text(strings.weeklyDigestTimeTitle)
-                        .font(.system(size: 13 * scale, weight: .semibold))
-                        .foregroundStyle(AppTheme.tertiaryText)
-                    Spacer()
-                    DatePicker(
-                        "",
-                        selection: weeklyDigestTimeBinding,
-                        displayedComponents: .hourAndMinute
-                    )
-                    .labelsHidden()
-                    .disabled(!localNotificationsEnabled || !weeklyDigestReminderEnabled)
-                }
+                Text("Reminder times are fixed at 2:00 PM and 8:00 PM to keep scheduling stable.")
+                    .font(.system(size: 13 * scale))
+                    .foregroundStyle(AppTheme.tertiaryText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -576,7 +499,7 @@ struct SettingsView: View {
                     .tint(AppTheme.primaryText)
                     .disabled(!appLockEnabled)
 
-                    Toggle(isOn: $privacyModeHideAmounts) {
+                    Toggle(isOn: privacyModeHideAmountsBinding) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(strings.privacyModeHideAmountsTitle)
                                 .font(.system(size: 15 * scale, weight: .semibold))
@@ -588,7 +511,7 @@ struct SettingsView: View {
                     }
                     .tint(AppTheme.primaryText)
 
-                    Toggle(isOn: $hideAmountsInWidgets) {
+                    Toggle(isOn: hideAmountsInWidgetsBinding) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(strings.hideAmountsInWidgetsTitle)
                                 .font(.system(size: 15 * scale, weight: .semibold))
@@ -621,19 +544,20 @@ struct SettingsView: View {
                 }
 
                 VStack(spacing: 10) {
+                    Button {
+                        prepareBackupExport()
+                        backupFeedback = "Backup export prepared"
+                        backupFeedbackIsError = false
+                    } label: {
+                        actionButtonLabel(title: "Prepare Backup Export", systemImage: "square.and.arrow.up")
+                    }
+                    .buttonStyle(.plain)
+
                     if let backupExport {
                         ShareLink(item: backupExport.fileURL) {
                             actionButtonLabel(title: strings.exportBackup, systemImage: "square.and.arrow.up")
                         }
                         .buttonStyle(.plain)
-                    } else {
-                        Button {
-                            prepareBackupExport()
-                        } label: {
-                            actionButtonLabel(title: strings.exportBackup, systemImage: "square.and.arrow.up")
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(true)
                     }
 
                     Button {
@@ -1091,6 +1015,11 @@ struct SettingsView: View {
                 .font(.system(size: 13 * scale, weight: .semibold))
                 .foregroundStyle(AppTheme.secondaryText)
             Spacer()
+            Button("Refresh") {
+                Task { await refreshNotificationStatus() }
+            }
+            .font(.system(size: 13 * scale, weight: .semibold))
+            .foregroundStyle(AppTheme.primaryText)
         }
     }
 
@@ -1176,44 +1105,6 @@ struct SettingsView: View {
         return "\(summary)\n\n\(strings.backupImportConfirmationMessage)"
     }
 
-    private var backupSignature: String {
-        let expenseSignature = viewModel.expenses
-            .map { "\($0.id.uuidString):\($0.amount):\($0.date.timeIntervalSince1970):\($0.category.id.uuidString):\($0.merchant):\($0.note):\($0.source.rawValue)" }
-            .joined(separator: ",")
-
-        let goalSignature = [
-            viewModel.weeklyGoal.map { "\($0.id.uuidString):\($0.limit):\($0.updatedAt.timeIntervalSince1970)" } ?? "nil",
-            viewModel.monthlyGoal.map { "\($0.id.uuidString):\($0.limit):\($0.updatedAt.timeIntervalSince1970)" } ?? "nil"
-        ]
-        .joined(separator: "|")
-
-        let budgetSignature = viewModel.categoryBudgets
-            .map { "\($0.id.uuidString):\($0.category.id.uuidString):\($0.cadence.rawValue):\($0.limit):\($0.updatedAt.timeIntervalSince1970):\($0.isActive)" }
-            .joined(separator: ",")
-
-        let recurringSignature = viewModel.recurringExpenses
-            .map { "\($0.id.uuidString):\($0.merchant):\($0.amount):\($0.category.id.uuidString):\($0.cadence.rawValue):\($0.nextDueDate.timeIntervalSince1970):\($0.updatedAt.timeIntervalSince1970):\($0.isActive)" }
-            .joined(separator: ",")
-
-        let settingsSignature = [
-            appearanceSelection.rawValue,
-            textSizeSelection.rawValue,
-            languageSelection.rawValue,
-            String(hapticsEnabled),
-            String(smartAlertsEnabled),
-            String(localNotificationsEnabled),
-            String(dailyCheckInEnabled),
-            String(goalWarningsEnabled),
-            String(weeklyDigestReminderEnabled),
-            "\(dailyCheckInHour):\(dailyCheckInMinute)",
-            "\(weeklyDigestWeekday):\(weeklyDigestHour):\(weeklyDigestMinute)",
-            String(hasSeenOnboarding)
-        ]
-        .joined(separator: "|")
-
-        return [expenseSignature, goalSignature, budgetSignature, recurringSignature, settingsSignature].joined(separator: "||")
-    }
-
     private var notificationStatusText: String {
         switch notificationStatus {
         case .authorized, .provisional, .ephemeral:
@@ -1253,65 +1144,38 @@ struct SettingsView: View {
         }
     }
 
-    private var dailyCheckInTimeBinding: Binding<Date> {
-        Binding(
-            get: {
-                calendarDate(hour: dailyCheckInHour, minute: dailyCheckInMinute)
-            },
-            set: { newValue in
-                dailyCheckInHour = Calendar.current.component(.hour, from: newValue)
-                dailyCheckInMinute = Calendar.current.component(.minute, from: newValue)
-                Task { await handleNotificationSettingsChanged() }
-            }
-        )
-    }
-
-    private var weeklyDigestTimeBinding: Binding<Date> {
-        Binding(
-            get: {
-                calendarDate(hour: weeklyDigestHour, minute: weeklyDigestMinute)
-            },
-            set: { newValue in
-                weeklyDigestHour = Calendar.current.component(.hour, from: newValue)
-                weeklyDigestMinute = Calendar.current.component(.minute, from: newValue)
-                Task { await handleNotificationSettingsChanged() }
-            }
-        )
-    }
-
     @MainActor
-    private func handleNotificationSettingsChanged() async {
+    private func syncNotificationSettings() async {
         guard !isSyncingNotificationSettings else { return }
         isSyncingNotificationSettings = true
         defer { isSyncingNotificationSettings = false }
 
-        let status = await LocalNotificationService.shared.authorizationStatus()
-        notificationStatus = status
-
         if localNotificationsEnabled {
-            if status == .notDetermined {
-                let granted = await LocalNotificationService.shared.requestAuthorization()
-                notificationStatus = await LocalNotificationService.shared.authorizationStatus()
-                if !granted || notificationStatus == .denied {
-                    disableNotificationsWithFeedback()
-                    return
-                }
-            } else if status == .denied {
-                disableNotificationsWithFeedback()
-                return
-            }
             notificationFeedback = nil
         } else {
             notificationFeedback = nil
             LocalNotificationService.shared.cancelAllPocketLeakNotifications()
         }
 
+        notificationStatus = await LocalNotificationService.shared.authorizationStatus()
         onSyncNotifications?()
     }
 
     @MainActor
     private func refreshNotificationStatus() async {
         notificationStatus = await LocalNotificationService.shared.authorizationStatus()
+    }
+
+    @MainActor
+    private func requestNotificationPermission() async {
+        let granted = await LocalNotificationService.shared.requestAuthorization()
+        notificationStatus = await LocalNotificationService.shared.authorizationStatus()
+        if granted {
+            notificationFeedback = nil
+            await syncNotificationSettings()
+        } else {
+            disableNotificationsWithFeedback()
+        }
     }
 
     @MainActor
@@ -1322,19 +1186,6 @@ struct SettingsView: View {
         weeklyDigestReminderEnabled = false
         notificationFeedback = strings.notificationsPermissionDeniedMessage
         LocalNotificationService.shared.cancelAllPocketLeakNotifications()
-    }
-
-    private func calendarDate(hour: Int, minute: Int) -> Date {
-        var components = Calendar.current.dateComponents([.year, .month, .day], from: .now)
-        components.hour = hour
-        components.minute = minute
-        return Calendar.current.date(from: components) ?? .now
-    }
-
-    private func weekdayTitle(for weekday: Int) -> String {
-        let symbols = Calendar.current.weekdaySymbols
-        guard symbols.indices.contains(weekday - 1) else { return "\(weekday)" }
-        return symbols[weekday - 1]
     }
 
     private func prepareBackupExport() {
@@ -1350,25 +1201,45 @@ struct SettingsView: View {
 
     private func currentBackupSettingsSnapshot() -> DataBackupSettingsSnapshot {
         DataBackupSettingsSnapshot(
-                appearance: appearanceSelection.rawValue,
-                textSize: textSizeSelection.rawValue,
-                language: languageSelection.rawValue,
-                hapticsEnabled: hapticsEnabled,
-                smartAlertsEnabled: smartAlertsEnabled,
-                appLockEnabled: appLockEnabled,
-                requireFaceIDOnLaunch: requireFaceIDOnLaunch,
-                privacyModeHideAmounts: privacyModeHideAmounts,
-                hideAmountsInWidgets: hideAmountsInWidgets,
-                localNotificationsEnabled: localNotificationsEnabled,
-                dailyCheckInEnabled: dailyCheckInEnabled,
-                goalWarningsEnabled: goalWarningsEnabled,
-                weeklyDigestReminderEnabled: weeklyDigestReminderEnabled,
+            appearance: appearanceSelection.rawValue,
+            textSize: textSizeSelection.rawValue,
+            language: languageSelection.rawValue,
+            hapticsEnabled: hapticsEnabled,
+            smartAlertsEnabled: smartAlertsEnabled,
+            appLockEnabled: appLockEnabled,
+            requireFaceIDOnLaunch: requireFaceIDOnLaunch,
+            privacyModeHideAmounts: privacyModeHideAmounts,
+            hideAmountsInWidgets: hideAmountsInWidgets,
+            localNotificationsEnabled: localNotificationsEnabled,
+            dailyCheckInEnabled: dailyCheckInEnabled,
+            goalWarningsEnabled: goalWarningsEnabled,
+            weeklyDigestReminderEnabled: weeklyDigestReminderEnabled,
             dailyCheckInHour: dailyCheckInHour,
             dailyCheckInMinute: dailyCheckInMinute,
             weeklyDigestWeekday: weeklyDigestWeekday,
             weeklyDigestHour: weeklyDigestHour,
             weeklyDigestMinute: weeklyDigestMinute,
             hasSeenOnboarding: hasSeenOnboarding
+        )
+    }
+
+    private var privacyModeHideAmountsBinding: Binding<Bool> {
+        Binding(
+            get: { privacyModeHideAmounts },
+            set: { newValue in
+                privacyModeHideAmounts = newValue
+                Task { @MainActor in syncPrivacyPreferences() }
+            }
+        )
+    }
+
+    private var hideAmountsInWidgetsBinding: Binding<Bool> {
+        Binding(
+            get: { hideAmountsInWidgets },
+            set: { newValue in
+                hideAmountsInWidgets = newValue
+                Task { @MainActor in syncPrivacyPreferences() }
+            }
         )
     }
 
@@ -1406,6 +1277,7 @@ struct SettingsView: View {
         }
     }
 
+    @MainActor
     private func restorePendingBackup(mode: DataBackupRestoreMode) {
         guard let document = pendingBackupDocument else { return }
 
@@ -1421,6 +1293,7 @@ struct SettingsView: View {
         prepareBackupExport()
     }
 
+    @MainActor
     private func applyImportedSettings(_ settings: DataBackupSettingsSnapshot) {
         appearanceSelection = AppAppearance(rawValue: settings.appearance) ?? appearanceSelection
         textSizeSelection = AppTextSize(rawValue: settings.textSize) ?? textSizeSelection
@@ -1449,6 +1322,7 @@ struct SettingsView: View {
         weeklyDigestHour = settings.weeklyDigestHour
         weeklyDigestMinute = settings.weeklyDigestMinute
         hasSeenOnboarding = settings.hasSeenOnboarding
+        syncPrivacyPreferences()
     }
 
     private func summaryMessage(for summary: DataBackupRestorationSummary) -> String {

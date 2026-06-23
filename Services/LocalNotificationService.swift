@@ -1,6 +1,17 @@
 import Foundation
 import UserNotifications
 
+struct BudgetAlertCandidate: Equatable {
+    let cadence: SpendingGoalCadence
+    let periodKey: String
+    let percentUsed: Double
+    let remainingAmount: Double
+    let thresholdAmount: Double
+    let identifier: String
+    let title: String
+    let body: String
+}
+
 final class LocalNotificationService {
     static let shared = LocalNotificationService()
 
@@ -34,61 +45,20 @@ final class LocalNotificationService {
             return
         }
 
-        if dailyCheckInEnabled {
-            await scheduleDailyCheckIn()
+        if dailyRemindersEnabled {
+            await scheduleDailyReminders()
         } else {
-            cancel(ids: [LocalNotificationIdentifier.dailyCheckIn.rawValue])
-        }
-
-        if weeklyDigestReminderEnabled {
-            await scheduleWeeklyDigestReminder()
-        } else {
-            cancel(ids: [LocalNotificationIdentifier.weeklyDigest.rawValue])
+            cancel(ids: LocalNotificationIdentifier.dailyReminderIDs.map(\.rawValue))
         }
     }
 
     func syncGoalWarnings(goalForecasts: [GoalForecast]) async {
-        guard isMasterEnabled, goalWarningsEnabled else {
-            cancelGoalWarningNotifications()
-            return
-        }
-
-        let status = await authorizationStatus()
-        guard canSchedule(for: status) else {
-            cancelGoalWarningNotifications()
-            return
-        }
-
-        let warnings = goalForecasts
-            .filter { $0.status != .safe }
-            .sorted { lhs, rhs in
-                if lhs.status.priority == rhs.status.priority {
-                    return lhs.goalType == .weekly && rhs.goalType == .monthly
-                }
-                return lhs.status.priority > rhs.status.priority
-            }
-
-        guard !warnings.isEmpty else {
-            cancelGoalWarningNotifications()
-            return
-        }
-
-        for forecast in warnings {
-            await scheduleGoalWarning(for: forecast)
-        }
+        await syncBudgetAlerts(goalForecasts: goalForecasts)
     }
 
     func cancelAllPocketLeakNotifications() {
         cancel(ids: LocalNotificationIdentifier.all.map(\.rawValue))
-        clearGoalWarningHistory()
-    }
-
-    func cancelGoalWarningNotifications() {
-        cancel(ids: [
-            LocalNotificationIdentifier.weeklyGoalWarning.rawValue,
-            LocalNotificationIdentifier.monthlyGoalWarning.rawValue
-        ])
-        clearGoalWarningHistory()
+        clearBudgetAlertHistory()
     }
 
     private var isMasterEnabled: Bool {
@@ -97,16 +67,12 @@ final class LocalNotificationService {
             : defaults.bool(forKey: AppPreferenceKeys.localNotificationsEnabled)
     }
 
-    private var dailyCheckInEnabled: Bool {
+    private var dailyRemindersEnabled: Bool {
         defaults.bool(forKey: AppPreferenceKeys.dailyCheckInEnabled)
     }
 
-    private var goalWarningsEnabled: Bool {
+    private var budgetAlertsEnabled: Bool {
         defaults.bool(forKey: AppPreferenceKeys.goalWarningsEnabled)
-    }
-
-    private var weeklyDigestReminderEnabled: Bool {
-        defaults.bool(forKey: AppPreferenceKeys.weeklyDigestReminderEnabled)
     }
 
     private func canSchedule(for status: UNAuthorizationStatus) -> Bool {
@@ -120,45 +86,134 @@ final class LocalNotificationService {
         }
     }
 
-    private func scheduleDailyCheckIn() async {
-        let hour = clampedInt(for: AppPreferenceKeys.dailyCheckInHour, lower: 0, upper: 23, fallback: 18)
-        let minute = clampedInt(for: AppPreferenceKeys.dailyCheckInMinute, lower: 0, upper: 59, fallback: 0)
-        let content = notificationContent(
-            title: localizedDailyCheckInTitle(),
-            body: localizedDailyCheckInBody()
-        )
-        let components = DateComponents(hour: hour, minute: minute)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-        await schedule(identifier: LocalNotificationIdentifier.dailyCheckIn.rawValue, content: content, trigger: trigger)
+    private func scheduleDailyReminders() async {
+        let reminders: [(LocalNotificationIdentifier, Int, Int, String, String)] = [
+            (
+                .dailyReminderAt2PM,
+                14,
+                0,
+                localizedDailyReminderTitle(),
+                localizedDailyReminderBody(at: 2)
+            ),
+            (
+                .dailyReminderAt8PM,
+                20,
+                0,
+                localizedDailyReminderTitle(),
+                localizedDailyReminderBody(at: 8)
+            )
+        ]
+
+        for reminder in reminders {
+            let content = notificationContent(title: reminder.3, body: reminder.4)
+            let trigger = UNCalendarNotificationTrigger(
+                dateMatching: DateComponents(hour: reminder.1, minute: reminder.2),
+                repeats: true
+            )
+            await schedule(identifier: reminder.0.rawValue, content: content, trigger: trigger)
+        }
     }
 
-    private func scheduleWeeklyDigestReminder() async {
-        let weekday = clampedInt(for: AppPreferenceKeys.weeklyDigestWeekday, lower: 1, upper: 7, fallback: 1)
-        let hour = clampedInt(for: AppPreferenceKeys.weeklyDigestHour, lower: 0, upper: 23, fallback: 9)
-        let minute = clampedInt(for: AppPreferenceKeys.weeklyDigestMinute, lower: 0, upper: 59, fallback: 0)
-        let content = notificationContent(
-            title: localizedWeeklyDigestTitle(),
-            body: localizedWeeklyDigestBody()
-        )
-        let components = DateComponents(hour: hour, minute: minute, weekday: weekday)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-        await schedule(identifier: LocalNotificationIdentifier.weeklyDigest.rawValue, content: content, trigger: trigger)
+    private func syncBudgetAlerts(goalForecasts: [GoalForecast]) async {
+        guard isMasterEnabled, budgetAlertsEnabled else {
+            cancelBudgetAlertNotifications()
+            return
+        }
+
+        let status = await authorizationStatus()
+        guard canSchedule(for: status) else {
+            cancelBudgetAlertNotifications()
+            return
+        }
+
+        let candidates = budgetAlertCandidates(from: goalForecasts)
+        guard !candidates.isEmpty else {
+            cancelBudgetAlertNotifications()
+            return
+        }
+
+        for candidate in candidates {
+            guard shouldScheduleBudgetAlert(candidate) else { continue }
+            let content = notificationContent(title: candidate.title, body: candidate.body)
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+            await schedule(identifier: candidate.identifier, content: content, trigger: trigger)
+            storeBudgetAlertPeriodKey(candidate.periodKey, for: candidate.cadence)
+        }
     }
 
-    private func scheduleGoalWarning(for forecast: GoalForecast) async {
-        let identifier = forecast.goalType == .weekly
-            ? LocalNotificationIdentifier.weeklyGoalWarning.rawValue
-            : LocalNotificationIdentifier.monthlyGoalWarning.rawValue
-        let fingerprint = goalWarningFingerprint(for: forecast)
-        guard shouldScheduleGoalWarning(identifier: identifier, fingerprint: fingerprint) else { return }
+    func budgetAlertCandidates(from goalForecasts: [GoalForecast]) -> [BudgetAlertCandidate] {
+        goalForecasts.compactMap { forecast in
+            guard forecast.limit.isFinite, forecast.limit > 0 else { return nil }
+            guard forecast.percentUsed.isFinite, forecast.percentUsed >= 80 else { return nil }
 
-        let content = notificationContent(
-            title: localizedGoalWarningTitle(for: forecast),
-            body: localizedGoalWarningBody(for: forecast)
-        )
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        await schedule(identifier: identifier, content: content, trigger: trigger)
-        storeGoalWarningFingerprint(fingerprint, for: identifier)
+            let periodKey = budgetAlertPeriodKey(for: forecast.goalType)
+            let identifier = forecast.goalType == .weekly
+                ? LocalNotificationIdentifier.weeklyBudgetAlert.rawValue
+                : LocalNotificationIdentifier.monthlyBudgetAlert.rawValue
+            let remainingAmount = max(forecast.remaining, 0)
+            let title = localizedBudgetAlertTitle(for: forecast.goalType, percentUsed: forecast.percentUsed)
+            let body = localizedBudgetAlertBody(for: forecast.goalType, percentUsed: forecast.percentUsed, remainingAmount: remainingAmount)
+
+            return BudgetAlertCandidate(
+                cadence: forecast.goalType,
+                periodKey: periodKey,
+                percentUsed: forecast.percentUsed,
+                remainingAmount: remainingAmount,
+                thresholdAmount: forecast.limit * 0.8,
+                identifier: identifier,
+                title: title,
+                body: body
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.cadence == rhs.cadence {
+                return lhs.percentUsed > rhs.percentUsed
+            }
+            return lhs.cadence == .weekly && rhs.cadence == .monthly
+        }
+    }
+
+    func shouldScheduleBudgetAlert(_ candidate: BudgetAlertCandidate) -> Bool {
+        let storedKey = budgetAlertPeriodKeyKey(for: candidate.cadence)
+        let lastKey = defaults.string(forKey: storedKey)
+        return lastKey != candidate.periodKey
+    }
+
+    private func storeBudgetAlertPeriodKey(_ key: String, for cadence: SpendingGoalCadence) {
+        defaults.set(key, forKey: budgetAlertPeriodKeyKey(for: cadence))
+    }
+
+    private func clearBudgetAlertHistory() {
+        [SpendingGoalCadence.weekly, SpendingGoalCadence.monthly].forEach { cadence in
+            defaults.removeObject(forKey: budgetAlertPeriodKeyKey(for: cadence))
+        }
+    }
+
+    func budgetAlertPeriodKey(for cadence: SpendingGoalCadence) -> String {
+        let calendar = Calendar.current
+        let now = Date.now
+
+        switch cadence {
+        case .weekly:
+            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)
+            let year = components.yearForWeekOfYear ?? 0
+            let week = components.weekOfYear ?? 0
+            return String(format: "%04d-W%02d", year, week)
+        case .monthly:
+            let components = calendar.dateComponents([.year, .month], from: now)
+            let year = components.year ?? 0
+            let month = components.month ?? 0
+            return String(format: "%04d-%02d", year, month)
+        }
+    }
+
+    private func budgetAlertPeriodKeyKey(for cadence: SpendingGoalCadence) -> String {
+        switch cadence {
+        case .weekly:
+            return "app.localNotifications.budgetAlert.lastPeriod.weekly"
+        case .monthly:
+            return "app.localNotifications.budgetAlert.lastPeriod.monthly"
+        }
     }
 
     private func notificationContent(title: String, body: String) -> UNMutableNotificationContent {
@@ -179,6 +234,13 @@ final class LocalNotificationService {
         } catch {
             print("Failed to schedule local notification \(identifier): \(error)")
         }
+    }
+
+    private func cancelBudgetAlertNotifications() {
+        cancel(ids: [
+            LocalNotificationIdentifier.weeklyBudgetAlert.rawValue,
+            LocalNotificationIdentifier.monthlyBudgetAlert.rawValue
+        ])
     }
 
     private func cancel(ids: [String]) {
@@ -207,137 +269,52 @@ final class LocalNotificationService {
         }
     }
 
-    private func clampedInt(for key: String, lower: Int, upper: Int, fallback: Int) -> Int {
-        guard defaults.object(forKey: key) != nil else {
-            return fallback
-        }
-        return Swift.min(Swift.max(defaults.integer(forKey: key), lower), upper)
-    }
-
-    private func localizedDailyCheckInTitle() -> String {
+    private func localizedDailyReminderTitle() -> String {
         switch AppLanguage.current {
         case .english:
-            return "Daily Check-in"
+            return "Daily Reminder"
         case .spanish:
-            return "Revisión diaria"
+            return "Recordatorio diario"
         }
     }
 
-    private func localizedDailyCheckInBody() -> String {
+    private func localizedDailyReminderBody(at hour: Int) -> String {
         switch AppLanguage.current {
         case .english:
-            return "Add today's leaks before they disappear."
+            return hour == 2 ? "Remember to log your expenses." : "Don't forget to capture today's spending."
         case .spanish:
-            return "Agrega las fugas de hoy antes de que se pierdan."
+            return hour == 2 ? "Recuerda registrar tus gastos." : "No olvides capturar el gasto de hoy."
         }
     }
 
-    private func localizedWeeklyDigestTitle() -> String {
+    private func localizedBudgetAlertTitle(for cadence: SpendingGoalCadence, percentUsed: Double) -> String {
+        let label = cadence == .weekly ? "Weekly" : "Monthly"
         switch AppLanguage.current {
         case .english:
-            return "Weekly Digest"
+            return percentUsed >= 100 ? "\(label) budget over limit" : "\(label) budget at risk"
         case .spanish:
-            return "Resumen semanal"
+            return percentUsed >= 100 ? "Presupuesto \(label.lowercased()) sobre el límite" : "Presupuesto \(label.lowercased()) en riesgo"
         }
     }
 
-    private func localizedWeeklyDigestBody() -> String {
-        switch AppLanguage.current {
-        case .english:
-            return "Review your weekly summary in Pocket Leak."
-        case .spanish:
-            return "Revisa tu resumen semanal en Pocket Leak."
-        }
-    }
+    private func localizedBudgetAlertBody(for cadence: SpendingGoalCadence, percentUsed: Double, remainingAmount: Double) -> String {
+        let remainingText = currency(remainingAmount)
+        let percentText = String(format: "%.0f%%", percentUsed)
 
-    private func localizedGoalWarningTitle(for forecast: GoalForecast) -> String {
         switch AppLanguage.current {
         case .english:
-            switch forecast.goalType {
-            case .weekly:
-                return forecast.status == .over ? "Weekly goal over limit" : "Weekly goal close to limit"
-            case .monthly:
-                return forecast.status == .over ? "Monthly goal over limit" : "Monthly goal close to limit"
+            if cadence == .weekly {
+                return "You have used \(percentText) of your weekly limit. \(remainingText) remains."
+            } else {
+                return "You have used \(percentText) of your monthly limit. \(remainingText) remains."
             }
         case .spanish:
-            switch forecast.goalType {
-            case .weekly:
-                return forecast.status == .over ? "Meta semanal sobre el límite" : "Meta semanal cerca del límite"
-            case .monthly:
-                return forecast.status == .over ? "Meta mensual sobre el límite" : "Meta mensual cerca del límite"
+            if cadence == .weekly {
+                return "Has usado \(percentText) de tu límite semanal. Quedan \(remainingText)."
+            } else {
+                return "Has usado \(percentText) de tu límite mensual. Quedan \(remainingText)."
             }
         }
-    }
-
-    private func localizedGoalWarningBody(for forecast: GoalForecast) -> String {
-        let amount = currency(forecast.status == .over ? forecast.projectedOverLimitAmount : forecast.remainingDailyBudget)
-        switch AppLanguage.current {
-        case .english:
-            switch forecast.status {
-            case .watch:
-                return "You have \(amount) per day left."
-            case .risk:
-                return "You're projected to go over by \(currency(forecast.projectedOverLimitAmount))."
-            case .over:
-                return "You're already over by \(currency(forecast.projectedOverLimitAmount))."
-            case .safe:
-                return ""
-            }
-        case .spanish:
-            switch forecast.status {
-            case .watch:
-                return "Te quedan \(amount) por día."
-            case .risk:
-                return "Se proyecta que te pases por \(currency(forecast.projectedOverLimitAmount))."
-            case .over:
-                return "Ya estás por encima por \(currency(forecast.projectedOverLimitAmount))."
-            case .safe:
-                return ""
-            }
-        }
-    }
-
-    private func goalWarningFingerprint(for forecast: GoalForecast) -> String {
-        [
-            forecast.goalType.rawValue,
-            forecast.status.rawValue,
-            String(format: "%.2f", forecast.projectedOverLimitAmount),
-            String(format: "%.2f", forecast.remainingDailyBudget)
-        ].joined(separator: "|")
-    }
-
-    private func shouldScheduleGoalWarning(identifier: String, fingerprint: String) -> Bool {
-        let fingerprintKey = goalWarningFingerprintKey(for: identifier)
-        let timestampKey = goalWarningTimestampKey(for: identifier)
-        let existingFingerprint = defaults.string(forKey: fingerprintKey)
-        let existingTimestamp = defaults.double(forKey: timestampKey)
-        let now = Date().timeIntervalSince1970
-
-        if existingFingerprint == fingerprint, now - existingTimestamp < 86_400 {
-            return false
-        }
-
-        return true
-    }
-
-    private func storeGoalWarningFingerprint(_ fingerprint: String, for identifier: String) {
-        defaults.set(fingerprint, forKey: goalWarningFingerprintKey(for: identifier))
-        defaults.set(Date().timeIntervalSince1970, forKey: goalWarningTimestampKey(for: identifier))
-    }
-
-    private func clearGoalWarningHistory() {
-        [LocalNotificationIdentifier.weeklyGoalWarning, LocalNotificationIdentifier.monthlyGoalWarning].forEach { identifier in
-            defaults.removeObject(forKey: goalWarningFingerprintKey(for: identifier.rawValue))
-            defaults.removeObject(forKey: goalWarningTimestampKey(for: identifier.rawValue))
-        }
-    }
-
-    private func goalWarningFingerprintKey(for identifier: String) -> String {
-        "app.localNotifications.goalWarning.fingerprint.\(identifier)"
-    }
-
-    private func goalWarningTimestampKey(for identifier: String) -> String {
-        "app.localNotifications.goalWarning.timestamp.\(identifier)"
     }
 
     private func currency(_ amount: Double) -> String {
@@ -346,12 +323,16 @@ final class LocalNotificationService {
 }
 
 private enum LocalNotificationIdentifier: String, CaseIterable {
-    case dailyCheckIn
-    case weeklyDigest
-    case weeklyGoalWarning
-    case monthlyGoalWarning
+    case dailyReminderAt2PM
+    case dailyReminderAt8PM
+    case weeklyBudgetAlert
+    case monthlyBudgetAlert
+
+    static var dailyReminderIDs: [LocalNotificationIdentifier] {
+        [.dailyReminderAt2PM, .dailyReminderAt8PM]
+    }
 
     static var all: [LocalNotificationIdentifier] {
-        [.dailyCheckIn, .weeklyDigest, .weeklyGoalWarning, .monthlyGoalWarning]
+        dailyReminderIDs + [.weeklyBudgetAlert, .monthlyBudgetAlert]
     }
 }

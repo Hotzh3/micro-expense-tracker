@@ -126,6 +126,38 @@ final class ExpenseViewModel: ObservableObject {
         let availableCategories: [ExpenseCategory]
     }
 
+    struct CalendarCategoryBreakdown: Identifiable, Equatable {
+        let category: ExpenseCategory
+        let total: Double
+        let count: Int
+
+        var id: UUID { category.id }
+    }
+
+    struct CalendarDayReview: Identifiable, Equatable {
+        let date: Date
+        let isCurrentMonth: Bool
+        let total: Double
+        let expenses: [Expense]
+        let categoryBreakdown: [CalendarCategoryBreakdown]
+        let topMerchant: String?
+        let highestExpense: Expense?
+        let averageComparisonText: String
+        let insightText: String
+
+        var id: Date { date }
+    }
+
+    struct CalendarMonthReview: Equatable {
+        let monthStart: Date
+        let monthEnd: Date
+        let days: [CalendarDayReview]
+        let totalSpend: Double
+        let daysWithExpenses: Int
+        let highestDay: CalendarDayReview?
+        let averageDailySpend: Double
+    }
+
     struct CategorySpendPoint: Identifiable, Equatable {
         let category: ExpenseCategory
         let total: Double
@@ -238,6 +270,7 @@ final class ExpenseViewModel: ObservableObject {
     @Published var weeklyDigest: WeeklyDigest
     @Published var isQuickAddInputFocused: Bool = false
     @Published var isGoalsInputFocused: Bool = false
+    @Published var quickAddRouteToken: UUID = UUID()
     @Published var privacyModeHideAmounts: Bool = UserDefaults.standard.bool(forKey: AppPreferenceKeys.privacyModeHideAmounts)
     @Published var hideAmountsInWidgets: Bool = UserDefaults.standard.bool(forKey: AppPreferenceKeys.hideAmountsInWidgets)
 
@@ -293,11 +326,17 @@ final class ExpenseViewModel: ObservableObject {
             totalSpend: 0,
             expenseCount: 0,
             topCategory: nil,
+            topMerchant: nil,
+            highestSpendingDay: nil,
+            daysWithExpenses: 0,
+            totalDaysInWeek: 7,
             averageDailySpend: 0,
             largestExpense: nil,
             bestInsight: nil,
             goalStatus: nil,
-            comparisonVsLastWeek: nil
+            comparisonVsLastWeek: nil,
+            summaryText: "",
+            highlightTexts: []
         )
         self.expenses = store.loadExpenses()
         let goals = goalStore.loadGoals()
@@ -327,7 +366,7 @@ final class ExpenseViewModel: ObservableObject {
         }
     }
 
-    func saveDraftExpense() {
+    func saveDraftExpense(date: Date = .now) {
         let previousWeeklyStatus = goalStatus(for: .weekly)
         let previousMonthlyStatus = goalStatus(for: .monthly)
         let strings = AppStrings.current()
@@ -347,6 +386,7 @@ final class ExpenseViewModel: ObservableObject {
             category: selectedCategory,
             merchant: merchantText.trimmingCharacters(in: .whitespacesAndNewlines),
             note: noteText.trimmingCharacters(in: .whitespacesAndNewlines),
+            date: date,
             source: savedSource,
             confidence: savedConfidence
         )
@@ -430,6 +470,29 @@ final class ExpenseViewModel: ObservableObject {
 
         draftSource = source
         draftConfidence = 1.0
+    }
+
+    func prefillFromParsedText(_ text: String) {
+        let sanitized = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !sanitized.isEmpty else { return }
+
+        guard let suggestion = parser.parse(sanitized, categories: categories) else {
+            return
+        }
+
+        guard let amount = suggestion.amount, amount.isFinite, amount > 0 else {
+            return
+        }
+
+        amountText = amountText(for: amount)
+        merchantText = suggestion.merchant.trimmingCharacters(in: .whitespacesAndNewlines)
+        selectedCategory = resolvedCategory(from: suggestion.category)
+        noteText = ""
+        importText = sanitized
+        parsedExpense = nil
+        parseFeedback = nil
+        draftSource = .parsedText
+        draftConfidence = safeConfidence(suggestion.confidence)
     }
 
     func resetDraftForExternalEntry() {
@@ -628,6 +691,7 @@ final class ExpenseViewModel: ObservableObject {
     func clearAllRecurringExpenses() {
         recurringExpenses.removeAll()
         persistRecurringExpenses()
+        refreshWeeklyDigest()
     }
 
     func dismissSmartAlert(id: String) {
@@ -740,12 +804,14 @@ final class ExpenseViewModel: ObservableObject {
         }
 
         persistRecurringExpenses()
+        refreshWeeklyDigest()
     }
 
     func removeRecurringExpense(id: UUID) {
         print("Removing recurring expense:", id)
         recurringExpenses.removeAll { $0.id == id }
         persistRecurringExpenses()
+        refreshWeeklyDigest()
     }
 
     func markRecurringAsPaid(id: UUID) {
@@ -1162,6 +1228,54 @@ final class ExpenseViewModel: ObservableObject {
 
         let peakDate = peak.weekStart.formatted(date: .abbreviated, time: .omitted)
         return "6-week trend. Total \(currency(total)). Peak \(currency(peak.total)) on \(peakDate)."
+    }
+
+    var calendarMonthReview: CalendarMonthReview {
+        calendarMonthReview(for: .now)
+    }
+
+    func calendarMonthReview(for date: Date) -> CalendarMonthReview {
+        let monthInterval = calendar.dateInterval(of: .month, for: date)
+        let monthStart = monthInterval?.start ?? calendar.startOfDay(for: date)
+        let monthEnd = monthInterval.map { calendar.date(byAdding: .second, value: -1, to: $0.end) ?? $0.end } ?? date
+        let monthExpenses = expenseAnalytics.safeExpenses.filter { expense in
+            monthInterval?.contains(expense.date) == true
+        }
+        let dayStart = calendar.startOfDay(for: monthStart)
+        let dayCount = calendar.range(of: .day, in: .month, for: date)?.count ?? 30
+        let totalSpend = monthExpenses.reduce(0) { $0 + $1.amount }
+        let daysWithExpenses = Set(monthExpenses.map { calendar.startOfDay(for: $0.date) }).count
+        let averageDailySpend = dayCount > 0 ? totalSpend / Double(dayCount) : 0
+
+        let days: [CalendarDayReview] = (0..<dayCount).compactMap { offset in
+            guard let currentDate = calendar.date(byAdding: .day, value: offset, to: dayStart) else {
+                return nil
+            }
+            return calendarDayReview(for: currentDate, within: monthInterval, averageDailySpend: averageDailySpend)
+        }
+
+        let highestDay = days.max { lhs, rhs in
+            lhs.total < rhs.total
+        }
+
+        return CalendarMonthReview(
+            monthStart: monthStart,
+            monthEnd: monthEnd,
+            days: days,
+            totalSpend: totalSpend,
+            daysWithExpenses: daysWithExpenses,
+            highestDay: highestDay,
+            averageDailySpend: averageDailySpend
+        )
+    }
+
+    func calendarDayReview(for date: Date) -> CalendarDayReview {
+        let monthInterval = calendar.dateInterval(of: .month, for: date)
+        let monthReview = calendarMonthReview(for: date)
+        let normalizedDate = calendar.startOfDay(for: date)
+
+        return monthReview.days.first(where: { calendar.isDate($0.date, inSameDayAs: normalizedDate) })
+            ?? calendarDayReview(for: normalizedDate, within: monthInterval, averageDailySpend: monthReview.averageDailySpend)
     }
 
     var largestExpenseThisMonthText: String {
@@ -2359,6 +2473,98 @@ final class ExpenseViewModel: ObservableObject {
         String(format: "$%.2f", amount)
     }
 
+    private func calendarDayReview(
+        for date: Date,
+        within monthInterval: DateInterval?,
+        averageDailySpend: Double
+    ) -> CalendarDayReview {
+        let normalizedDate = calendar.startOfDay(for: date)
+        let dayExpenses = expenseAnalytics.safeExpenses.filter { expense in
+            calendar.isDate(expense.date, inSameDayAs: normalizedDate)
+        }
+
+        let total = dayExpenses.reduce(0) { $0 + $1.amount }
+        let breakdown = categoryBreakdown(from: dayExpenses, sortMode: .amount).map {
+            CalendarCategoryBreakdown(category: $0.category, total: $0.total, count: $0.count)
+        }
+        let merchantTotals = Dictionary(grouping: dayExpenses) { expense -> String in
+            let merchant = expense.merchant.trimmingCharacters(in: .whitespacesAndNewlines)
+            return merchant.isEmpty ? expense.category.displayName : merchant
+        }
+        .mapValues { items in
+            items.reduce(0) { $0 + $1.amount }
+        }
+
+        let topMerchant = merchantTotals.sorted { lhs, rhs in
+            if lhs.value == rhs.value {
+                return lhs.key.localizedCaseInsensitiveCompare(rhs.key) == .orderedAscending
+            }
+            return lhs.value > rhs.value
+        }.first?.key
+
+        let highestExpense = dayExpenses.max(by: { $0.amount < $1.amount })
+        let comparisonValue = averageDailySpend > 0 ? total / averageDailySpend : 0
+        let averageComparisonText: String
+        switch AppLanguage.current {
+        case .english:
+            if averageDailySpend <= 0 {
+                averageComparisonText = "No monthly average yet."
+            } else if comparisonValue > 1.05 {
+                averageComparisonText = String(format: "This day was %@ above your daily average.", percentageString((comparisonValue - 1) * 100))
+            } else if comparisonValue < 0.95 {
+                averageComparisonText = String(format: "This day was %@ below your daily average.", percentageString((1 - comparisonValue) * 100))
+            } else {
+                averageComparisonText = "This day matched your daily average."
+            }
+        case .spanish:
+            if averageDailySpend <= 0 {
+                averageComparisonText = "Aún no hay promedio mensual."
+            } else if comparisonValue > 1.05 {
+                averageComparisonText = String(format: "Este día estuvo %@ por encima de tu promedio diario.", percentageString((comparisonValue - 1) * 100))
+            } else if comparisonValue < 0.95 {
+                averageComparisonText = String(format: "Este día estuvo %@ por debajo de tu promedio diario.", percentageString((1 - comparisonValue) * 100))
+            } else {
+                averageComparisonText = "Este día estuvo cerca de tu promedio diario."
+            }
+        }
+
+        let insightText: String
+        switch AppLanguage.current {
+        case .english:
+            if dayExpenses.isEmpty {
+                insightText = "No expenses recorded for this day."
+            } else if let highestExpense {
+                let merchant = highestExpense.merchant.trimmingCharacters(in: .whitespacesAndNewlines)
+                let label = merchant.isEmpty ? highestExpense.category.displayName : merchant
+                insightText = "Top spend was \(currency(highestExpense.amount)) at \(label)."
+            } else {
+                insightText = "Expenses were recorded for this day."
+            }
+        case .spanish:
+            if dayExpenses.isEmpty {
+                insightText = "No hay gastos registrados en este día."
+            } else if let highestExpense {
+                let merchant = highestExpense.merchant.trimmingCharacters(in: .whitespacesAndNewlines)
+                let label = merchant.isEmpty ? highestExpense.category.displayName : merchant
+                insightText = "El gasto más alto fue \(currency(highestExpense.amount)) en \(label)."
+            } else {
+                insightText = "Hay gastos registrados para este día."
+            }
+        }
+
+        return CalendarDayReview(
+            date: normalizedDate,
+            isCurrentMonth: monthInterval?.contains(normalizedDate) == true,
+            total: total,
+            expenses: dayExpenses.sorted { $0.date > $1.date },
+            categoryBreakdown: breakdown,
+            topMerchant: topMerchant,
+            highestExpense: highestExpense,
+            averageComparisonText: averageComparisonText,
+            insightText: insightText
+        )
+    }
+
     func displayCurrency(_ amount: Double) -> String {
         guard !privacyModeHideAmounts else { return "••••" }
         return currency(amount)
@@ -2508,6 +2714,7 @@ final class ExpenseViewModel: ObservableObject {
     private func refreshWeeklyDigest() {
         weeklyDigest = weeklyDigestService.generateDigest(
             expenses: safeExpenses,
+            recurringExpenses: recurringExpenses,
             goals: SpendingGoals(weekly: weeklyGoal, monthly: monthlyGoal),
             smartInsights: smartInsights,
             comparisons: spendingComparisons,
