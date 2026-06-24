@@ -49,9 +49,6 @@ struct QuickAddView: View {
             }
             .onAppear {
                 viewModel.isQuickAddInputFocused = focusedField != nil
-                if captureMode == .today {
-                    focusedField = .amount
-                }
             }
             .onDisappear {
                 viewModel.isQuickAddInputFocused = false
@@ -59,7 +56,7 @@ struct QuickAddView: View {
             .onChange(of: viewModel.quickAddRouteToken) { _, _ in
                 captureMode = .today
                 pastDate = .now
-                focusedField = .amount
+                focusedField = nil
             }
             .onChange(of: viewModel.amountText) { _, _ in viewModel.clearSaveFeedback() }
             .onChange(of: viewModel.merchantText) { _, _ in viewModel.clearSaveFeedback() }

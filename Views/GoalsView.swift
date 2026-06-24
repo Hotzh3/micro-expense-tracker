@@ -9,8 +9,6 @@ struct GoalsView: View {
     @State private var selectedCadence: SpendingGoalCadence = .weekly
     @State private var limitText: String = ""
     @State private var pendingRemovalCadence: SpendingGoalCadence?
-    @State private var pendingRemovalBudget: CategoryBudget?
-    @State private var budgetEditorContext: BudgetEditorContext?
     @State private var didAnimateIn = false
     @FocusState private var focusedField: Field?
 
@@ -21,14 +19,6 @@ struct GoalsView: View {
 
     private enum Field {
         case limit
-    }
-
-    private struct BudgetEditorContext: Identifiable {
-        let id = UUID()
-        let budgetID: UUID?
-        let category: ExpenseCategory
-        let cadence: SpendingGoalCadence
-        let limitText: String
     }
 
     var body: some View {
@@ -50,10 +40,6 @@ struct GoalsView: View {
 
                     editorCard
                         .id("goal-editor")
-                        .opacity(didAnimateIn ? 1 : 0)
-                        .offset(y: didAnimateIn ? 0 : 8)
-
-                    categoryBudgetsSection
                         .opacity(didAnimateIn ? 1 : 0)
                         .offset(y: didAnimateIn ? 0 : 8)
                 }
@@ -127,45 +113,6 @@ struct GoalsView: View {
             Button(strings.cancel, role: .cancel) {}
         } message: {
             Text(strings.goalsRemoveConfirmationMessage)
-        }
-        .confirmationDialog(
-            strings.categoryBudgetsRemoveConfirmationTitle,
-            isPresented: Binding(
-                get: { pendingRemovalBudget != nil },
-                set: { if !$0 { pendingRemovalBudget = nil } }
-            ),
-            titleVisibility: .visible
-        ) {
-            Button(strings.goalsRemove, role: .destructive) {
-                if let pendingRemovalBudget {
-                    viewModel.removeCategoryBudget(id: pendingRemovalBudget.id)
-                }
-                pendingRemovalBudget = nil
-            }
-            Button(strings.cancel, role: .cancel) {}
-        } message: {
-            Text(strings.categoryBudgetsRemoveConfirmationMessage)
-        }
-        .sheet(item: $budgetEditorContext) { context in
-            CategoryBudgetEditorView(
-                budgetID: context.budgetID,
-                initialCategory: context.category,
-                initialCadence: context.cadence,
-                initialLimitText: context.limitText,
-                categories: viewModel.categories,
-                onSave: { budgetID, category, cadence, limit in
-                    viewModel.saveCategoryBudget(
-                        budgetID: budgetID,
-                        category: category,
-                        cadence: cadence,
-                        limit: limit
-                    )
-                    budgetEditorContext = nil
-                },
-                onCancel: {
-                    budgetEditorContext = nil
-                }
-            )
         }
     }
 
@@ -256,129 +203,6 @@ struct GoalsView: View {
                         selectedCadence = cadence
                         limitText = ""
                         focusedField = .limit
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-        }
-    }
-
-    private var categoryBudgetsSection: some View {
-        let overviews = viewModel.categoryBudgetOverviews
-
-        return GlassCardView {
-            VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(strings.categoryBudgetsTitle)
-                        .font(.system(size: 20 * safeScale, weight: .semibold, design: .rounded))
-                        .foregroundStyle(AppTheme.primaryText)
-                    Text(strings.categoryBudgetsSubtitle)
-                        .font(.system(size: 14 * safeScale))
-                        .foregroundStyle(AppTheme.secondaryText)
-                }
-
-                if overviews.isEmpty {
-                    EmptyStateView(
-                        title: strings.categoryBudgetsEmptyTitle,
-                        message: strings.categoryBudgetsEmptyMessage
-                    )
-
-                    goalActionButton(
-                        title: strings.categoryBudgetsCreateButton,
-                        systemImage: "plus.circle.fill",
-                        primary: true
-                    ) {
-                        presentCategoryBudgetEditor(for: nil)
-                    }
-                } else {
-                    LazyVStack(spacing: 12) {
-                        ForEach(overviews) { overview in
-                            categoryBudgetCard(for: overview)
-                        }
-                    }
-
-                    goalActionButton(
-                        title: strings.categoryBudgetsCreateButton,
-                        systemImage: "plus.circle.fill",
-                        primary: true
-                    ) {
-                        presentCategoryBudgetEditor(for: nil)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private func categoryBudgetCard(for overview: ExpenseViewModel.CategoryBudgetOverview) -> some View {
-        let budget = overview.budget
-        let cadenceLabel = budget.cadence == .weekly ? strings.goalsPeriodThisWeek : strings.goalsPeriodThisMonth
-        let statusText = viewModel.categoryBudgetStatusText(for: overview.status)
-        let statusFill = overview.status.tintColor.opacity(0.18)
-
-        return ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(AppTheme.cardFill)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(AppTheme.cardBorder, lineWidth: 1)
-                )
-
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top, spacing: 10) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(budget.category.accentColor)
-                                .frame(width: 10, height: 10)
-                            Text(budget.category.displayName)
-                                .font(.system(size: 20 * safeScale, weight: .semibold, design: .rounded))
-                                .foregroundStyle(AppTheme.primaryText)
-                        }
-                        Text(cadenceLabel)
-                            .font(.system(size: 14 * safeScale))
-                            .foregroundStyle(AppTheme.secondaryText)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    statusChip(statusText: statusText, fill: statusFill)
-                }
-
-                progressBar(
-                    progress: overview.progressFraction,
-                    fill: overview.status.tintColor,
-                    statusText: statusText,
-                    hasGoal: true
-                )
-
-                VStack(spacing: 10) {
-                    HStack(spacing: 10) {
-                        goalMetric(label: strings.categoryBudgetsLimitLabel, value: viewModel.displayCurrency(overview.budget.limit))
-                        goalMetric(label: strings.categoryBudgetsSpentLabel, value: viewModel.displayCurrency(overview.spent))
-                    }
-                    HStack(spacing: 10) {
-                        goalMetric(label: strings.categoryBudgetsRemainingLabel, value: viewModel.displayCurrency(overview.remaining))
-                        goalMetric(label: strings.categoryBudgetsPercentLabel, value: overview.percentUsedText)
-                    }
-                }
-
-                HStack(spacing: 10) {
-                    goalActionButton(
-                        title: strings.categoryBudgetsEditButton,
-                        systemImage: "pencil",
-                        primary: false
-                    ) {
-                        presentCategoryBudgetEditor(for: budget)
-                    }
-
-                    goalActionButton(
-                        title: strings.categoryBudgetsRemoveButton,
-                        systemImage: "trash",
-                        primary: true
-                    ) {
-                        pendingRemovalBudget = budget
                     }
                 }
             }
@@ -580,15 +404,4 @@ struct GoalsView: View {
         }
     }
 
-    private func presentCategoryBudgetEditor(for budget: CategoryBudget?) {
-        let category = budget?.category ?? viewModel.categories.first ?? .other
-        let cadence = budget?.cadence ?? .monthly
-        let limitText = budget.map { String(format: "%.2f", $0.limit) } ?? ""
-        budgetEditorContext = BudgetEditorContext(
-            budgetID: budget?.id,
-            category: category,
-            cadence: cadence,
-            limitText: limitText
-        )
-    }
 }
