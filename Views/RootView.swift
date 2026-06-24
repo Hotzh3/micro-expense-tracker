@@ -92,7 +92,7 @@ struct RootView: View {
         .task {
             guard !didRunSplashTimer else { return }
             didRunSplashTimer = true
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            try? await Task.sleep(nanoseconds: 800_000_000)
             withAnimation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.emphasis)) {
                 showLaunchSplash = false
             }
