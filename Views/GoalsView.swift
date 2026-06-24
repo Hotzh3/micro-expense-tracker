@@ -4,370 +4,186 @@ struct GoalsView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
     @Environment(\.appTextSize) private var appTextSize: AppTextSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    @State private var selectedCadence: SpendingGoalCadence = .weekly
-    @State private var limitText: String = ""
-    @State private var pendingRemovalCadence: SpendingGoalCadence?
-    @State private var didAnimateIn = false
-    @FocusState private var focusedField: Field?
 
     private var safeScale: CGFloat {
-        let raw = appTextSize.scale
-        return raw.isFinite && raw > 0 ? raw : 1
+        let scale = appTextSize.scale
+        return scale.isFinite && scale > 0 ? scale : 1
     }
 
-    private enum Field {
-        case limit
+    private enum EditorMode: String, Identifiable {
+        case create
+        case editWeekly
+        case editMonthly
+
+        var id: String { rawValue }
     }
+
+    private var validWeeklyGoal: SpendingGoal? {
+        sanitizedGoal(viewModel.weeklyGoal, expectedCadence: .weekly)
+    }
+
+    private var validMonthlyGoal: SpendingGoal? {
+        sanitizedGoal(viewModel.monthlyGoal, expectedCadence: .monthly)
+    }
+
+    private var hasInvalidStoredGoal: Bool {
+        [viewModel.weeklyGoal, viewModel.monthlyGoal].contains { goal in
+            guard let goal else { return false }
+            return !goal.isValid || !goal.createdAt.timeIntervalSinceReferenceDate.isFinite || !goal.updatedAt.timeIntervalSinceReferenceDate.isFinite
+        }
+    }
+
+    @State private var editorMode: EditorMode?
+    @State private var editorCadence: SpendingGoalCadence = .weekly
+    @State private var editorLimitText: String = ""
 
     var body: some View {
-        ScrollViewReader { scrollProxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    ScreenHeaderView(
-                        title: strings.goalsHeader,
-                        subtitle: strings.goalsHeaderSubtitle,
-                        showsSettingsButton: true
-                    )
-
-                    VStack(spacing: 12) {
-                        goalSection(for: .weekly)
-                        goalSection(for: .monthly)
-                    }
-                    .opacity(didAnimateIn ? 1 : 0)
-                    .offset(y: didAnimateIn ? 0 : 8)
-
-                    editorCard
-                        .id("goal-editor")
-                        .opacity(didAnimateIn ? 1 : 0)
-                        .offset(y: didAnimateIn ? 0 : 8)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 0)
-                .padding(.bottom, 24)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .foregroundColor(AppTheme.primaryText)
-            .tint(AppTheme.primaryText)
-            .accentColor(AppTheme.primaryText)
-            .onChange(of: focusedField) { _, newValue in
-                viewModel.isGoalsInputFocused = newValue != nil
-                guard newValue != nil else { return }
-                withAnimation(.easeOut(duration: 0.25)) {
-                    scrollProxy.scrollTo("goal-editor", anchor: .center)
-                }
-            }
-            .onAppear {
-                viewModel.isGoalsInputFocused = focusedField != nil
-            }
-            .onDisappear {
-                viewModel.isGoalsInputFocused = false
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .onAppear(perform: syncEditorFromSelectedGoal)
-        .onChange(of: selectedCadence) { _, _ in
-            syncEditorFromSelectedGoal()
-        }
-        .onChange(of: viewModel.weeklyGoal) { _, _ in
-            syncEditorFromSelectedGoal()
-        }
-        .onChange(of: viewModel.monthlyGoal) { _, _ in
-            syncEditorFromSelectedGoal()
-        }
-        .onAppear {
-            guard !didAnimateIn else { return }
-            if reduceMotion {
-                didAnimateIn = true
-            } else {
-                withAnimation(AppMotion.standard) {
-                    didAnimateIn = true
-                }
-            }
-        }
-        .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard), value: didAnimateIn)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button(strings.done) {
-                    focusedField = nil
-                }
-            }
-        }
-        .confirmationDialog(
-            strings.goalsRemoveConfirmationTitle,
-            isPresented: Binding(
-                get: { pendingRemovalCadence != nil },
-                set: { if !$0 { pendingRemovalCadence = nil } }
-            ),
-            titleVisibility: .visible
-        ) {
-            Button(strings.goalsRemove, role: .destructive) {
-                if let pendingRemovalCadence {
-                    viewModel.removeGoal(cadence: pendingRemovalCadence)
-                }
-                pendingRemovalCadence = nil
-                syncEditorFromSelectedGoal()
-            }
-            Button(strings.cancel, role: .cancel) {}
-        } message: {
-            Text(strings.goalsRemoveConfirmationMessage)
-        }
-    }
-
-    private func goalSection(for cadence: SpendingGoalCadence) -> some View {
-        let emptyTitle = cadence == .weekly ? strings.goalsEmptyWeekly : strings.goalsEmptyMonthly
-        let createTitle = cadence == .weekly ? strings.goalsCreateWeekly : strings.goalsCreateMonthly
-        let sectionTitle = cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle
-        let periodLabel = cadence == .weekly ? strings.goalsPeriodThisWeek : strings.goalsPeriodThisMonth
-        let summary = viewModel.goalOverview(for: cadence)
-        let goal = summary?.goal
-        let hasGoal = goal != nil
-        let safeLimitText = viewModel.displayCurrency(goal?.limit ?? 0)
-        let safeSpentText = viewModel.displayCurrency(summary?.spent ?? 0)
-        let safeRemainingText = viewModel.displayCurrency(summary?.remaining ?? 0)
-        let safePercentText = summary?.percentUsedText ?? "—"
-        let safeStatusText = summary?.statusText ?? viewModel.goalStatusText(for: cadence)
-        let goalStatus = summary?.status ?? .none
-        let progressFillColor = progressFill(for: goalStatus)
-        let safeProgress = summary?.progressFraction ?? 0
-
-        return ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(AppTheme.cardFill)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(AppTheme.cardBorder, lineWidth: 1)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                ScreenHeaderView(
+                    title: strings.goalsHeader,
+                    subtitle: strings.goalsHeaderSubtitle,
+                    showsSettingsButton: true
                 )
 
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top, spacing: 10) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(sectionTitle)
-                            .font(.system(size: 20 * safeScale, weight: .semibold, design: .rounded))
-                            .foregroundStyle(AppTheme.primaryText)
-                        Text(periodLabel)
-                            .font(.system(size: 14 * safeScale))
-                            .foregroundStyle(AppTheme.secondaryText)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    statusChip(statusText: safeStatusText, fill: statusChipFill(for: goalStatus))
+                if hasInvalidStoredGoal {
+                    warningCard
                 }
 
-                if hasGoal {
-                    VStack(alignment: .leading, spacing: 12) {
-                        progressBar(progress: safeProgress, fill: progressFillColor, statusText: safeStatusText, hasGoal: hasGoal)
+                Button {
+                    startCreateGoal()
+                } label: {
+                    actionPill(title: "Add Goal", systemImage: "plus.circle.fill")
+                }
+                .buttonStyle(.plain)
 
-                        VStack(spacing: 10) {
-                            HStack(spacing: 10) {
-                                goalMetric(label: strings.goalsLimitLabel, value: safeLimitText)
-                                goalMetric(label: strings.goalsSpentLabel, value: safeSpentText)
-                            }
-                            HStack(spacing: 10) {
-                                goalMetric(label: strings.goalsRemainingLabel, value: safeRemainingText)
-                                goalMetric(label: strings.goalsPercentUsedLabel, value: safePercentText)
-                            }
-                        }
+                if let goal = validWeeklyGoal {
+                    goalCard(
+                        title: strings.goalsWeeklyTitle,
+                        periodLabel: strings.goalsPeriodThisWeek,
+                        goal: goal,
+                        spent: safeSpent(for: .weekly),
+                        cadence: .weekly
+                    )
+                }
 
-                        HStack(spacing: 10) {
-                            goalActionButton(
-                                title: strings.goalsEdit,
-                                systemImage: "pencil",
-                                primary: false
-                            ) {
-                                selectedCadence = cadence
-                                limitText = goal.map { String(format: "%.2f", $0.limit) } ?? ""
-                                focusedField = .limit
-                            }
+                if let goal = validMonthlyGoal {
+                    goalCard(
+                        title: strings.goalsMonthlyTitle,
+                        periodLabel: strings.goalsPeriodThisMonth,
+                        goal: goal,
+                        spent: safeSpent(for: .monthly),
+                        cadence: .monthly
+                    )
+                }
 
-                            goalActionButton(
-                                title: strings.goalsRemove,
-                                systemImage: "trash",
-                                primary: true
-                            ) {
-                                pendingRemovalCadence = cadence
-                            }
-                        }
-                    }
-                } else {
-                    EmptyStateView(title: emptyTitle, message: strings.goalsGoalLogicDescription)
-
-                    goalActionButton(
-                        title: createTitle,
-                        systemImage: "plus.circle.fill",
-                        primary: true
-                    ) {
-                        selectedCadence = cadence
-                        limitText = ""
-                        focusedField = .limit
-                    }
+                if validWeeklyGoal == nil, validMonthlyGoal == nil {
+                    EmptyStateView(
+                        title: strings.goalsEmptyWeekly,
+                        message: strings.goalsGoalLogicDescription
+                    )
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
+            .padding(.horizontal, 16)
+            .padding(.top, 0)
+            .padding(.bottom, 24)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .foregroundColor(AppTheme.primaryText)
+        .tint(AppTheme.primaryText)
+        .accentColor(AppTheme.primaryText)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .sheet(item: $editorMode) { mode in
+            goalEditorSheet(mode: mode)
+                .environment(\.pocketLeakStrings, strings)
+                .environment(\.appTextSize, appTextSize)
         }
     }
 
-    private var editorCard: some View {
-        let scale = safeScale
-        let goal = viewModel.goal(for: selectedCadence)
-        let actionTitle = goal == nil
-            ? (selectedCadence == .weekly ? strings.goalsCreateWeekly : strings.goalsCreateMonthly)
-            : strings.goalsEdit
+    private func goalCard(
+        title: String,
+        periodLabel: String,
+        goal: SpendingGoal,
+        spent: Double,
+        cadence: SpendingGoalCadence
+    ) -> some View {
+        let safeGoalLimit = safeGoalLimit(goal.limit)
+        let safeSpent = safeAmount(spent)
+        let remaining = max(safeGoalLimit - safeSpent, 0)
+        let progress = safeProgress(spent: safeSpent, limit: safeGoalLimit)
+        let statusText = goalStatusText(spent: safeSpent, limit: safeGoalLimit)
+        let percentText = String(format: "%.0f%%", progress * 100)
 
         return GlassCardView {
             VStack(alignment: .leading, spacing: 14) {
-                Text(strings.goalsEditorTitle)
-                    .font(.system(size: 20 * scale, weight: .semibold, design: .rounded))
-                    .foregroundStyle(AppTheme.primaryText)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 20 * safeScale, weight: .semibold, design: .rounded))
+                        .foregroundStyle(AppTheme.primaryText)
+                    Text(periodLabel)
+                        .font(.system(size: 14 * safeScale))
+                        .foregroundStyle(AppTheme.secondaryText)
+                }
 
-                Picker(strings.goalsEditorTitle, selection: $selectedCadence) {
-                    ForEach(SpendingGoalCadence.allCases) { cadence in
-                        Text(cadence == .weekly ? strings.goalsWeeklyTitle : strings.goalsMonthlyTitle).tag(cadence)
+                progressBar(progress: progress, statusText: statusText)
+
+                VStack(spacing: 10) {
+                    HStack(spacing: 10) {
+                        metricCard(label: strings.goalsLimitLabel, value: viewModel.displayCurrency(safeGoalLimit))
+                        metricCard(label: strings.goalsSpentLabel, value: viewModel.displayCurrency(safeSpent))
+                    }
+                    HStack(spacing: 10) {
+                        metricCard(label: strings.goalsRemainingLabel, value: viewModel.displayCurrency(remaining))
+                        metricCard(label: strings.goalsPercentUsedLabel, value: percentText)
                     }
                 }
-                .pickerStyle(.segmented)
-                .accessibilityLabel(strings.goalsEditorTitle)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(strings.goalsLimitLabel)
-                        .font(.system(size: 13 * scale, weight: .semibold))
-                        .foregroundStyle(AppTheme.tertiaryText)
-
-                    TextField("0.00", text: $limitText)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(.plain)
-                        .focused($focusedField, equals: .limit)
-                        .font(.system(size: 27 * scale, weight: .semibold, design: .rounded))
-                        .foregroundColor(AppTheme.primaryText)
-                        .tint(AppTheme.primaryText)
-                        .accentColor(AppTheme.primaryText)
-                        .accessibilityLabel(strings.goalsLimitLabel)
-                        .accessibilityHint(strings.goalsGoalLogicDescription)
-                        .padding(.vertical, 14)
-                        .padding(.horizontal, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .fill(AppTheme.inputFill)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                        .stroke(AppTheme.inputBorder, lineWidth: 1)
-                                )
-                        )
-                }
-
-                PrimaryButton(title: actionTitle) {
-                    guard let limit = Double(limitText.replacingOccurrences(of: ",", with: ".")), limit.isFinite, limit > 0 else {
-                        print("Invalid goal ignored:", limitText)
-                        return
-                    }
-                    print("Saving \(selectedCadence.rawValue) goal:", limit)
-                    viewModel.saveGoal(cadence: selectedCadence, limit: limit)
-                }
-
-                Text(strings.goalsGoalLogicDescription)
-                    .font(.system(size: 13 * scale))
+                Text(statusText)
+                    .font(.system(size: 13 * safeScale))
                     .foregroundStyle(AppTheme.secondaryText)
+
+                HStack(spacing: 10) {
+                    Button {
+                        startEditGoal(cadence: cadence, goal: goal)
+                    } label: {
+                        actionPill(title: "Edit Goal", systemImage: "pencil")
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(role: .destructive) {
+                        viewModel.removeGoal(cadence: cadence)
+                    } label: {
+                        actionPill(title: "Delete Goal", systemImage: "trash")
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private func statusChip(statusText: String, fill: Color) -> some View {
-        Text(statusText)
-            .font(.system(size: 13 * safeScale, weight: .semibold))
-            .foregroundStyle(AppTheme.primaryText)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(fill)
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(AppTheme.cardBorder, lineWidth: 1)
-                    )
-            )
-    }
-
-    private func statusChipFill(for status: ExpenseViewModel.GoalStatus) -> Color {
-        switch status {
-        case .onTrack:
-            return Color(red: 0.19, green: 0.64, blue: 0.38).opacity(0.18)
-        case .closeToLimit:
-            return Color(red: 0.92, green: 0.69, blue: 0.15).opacity(0.18)
-        case .limitReached:
-            return Color(red: 0.86, green: 0.25, blue: 0.24).opacity(0.18)
-        case .none:
-            return AppTheme.chipFill
-        }
-    }
-
-    private func progressBar(progress: Double, fill: Color, statusText: String, hasGoal: Bool) -> some View {
+    private func progressBar(progress: Double, statusText: String) -> some View {
         let safeProgress = progress.isFinite ? min(max(progress, 0), 1) : 0
+
         return GeometryReader { geometry in
-            let safeWidth = max(geometry.size.width, 0)
-            let fillWidth = max(0, min(safeWidth * safeProgress, safeWidth))
+            let width = max(geometry.size.width, 0)
+            let fillWidth = max(0, min(width * safeProgress, width))
 
             ZStack(alignment: .leading) {
                 Capsule(style: .continuous)
                     .fill(AppTheme.cardFill)
                 Capsule(style: .continuous)
-                    .fill(fill)
+                    .fill(progressTint(for: safeProgress))
                     .frame(width: fillWidth)
-                    .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.emphasis), value: safeProgress)
             }
         }
         .frame(height: 14)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(hasGoal ? statusText : strings.goalsNoGoalStatus)
-        .accessibilityValue(hasGoal ? statusText : strings.goalsNoGoalMessage)
+        .accessibilityLabel(statusText)
+        .accessibilityValue(statusText)
     }
 
-    private func goalActionButton(
-        title: String,
-        systemImage: String,
-        primary: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: systemImage)
-                Text(title)
-            }
-            .font(.system(size: 15 * safeScale, weight: .semibold))
-            .foregroundStyle(primary ? AppTheme.background : AppTheme.primaryText)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 44)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(primary ? AppTheme.primaryText : AppTheme.cardFill)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(primary ? Color.clear : AppTheme.cardBorder, lineWidth: 1)
-                    )
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func progressFill(for status: ExpenseViewModel.GoalStatus) -> Color {
-        switch status {
-        case .onTrack:
-            return Color(red: 0.19, green: 0.64, blue: 0.38)
-        case .closeToLimit:
-            return Color(red: 0.92, green: 0.69, blue: 0.15)
-        case .limitReached:
-            return Color(red: 0.86, green: 0.25, blue: 0.24)
-        case .none:
-            return Color(red: 0.19, green: 0.64, blue: 0.38)
-        }
-    }
-
-    private func goalMetric(label: String, value: String) -> some View {
+    private func metricCard(label: String, value: String) -> some View {
         let safeLabel = label.isEmpty ? "—" : label
         let safeValue = value.isEmpty ? "—" : value
 
@@ -386,22 +202,190 @@ struct GoalsView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(AppTheme.cardFill)
         )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(safeLabel): \(safeValue)")
     }
 
-    private func syncEditorFromSelectedGoal() {
-        guard let goal = viewModel.goal(for: selectedCadence) else {
-            if !limitText.isEmpty {
-                limitText = ""
+    private var warningCard: some View {
+        GlassCardView {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Stored goal data needs attention")
+                    .font(.system(size: 18 * safeScale, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AppTheme.primaryText)
+                Text("Pocket Leak found old goal data that is not safe to render directly. It is preserved, and only valid goals are shown here.")
+                    .font(.system(size: 13 * safeScale))
+                    .foregroundStyle(AppTheme.secondaryText)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func actionPill(title: String, systemImage: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+            Text(title)
+        }
+        .font(.system(size: 15 * safeScale, weight: .semibold))
+        .foregroundStyle(AppTheme.primaryText)
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: 44)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppTheme.cardFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(AppTheme.cardBorder, lineWidth: 1)
+                )
+        )
+    }
+
+    private func sanitizedGoal(_ goal: SpendingGoal?, expectedCadence: SpendingGoalCadence) -> SpendingGoal? {
+        guard let goal else { return nil }
+        guard goal.cadence == expectedCadence else { return nil }
+        guard goal.isValid else { return nil }
+        guard goal.createdAt.timeIntervalSinceReferenceDate.isFinite else { return nil }
+        guard goal.updatedAt.timeIntervalSinceReferenceDate.isFinite else { return nil }
+        return goal
+    }
+
+    private func safeAmount(_ amount: Double) -> Double {
+        guard amount.isFinite, amount >= 0 else { return 0 }
+        return amount
+    }
+
+    private func safeGoalLimit(_ limit: Double) -> Double {
+        guard limit.isFinite, limit > 0 else { return 0 }
+        return limit
+    }
+
+    private func safeProgress(spent: Double, limit: Double) -> Double {
+        guard spent.isFinite, spent >= 0, limit.isFinite, limit > 0 else { return 0 }
+        let progress = spent / limit
+        guard progress.isFinite else { return 0 }
+        return min(max(progress, 0), 1)
+    }
+
+    private func progressTint(for progress: Double) -> Color {
+        if progress >= 1 {
+            return Color(red: 0.86, green: 0.25, blue: 0.24)
+        }
+        if progress >= 0.75 {
+            return Color(red: 0.92, green: 0.69, blue: 0.15)
+        }
+        return Color(red: 0.19, green: 0.64, blue: 0.38)
+    }
+
+    private func goalStatusText(spent: Double, limit: Double) -> String {
+        let strings = AppStrings.current()
+        let progress = safeProgress(spent: spent, limit: limit)
+        if progress >= 1 {
+            return strings.goalsStatusLimitReached
+        }
+        if progress >= 0.75 {
+            return strings.goalsStatusCloseToLimit
+        }
+        if limit > 0 {
+            return strings.goalsStatusOnTrack
+        }
+        return strings.goalsNoGoalStatus
+    }
+
+    private func safeSpent(for cadence: SpendingGoalCadence) -> Double {
+        let value = viewModel.goalSpentAmount(for: cadence)
+        return safeAmount(value)
+    }
+
+    private func startCreateGoal() {
+        editorCadence = validWeeklyGoal == nil ? .weekly : .monthly
+        editorLimitText = ""
+        editorMode = .create
+    }
+
+    private func startEditGoal(cadence: SpendingGoalCadence, goal: SpendingGoal) {
+        editorCadence = cadence
+        editorLimitText = goal.limit.isFinite ? String(format: "%.2f", goal.limit) : ""
+        editorMode = cadence == .weekly ? .editWeekly : .editMonthly
+    }
+
+    private func goalEditorSheet(mode: EditorMode) -> some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Goal Editor")
+                        .font(.system(size: 22 * safeScale, weight: .semibold, design: .rounded))
+                        .foregroundStyle(AppTheme.primaryText)
+                    Text("Create or edit a weekly or monthly spending goal.")
+                        .font(.system(size: 14 * safeScale))
+                        .foregroundStyle(AppTheme.secondaryText)
+                }
+
+                Picker("Cadence", selection: $editorCadence) {
+                    Text(strings.goalsWeeklyTitle).tag(SpendingGoalCadence.weekly)
+                    Text(strings.goalsMonthlyTitle).tag(SpendingGoalCadence.monthly)
+                }
+                .pickerStyle(.segmented)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(strings.goalsLimitLabel)
+                        .font(.system(size: 13 * safeScale, weight: .semibold))
+                        .foregroundStyle(AppTheme.tertiaryText)
+
+                    TextField("0.00", text: $editorLimitText)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 27 * safeScale, weight: .semibold, design: .rounded))
+                        .foregroundColor(AppTheme.primaryText)
+                        .tint(AppTheme.primaryText)
+                        .accentColor(AppTheme.primaryText)
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .fill(AppTheme.inputFill)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                        .stroke(AppTheme.inputBorder, lineWidth: 1)
+                                )
+                        )
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(16)
+            .navigationTitle("Goal Editor")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        editorMode = nil
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save") {
+                        saveGoalFromEditor()
+                    }
+                }
+            }
+            .onAppear {
+                if case .create = mode {
+                    if validWeeklyGoal != nil, validMonthlyGoal == nil {
+                        editorCadence = .monthly
+                    } else if validWeeklyGoal == nil {
+                        editorCadence = .weekly
+                    }
+                    if editorLimitText.isEmpty {
+                        editorLimitText = ""
+                    }
+                }
+            }
+        }
+    }
+
+    private func saveGoalFromEditor() {
+        guard let limit = Double(editorLimitText.replacingOccurrences(of: ",", with: ".")), limit.isFinite, limit > 0 else {
             return
         }
-
-        let resolvedLimitText = goal.limit.isFinite ? String(format: "%.2f", goal.limit) : ""
-        if limitText != resolvedLimitText {
-            limitText = resolvedLimitText
-        }
+        viewModel.saveGoal(cadence: editorCadence, limit: limit)
+        editorMode = nil
+        editorLimitText = ""
     }
-
 }

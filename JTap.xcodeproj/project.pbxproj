@@ -147,7 +147,7 @@
 		1DB55C1245F585B698B4592D /* WeeklyDigestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyDigestView.swift; sourceTree = "<group>"; };
 		213F025111AB8C3989BEA54B /* PocketLeakShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PocketLeakShareExtension.entitlements; sourceTree = "<group>"; };
 		23440D26C2CD475D6FD16A68 /* PocketLeakWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PocketLeakWidget.swift; sourceTree = "<group>"; };
-		2400B34CA586FB694B7FBC85 /* JTap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = JTap.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2400B34CA586FB694B7FBC85 /* JTap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JTap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		251D91C6E2652D3A9258052E /* DemoDataGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoDataGenerator.swift; sourceTree = "<group>"; };
 		25B76BED0B8BCC03EFBAE2C7 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		2AC19EB6ECA6DBAC6126C8D2 /* HapticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsService.swift; sourceTree = "<group>"; };
@@ -156,7 +156,7 @@
 		3381D146B3956102E5D5925D /* WidgetSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSummary.swift; sourceTree = "<group>"; };
 		345C13449DE35BEE800F7AB0 /* DataBackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataBackupService.swift; sourceTree = "<group>"; };
 		3AF513937D0D5DE56BEE8EF9 /* AppLockService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockService.swift; sourceTree = "<group>"; };
-		3D99359ED59F8CD20BCCAF4A /* PocketLeakWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PocketLeakWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		3D99359ED59F8CD20BCCAF4A /* PocketLeakWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PocketLeakWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		43757A35CE1048C7E2690FE1 /* SmartAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartAlert.swift; sourceTree = "<group>"; };
 		44048E144E9D5752313C299C /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		4419579B64FA80F9A2AC38B4 /* WeeklyDigest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyDigest.swift; sourceTree = "<group>"; };
@@ -192,9 +192,9 @@
 		ABF8C91F013BFC9F006FF742 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		AC04FA705318868C3B6619FA /* WidgetSummaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSummaryStore.swift; sourceTree = "<group>"; };
 		ACEC18AF50EA83BA39FC2A50 /* SpendingGoal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingGoal.swift; sourceTree = "<group>"; };
-		AF1C1099D46688760F770349 /* PocketLeakShareExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PocketLeakShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF1C1099D46688760F770349 /* PocketLeakShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PocketLeakShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B17D6DA79AF62D5D00DD994B /* ShareCardRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardRenderer.swift; sourceTree = "<group>"; };
-		B4C0027C385733B5B924FCD5 /* JTapTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = JTapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B4C0027C385733B5B924FCD5 /* JTapTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JTapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4E89F1506DA204E117366DB /* CategoryPillView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPillView.swift; sourceTree = "<group>"; };
 		B4FAFA12B4A5B51B056024E3 /* WeeklyDigestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyDigestService.swift; sourceTree = "<group>"; };
 		C879640230F5C9FE3109AB05 /* Expense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expense.swift; sourceTree = "<group>"; };
@@ -681,6 +681,7 @@
 				CODE_SIGN_ENTITLEMENTS = Widgets/PocketLeakWidget/PocketLeakWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 50;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Widgets/PocketLeakWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -766,6 +767,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -844,6 +846,7 @@
 				CODE_SIGN_ENTITLEMENTS = Widgets/PocketLeakWidget/PocketLeakWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 50;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Widgets/PocketLeakWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -867,6 +870,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 50;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -886,6 +890,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -906,6 +911,7 @@
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/PocketLeakShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 50;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -927,6 +933,7 @@
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/PocketLeakShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 50;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -950,6 +957,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 50;
+				DEVELOPMENT_TEAM = 8FXCTDGXSV;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

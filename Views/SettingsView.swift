@@ -53,7 +53,6 @@ struct SettingsView: View {
     @State private var backupExport: DataBackupExport?
     @State private var pendingBackupDocument: DataBackupDocument?
     @State private var isSyncingNotificationSettings = false
-    @State private var didLoadNotificationStatus = false
     @State private var showLoadDemoConfirmation = false
     @State private var showResetDemoConfirmation = false
     @State private var showStressDemoConfirmation = false
@@ -80,18 +79,8 @@ struct SettingsView: View {
                     languageCard
                     onboardingCard
                     hapticsCard
-                    smartAlertsCard
                     notificationsCard
-                    privacyCard
-                    backupCard
-                    demoModeCard
-#if DEBUG
-                    stressToolsCard
-#endif
                     exportCard
-                    recurringCard
-                    backTapCard
-                    resetCard
                     versionCard
                 }
                 .padding(.horizontal, 16)
@@ -102,11 +91,6 @@ struct SettingsView: View {
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle(strings.settingsTitle)
             .navigationBarTitleDisplayMode(.inline)
-            .onAppear {
-                guard !didLoadNotificationStatus else { return }
-                didLoadNotificationStatus = true
-                Task { await refreshNotificationStatus() }
-            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(strings.done) {
@@ -114,112 +98,6 @@ struct SettingsView: View {
                     }
                     .foregroundStyle(AppTheme.primaryText)
                 }
-            }
-            .confirmationDialog(
-                strings.resetConfirmationTitle,
-                isPresented: $showResetConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button(strings.deleteAllData, role: .destructive) {
-                    onResetLocalData()
-                }
-                Button(strings.cancel, role: .cancel) {}
-            } message: {
-                Text(strings.resetConfirmationMessage)
-            }
-            .confirmationDialog(
-                strings.demoModeTitle,
-                isPresented: $showLoadDemoConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button(strings.loadDemoData, role: .destructive) {
-                    viewModel.loadDemoData()
-                    backupFeedback = strings.demoDataLoaded
-                    backupFeedbackIsError = false
-                }
-                Button(strings.cancel, role: .cancel) {}
-            } message: {
-                Text(strings.demoDataWarning)
-            }
-            .confirmationDialog(
-                strings.demoModeTitle,
-                isPresented: $showResetDemoConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button(strings.resetDemoData, role: .destructive) {
-                    if viewModel.resetDemoData() {
-                        backupFeedback = strings.demoDataCleared
-                        backupFeedbackIsError = false
-                    } else {
-                        showResetConfirmation = true
-                    }
-                }
-                Button(strings.cancel, role: .cancel) {}
-            } message: {
-                Text(strings.demoDataWarning)
-            }
-            .confirmationDialog(
-                strings.backupTitle,
-                isPresented: $showBackupImportConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button(strings.backupImportMerge) {
-                    restorePendingBackup(mode: .merge)
-                }
-                Button(strings.backupImportReplace, role: .destructive) {
-                    restorePendingBackup(mode: .replace)
-                }
-                Button(strings.cancel, role: .cancel) {}
-            } message: {
-                Text(backupImportMessage)
-            }
-#if DEBUG
-            .confirmationDialog(
-                "Generate demo data?",
-                isPresented: $showStressDemoConfirmation,
-                titleVisibility: .visible,
-                presenting: selectedStressScenario
-            ) { scenario in
-                Button("Generate \(scenario.title)", role: .destructive) {
-                    viewModel.loadStressDemoData(days: scenario.days, expensesPerDay: scenario.dailyExpenseCount)
-                    backupFeedback = "Generated \(scenario.days) days of demo data"
-                    backupFeedbackIsError = false
-                    prepareBackupExport()
-                }
-                Button(strings.cancel, role: .cancel) {}
-            } message: { scenario in
-                Text("This will replace current expenses with \(scenario.title.lowercased()) of synthetic data.")
-            }
-            .confirmationDialog(
-                "Clear demo data?",
-                isPresented: $showStressClearConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Clear demo expenses", role: .destructive) {
-                    viewModel.clearAllExpenses()
-                    backupFeedback = "Demo expenses cleared"
-                    backupFeedbackIsError = false
-                    prepareBackupExport()
-                }
-                Button(strings.cancel, role: .cancel) {}
-            } message: {
-                Text("This removes the generated demo expenses from the local store.")
-            }
-#endif
-            .fileImporter(
-                isPresented: $showBackupImporter,
-                allowedContentTypes: [.json]
-            ) { result in
-                handleBackupImport(result: result)
-            }
-            .sheet(isPresented: $showShortcutsGuide) {
-                ShortcutsGuideView(
-                    onCopyQuickAddURL: onCopyQuickAddURL,
-                    onCopyPrefillURLExample: onCopyPrefillURLExample,
-                    onOpenQuickAddRoute: onOpenQuickAddRoute
-                )
-                .environment(\.pocketLeakStrings, strings)
-                .environment(\.appTextSize, appTextSize)
             }
         }
     }

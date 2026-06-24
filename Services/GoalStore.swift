@@ -28,18 +28,12 @@ final class GoalStore {
 
             let data = try Data(contentsOf: fileURL)
             if let goals = try? decoder.decode(SpendingGoals.self, from: data) {
-                let sanitized = goals.sanitized
-                if sanitized != goals {
-                    print("Invalid goal ignored: sanitized stored goals")
-                    saveGoals(sanitized)
-                }
-                return sanitized
+                return goals.sanitized
             }
 
             if let legacyGoal = try? decoder.decode(SpendingGoal.self, from: data) {
                 guard legacyGoal.isValid else {
                     print("Invalid goal ignored:", legacyGoal)
-                    removeCorruptGoalsFile()
                     return .empty
                 }
                 let goals: SpendingGoals
@@ -49,17 +43,13 @@ final class GoalStore {
                 case .monthly:
                     goals = SpendingGoals(weekly: nil, monthly: legacyGoal)
                 }
-                saveGoals(goals)
-                return goals
+                return goals.sanitized
             }
 
-            print("GoalStore decode failed; clearing corrupt goals")
-            removeCorruptGoalsFile()
+            print("GoalStore decode failed; ignoring corrupt goals")
             return .empty
         } catch {
             print("Failed to load goals: \(error)")
-            print("GoalStore decode failed; clearing corrupt goals")
-            removeCorruptGoalsFile()
             return .empty
         }
     }
