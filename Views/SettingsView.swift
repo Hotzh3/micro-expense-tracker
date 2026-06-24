@@ -53,6 +53,7 @@ struct SettingsView: View {
     @State private var backupExport: DataBackupExport?
     @State private var pendingBackupDocument: DataBackupDocument?
     @State private var isSyncingNotificationSettings = false
+    @State private var didLoadNotificationStatus = false
     @State private var showLoadDemoConfirmation = false
     @State private var showResetDemoConfirmation = false
     @State private var showStressDemoConfirmation = false
@@ -101,8 +102,10 @@ struct SettingsView: View {
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle(strings.settingsTitle)
             .navigationBarTitleDisplayMode(.inline)
-            .task {
-                await refreshNotificationStatus()
+            .onAppear {
+                guard !didLoadNotificationStatus else { return }
+                didLoadNotificationStatus = true
+                Task { await refreshNotificationStatus() }
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

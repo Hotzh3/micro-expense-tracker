@@ -132,4 +132,33 @@ final class ReportingAndNotificationsTests: XCTestCase {
         XCTAssertFalse(todayReview.categoryBreakdown.isEmpty)
         XCTAssertNotNil(todayReview.topMerchant)
     }
+
+    func testHistoryFilterAppliesCategoryDateAndSortTogether() {
+        let viewModel = ExpenseViewModel()
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+        let filter = ExpenseFilter(
+            searchText: "",
+            categories: [.food],
+            dateRange: .all,
+            minAmount: nil,
+            maxAmount: nil,
+            source: nil,
+            merchant: "",
+            sortOrder: .highest
+        )
+
+        viewModel.expenses = [
+            Expense(amount: 12, category: .food, merchant: "Coffee", date: yesterday),
+            Expense(amount: 30, category: .food, merchant: "Dinner", date: today),
+            Expense(amount: 99, category: .shopping, merchant: "Store", date: today)
+        ]
+
+        let filtered = viewModel.filteredExpenses(using: filter)
+
+        XCTAssertEqual(filtered.count, 2)
+        XCTAssertEqual(filtered.first?.amount, 30, accuracy: 0.01)
+        XCTAssertTrue(filtered.allSatisfy { $0.category == .food })
+    }
 }

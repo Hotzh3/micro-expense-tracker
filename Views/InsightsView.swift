@@ -4,10 +4,7 @@ struct InsightsView: View {
     @EnvironmentObject private var viewModel: ExpenseViewModel
     @Environment(\.pocketLeakStrings) private var strings: AppStrings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.presentRecurringExpenses) private var presentRecurringExpenses
     @State private var didAnimateIn = false
-    @State private var weeklyDigestShareURL: URL?
-    private let shareCardRenderer = ShareCardRenderer()
 
     var body: some View {
         ScrollView {
@@ -44,39 +41,7 @@ struct InsightsView: View {
                         .offset(y: didAnimateIn ? 0 : 8)
                     }
 
-                    WeeklyDigestView(
-                        digest: viewModel.weeklyDigest,
-                        strings: strings,
-                        shareURL: weeklyDigestShareURL
-                    )
-
                     CalendarReviewView()
-
-                    if let categoryBudget = viewModel.primaryCategoryBudgetOverview {
-                        categoryBudgetInsightCard(for: categoryBudget)
-                            .opacity(didAnimateIn ? 1 : 0)
-                            .offset(y: didAnimateIn ? 0 : 8)
-                    }
-
-                    recurringExpensesCard
-                        .opacity(didAnimateIn ? 1 : 0)
-                        .offset(y: didAnimateIn ? 0 : 8)
-
-                    if !viewModel.expenses.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(strings.smartInsightsTitle)
-                                .font(.headline)
-                                .foregroundStyle(AppTheme.primaryText)
-
-                            VStack(spacing: 12) {
-                                ForEach(Array(viewModel.smartInsights.prefix(4))) { insight in
-                                    SmartInsightCardView(insight: insight)
-                                }
-                            }
-                        }
-                        .opacity(didAnimateIn ? 1 : 0)
-                        .offset(y: didAnimateIn ? 0 : 8)
-                    }
 
                     if !viewModel.spendingComparisons.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
@@ -166,124 +131,6 @@ struct InsightsView: View {
             }
         }
         .animation(AppMotion.animation(reduceMotion: reduceMotion, fallback: AppMotion.standard), value: didAnimateIn)
-        .task(id: viewModel.shareCardSnapshotSignature) {
-            await refreshWeeklyDigestShareURL()
-        }
-    }
-
-    @MainActor
-    private func refreshWeeklyDigestShareURL() async {
-        weeklyDigestShareURL = shareCardRenderer.shareURL(
-            for: .weeklySummary,
-            viewModel: viewModel,
-            strings: strings
-        )
-    }
-
-    private func categoryBudgetInsightCard(for overview: ExpenseViewModel.CategoryBudgetOverview) -> some View {
-        let statusText = viewModel.categoryBudgetStatusText(for: overview.status)
-        let insightText = viewModel.categoryBudgetInsightText(for: overview)
-
-        return GlassCardView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(strings.insightsCategoryBudgetTitle)
-                    .font(.headline)
-                    .foregroundStyle(AppTheme.primaryText)
-                Text(strings.insightsCategoryBudgetSubtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(AppTheme.secondaryText)
-
-                HStack(alignment: .top, spacing: 12) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(overview.status.tintColor.opacity(0.14))
-                        Image(systemName: overview.status == .over ? "exclamationmark.octagon.fill" : "target")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(overview.status.tintColor)
-                    }
-                    .frame(width: 40, height: 40)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(overview.budget.category.displayName) • \(statusText)")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(AppTheme.primaryText)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                        Text(insightText)
-                            .font(.subheadline)
-                            .foregroundStyle(AppTheme.secondaryText)
-                            .lineLimit(3)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private var recurringExpensesCard: some View {
-        GlassCardView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(strings.insightsRecurringLeaksTitle)
-                    .font(.headline)
-                    .foregroundStyle(AppTheme.primaryText)
-                Text(strings.insightsRecurringLeaksSubtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(AppTheme.secondaryText)
-
-                if let nextRecurring = viewModel.nextRecurringExpense {
-                    HStack(alignment: .top, spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(AppTheme.cardFill)
-                            Image(systemName: "repeat")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(AppTheme.primaryText)
-                        }
-                        .frame(width: 40, height: 40)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(viewModel.recurringExpenseTitle(for: nextRecurring))
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(AppTheme.primaryText)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.85)
-                            Text(viewModel.recurringExpenseNextDueText(for: nextRecurring))
-                                .font(.subheadline)
-                                .foregroundStyle(AppTheme.secondaryText)
-                            Text("\(viewModel.recurringExpenseCadenceText(for: nextRecurring.cadence)) • \(viewModel.displayCurrency(nextRecurring.amount))")
-                                .font(.caption)
-                                .foregroundStyle(AppTheme.tertiaryText)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                } else {
-                    Text(strings.recurringExpensesNoUpcomingMessage)
-                        .font(.subheadline)
-                        .foregroundStyle(AppTheme.secondaryText)
-                }
-
-                Button {
-                    presentRecurringExpenses()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "repeat")
-                        Text(strings.recurringExpensesCreateButton)
-                    }
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(AppTheme.background)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(AppTheme.primaryText)
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
     }
 
     private var highestExpenseValue: String {

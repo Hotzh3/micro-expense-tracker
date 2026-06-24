@@ -990,29 +990,6 @@ final class ExpenseViewModel: ObservableObject {
     }
 
     var dashboardSignalSafe: DashboardSignal? {
-        let strings = AppStrings.current()
-
-        if let overview = primaryCategoryBudgetOverview {
-            let cadenceLabel = overview.budget.cadence == .weekly
-                ? strings.categoryBudgetsWeeklyLabel
-                : strings.categoryBudgetsMonthlyLabel
-
-            let detail = String(
-                format: strings.categoryBudgetInsightTemplate,
-                overview.budget.category.displayName,
-                overview.percentUsedText,
-                cadenceLabel
-            )
-
-            return DashboardSignal(
-                id: "budget-\(overview.id.uuidString)",
-                kind: .budget,
-                title: overview.budget.category.displayName,
-                detail: detail,
-                accentColor: overview.status.tintColor
-            )
-        }
-
         guard let top = dashboardTopCategorySafe else { return nil }
         let detail = "\(currency(top.total)) • \(percentageString(top.percentage)) of month"
 
@@ -1070,24 +1047,6 @@ final class ExpenseViewModel: ObservableObject {
     var dashboardSmartInsightSafe: DashboardSmartInsight? {
         let monthExpenses = expenseAnalytics.monthExpenses
         guard !monthExpenses.isEmpty else { return nil }
-
-        if let budget = dashboardCategoryBudgetSignalSafe, budget.progressFraction >= 0.75 {
-            let title = AppStrings.current().dashboardSmartInsightTitle
-            let message = String(
-                format: AppStrings.current().categoryBudgetInsightTemplate,
-                budget.categoryName,
-                budget.percentText,
-                budget.cadenceText
-            )
-
-            return DashboardSmartInsight(
-                id: "budget-\(budget.id)",
-                title: title,
-                message: message,
-                symbolName: budget.progressFraction >= 1 ? "exclamationmark.triangle.fill" : "exclamationmark.circle.fill",
-                accentColor: budget.accentColor
-            )
-        }
 
         let thisWeekTotal = weekTotal
         let previousWeekTotal = expenseAnalytics.previousWeekTotal
